@@ -48,7 +48,10 @@ curl http://127.0.0.1:3333/v1/health
 ```
 
 Com o banco fora do ar o `status` vira `degraded`, o `latencyMs` do banco
-desaparece — e a resposta continua **200**. É relatório de estado, não porta de
+desaparece — e a resposta continua **200**. Banco que recusa a conexão falha na
+hora; banco que fica calado (host inalcançável, pacote descartado, projeto
+pausado) tem 2 s de prazo e depois sai como `down`, para o endpoint responder em
+vez de pendurar. É relatório de estado, não porta de
 entrada: um soluço do Postgres não deve derrubar o health check de todas as
 tasks de uma vez e tirar o serviço inteiro do balanceador. A sonda que tira uma
 task de rotação entra com o card de ECS e ALB, junto do target group que a lê.
