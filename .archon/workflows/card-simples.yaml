@@ -1,0 +1,69 @@
+name: card-simples
+description: Executa um card simples do quadro Wellness, do card ao PR, sem merge
+
+provider: claude
+worktree:
+  enabled: true
+
+nodes:
+  # 1. Lê o card no Trello e salva em $ARTIFACTS_DIR/card.md
+  - id: ler-card
+    command: ler-card
+
+  # 2. A cópia isolada (worktree) nasce sem node_modules
+  - id: preparar
+    depends_on: [ler-card]
+    bash: "pnpm install"
+
+  # 3. Implementação
+  - id: implementar
+    depends_on: [preparar]
+    prompt: |
+      Leia $ARTIFACTS_DIR/card.md e o CLAUDE.md do repositório. O CLAUDE.md é a única
+      fonte de instruções: não crie AGENTS.md nem outro arquivo de instruções para IA.
+
+      Implemente o card cumprindo todos os critérios de aceite, sem ir além do escopo.
+      Faça commits pequenos no padrão Conventional Commits.
+      Antes de terminar, rode os scripts de verificação que existirem
+      (lint, typecheck, build, test) e corrija o que falhar.
+
+      Ao final, escreva em $ARTIFACTS_DIR/resumo.md:
+      - o que foi feito
+      - como cada critério de aceite foi atendido
+      - o que ficou de fora e por quê
+
+  # 4. Validação determinística, sem IA (ajuste conforme os scripts forem existindo)
+  - id: validar
+    depends_on: [implementar]
+    bash: "pnpm turbo run lint typecheck build"
+
+  # 5. Revisão com contexto limpo
+  - id: revisar
+    depends_on: [validar]
+    context: fresh
+    prompt: |
+      Você é um revisor rigoroso que NÃO escreveu este código.
+      Leia $ARTIFACTS_DIR/card.md, $ARTIFACTS_DIR/resumo.md, o CLAUDE.md e as mudanças
+      desta branch em relação à main (git diff main...HEAD).
+
+      Verifique:
+      - todos os critérios de aceite foram cumpridos de verdade
+      - regras do CLAUDE.md (fronteiras de módulo, domínio puro, sem dado pessoal em log)
+      - nada fora do escopo do card
+      - nenhum segredo ou token commitado
+
+      Corrija problemas reais com novos commits. Não reescreva o que está correto.
+      Acrescente ao final de $ARTIFACTS_DIR/resumo.md uma seção "Revisão" com o que
+      encontrou e o que corrigiu.
+
+  # 6. PR e Trello
+  - id: abrir-pr
+    depends_on: [revisar]
+    prompt: |
+      Envie a branch e abra um PR para a main com o gh.
+      Se o comando gh não for encontrado, use "C:\Program Files\GitHub CLI\gh.exe".
+      - Título: "<ID do card> <título do card>"
+      - Descrição: link do card e o conteúdo de $ARTIFACTS_DIR/resumo.md
+
+      Depois, no Trello: comente o link do PR no card e mova o card para "Revisão".
+      NÃO faça merge.
