@@ -1,5 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "//": "agentGuidance=false: CLAUDE.md is the single source of agent instructions in this repo, so turbo must not maintain an AGENTS.md block.",
+  "agentGuidance": false,
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

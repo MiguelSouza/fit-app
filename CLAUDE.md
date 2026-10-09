@@ -102,6 +102,9 @@ modules/<modulo>/
 - Erros de domínio são classes próprias, traduzidas para HTTP só na camada `presentation`.
 - Datas com `date-fns` / `date-fns-tz`; dinheiro em centavos (inteiro).
 - Migrações só via Drizzle Kit, revisadas no PR. Nunca alterar o banco de produção à mão.
+- Turborepo muda de comportamento e de configuração entre versões: antes de mexer no `turbo.json` ou
+  nos comandos do `turbo`, leia os docs embarcados na versão instalada (`docs/README.md` dentro do
+  pacote, achável com `node -p "require.resolve('turbo/package.json')"`), não a documentação do site.
 
 ## Testes
 
