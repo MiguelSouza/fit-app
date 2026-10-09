@@ -11,17 +11,17 @@ A IA é copiloto do profissional: aponta, nunca diagnostica.
 
 ## Stack
 
-| Parte | Tecnologia |
-| --- | --- |
-| API | NestJS (TypeScript strict), monólito modular, clean architecture pragmática |
-| Painel do profissional | Next.js (App Router), Tailwind, shadcn/ui, TanStack Query e Table, React Hook Form, Recharts |
-| App do paciente | Flutter (Dart), Riverpod |
-| Banco | Postgres no Supabase (região São Paulo), Drizzle ORM, um schema por módulo |
-| Login e arquivos | Supabase Auth (a API valida o JWT) e Supabase Storage |
-| Jobs | pg-boss |
-| Validação e contratos | Zod compartilhado + OpenAPI gerado pelo NestJS |
-| Infra | AWS sa-east-1 (ECS Fargate, ECR, ALB, Secrets Manager, CloudWatch) via AWS CDK; painel na Vercel |
-| Monorepo | Turborepo + pnpm |
+| Parte                  | Tecnologia                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| API                    | NestJS (TypeScript strict), monólito modular, clean architecture pragmática                      |
+| Painel do profissional | Next.js (App Router), Tailwind, shadcn/ui, TanStack Query e Table, React Hook Form, Recharts     |
+| App do paciente        | Flutter (Dart), Riverpod                                                                         |
+| Banco                  | Postgres no Supabase (região São Paulo), Drizzle ORM, um schema por módulo                       |
+| Login e arquivos       | Supabase Auth (a API valida o JWT) e Supabase Storage                                            |
+| Jobs                   | pg-boss                                                                                          |
+| Validação e contratos  | Zod compartilhado + OpenAPI gerado pelo NestJS                                                   |
+| Infra                  | AWS sa-east-1 (ECS Fargate, ECR, ALB, Secrets Manager, CloudWatch) via AWS CDK; painel na Vercel |
+| Monorepo               | Turborepo + pnpm                                                                                 |
 
 ## Estrutura do repositório
 
@@ -41,12 +41,12 @@ scripts/          seeds, gerador de pacientes sintéticos, importação TACO/TBC
 
 ## Módulos de domínio (apps/api/src/modules)
 
-| Módulo | Schema Postgres | Responsável por |
-| --- | --- | --- |
-| `identity` | `identity` | pessoas, organizações, vínculos, convites, consentimentos, registro de acessos |
-| `nutrition` | `nutrition` | alimentos, planos, refeições, opções, cálculo de macros, adesão |
-| `health` | `health` | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas |
-| `insights` | `insights` | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo |
+| Módulo      | Schema Postgres | Responsável por                                                                |
+| ----------- | --------------- | ------------------------------------------------------------------------------ |
+| `identity`  | `identity`      | pessoas, organizações, vínculos, convites, consentimentos, registro de acessos |
+| `nutrition` | `nutrition`     | alimentos, planos, refeições, opções, cálculo de macros, adesão                |
+| `health`    | `health`        | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas   |
+| `insights`  | `insights`      | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo        |
 
 Camadas dentro de cada módulo:
 
