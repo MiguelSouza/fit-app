@@ -40,6 +40,24 @@ function internalPaths(target) {
 }
 
 /**
+ * Where a module's files are, written the two ways eslint may see them.
+ *
+ * `files` is matched against the path of the file relative to the config file
+ * being applied, and eslint 10 applies the config file nearest to the linted
+ * file. So the same file has two names: `apps/api/src/modules/...` when the
+ * root config answers for it (an editor, `lint-staged`, `eslint .` at the
+ * root) and `src/modules/...` when `apps/api/eslint.config.mjs` does
+ * (`pnpm --filter api lint`, which is what `turbo run lint` runs). Naming only
+ * the first one leaves the boundary off exactly where the code is.
+ *
+ * @param {string} current the module whose files the entry applies to
+ * @returns {string[]} the patterns that name that module’s files
+ */
+function boundaryFiles(current) {
+  return [`**/apps/api/src/modules/${current}/**/*.ts`, `**/src/modules/${current}/**/*.ts`];
+}
+
+/**
  * CLAUDE.md rule 1 ("Fronteira de módulo"): from inside a module, the other
  * modules exist only through their `index.ts`.
  *
@@ -61,7 +79,7 @@ function moduleBoundaryRule(current) {
     }));
 
   return {
-    files: [`**/apps/api/src/modules/${current}/**/*.ts`],
+    files: boundaryFiles(current),
     rules: {
       'no-restricted-imports': ['error', { patterns }],
     },
@@ -72,8 +90,8 @@ function moduleBoundaryRule(current) {
  * Eslint flat config for `apps/api`: the monorepo base plus the boundary
  * between the domain modules.
  *
- * `apps/api` does not apply it yet (the package is empty until card F-05); the
- * monorepo root already does, so editors and the pre-commit hook see the rule
- * as soon as the first module file shows up.
+ * `apps/api/eslint.config.mjs` and the monorepo root both apply it, so the
+ * boundary is the same rule for `pnpm --filter api lint`, for the pre-commit
+ * hook and for an editor.
  */
 export default [...base, ...apiModules.map(moduleBoundaryRule)];

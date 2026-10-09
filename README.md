@@ -157,7 +157,11 @@ scripts/          seeds, pacientes sintéticos, TACO/TBCA    @fit-app/scripts
 
 O esqueleto do monorepo (card **F-01**), a configuração compartilhada de eslint, tsconfig
 e prettier (card **F-03**, em `packages/config`) e o ambiente local com Docker e Supabase
-CLI (card **F-04**, em `supabase/`) já estão de pé. Os demais pacotes seguem
+CLI (card **F-04**, em `supabase/`) já estão de pé. O esqueleto da API (card **F-05**, em
+`apps/api`) também: NestJS com os quatro módulos de domínio, tratamento global de erros e
+`GET /v1/health` — `pnpm --filter api dev` sobe a API em
+[http://127.0.0.1:3333](http://127.0.0.1:3333), e o
+[README de `apps/api`](./apps/api/README.md) tem o resto. Os demais pacotes seguem
 como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo real de
 cada um entra pelos cards indicados no `README.md` de cada pasta.
 

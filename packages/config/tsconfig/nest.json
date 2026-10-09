@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@fit-app/config - nest (apps/api)",
+  "extends": "./base.json",
+
+  "//": "What NestJS needs on top of the base, and nothing else. Two things. The decorators: Nest resolves a constructor dependency from the type metadata they emit, and without `emitDecoratorMetadata` every injection fails at runtime with \"Nest can't resolve dependencies\". And `verbatimModuleSyntax` off: a Nest app is a CommonJS package (`@nestjs/cli` compiles it, and NestJS 12 itself is loaded through require), while the flag forbids ESM syntax inside a CommonJS file — with it on, every file would have to be written as `import x = require('x')`. Every strict flag of the base stays as it is. `outDir`, `rootDir`, `include` and `types` are the consumer's: see the comment in base.json.",
+
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": false
+  }
+}

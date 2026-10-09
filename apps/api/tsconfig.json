@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@fit-app/config/tsconfig/nest.json",
+
+  "//": "Only what depends on this package's paths. Everything NestJS needs (decorators, CommonJS) is in the shared preset, and every strict flag comes from the base through it.",
+
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node", "jest"]
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
