@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /**
@@ -29,6 +30,13 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Tudo aqui roda em Node (scripts, jobs, arquivos de config). Sem isto, o
+    // `no-undef` — que o typescript-eslint so desliga para arquivos TS — dispara
+    // em `process`, `console` e companhia nos arquivos `.js`/`.mjs`. Workspace
+    // que tambem roda no browser acrescenta `globals.browser` em cima disto.
+    languageOptions: {
+      globals: { ...globals.node },
+    },
     linterOptions: {
       // Um `eslint-disable` que deixou de ser necessario e erro: evita que a
       // justificativa envelheca junto com o codigo.
