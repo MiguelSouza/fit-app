@@ -124,11 +124,30 @@ function cardById(cards: TrelloCard[], id: string): TrelloCard {
   return matches[0] as TrelloCard;
 }
 
-/** Reads the ids under the card's "Depende de" heading. */
-function dependencies(desc: string): string[] {
-  const section = /^##\s*Depende de\s*$([\s\S]*?)(?=^##\s|\s*$)/m.exec(desc);
-  if (!section?.[1]) return [];
-  return [...section[1].matchAll(new RegExp(CARD_ID.source, 'g'))].map((m) => m[1] as string);
+/**
+ * Reads the ids under the card's "Depende de" heading.
+ *
+ * Walks lines instead of matching one regex over the whole description. The
+ * regex version of this failed open: with the `m` flag, a `\s*$` lookahead
+ * closes the capture group on the very first position, so every card looked
+ * dependency-free and the gate below never stopped anything. A gate that fails
+ * open is worse than no gate, hence the test beside this file.
+ */
+export function dependencies(desc: string): string[] {
+  const lines = desc.split(/\r?\n/);
+  const heading = lines.findIndex((line) => /^##\s*Depende de\s*$/i.test(line.trim()));
+  if (heading === -1) return [];
+
+  const body: string[] = [];
+  for (const line of lines.slice(heading + 1)) {
+    if (/^##\s/.test(line)) break;
+    body.push(line);
+  }
+
+  const ids = [...body.join('\n').matchAll(new RegExp(CARD_ID.source, 'g'))].map(
+    (match) => match[1] as string,
+  );
+  return [...new Set(ids)];
 }
 
 async function board() {
@@ -219,15 +238,19 @@ async function finishCard(prUrl: string | undefined): Promise<void> {
   console.log(`${id}: comentei o PR e movi o card para "${review.name}".`);
 }
 
-const [subcommand, ...rest] = process.argv.slice(2);
+// Guarded so the test beside this file can import the parsers without the CLI
+// firing and talking to Trello.
+if (import.meta.main) {
+  const [subcommand, ...rest] = process.argv.slice(2);
 
-switch (subcommand) {
-  case 'card':
-    await readCard();
-    break;
-  case 'finish':
-    await finishCard(rest[0]);
-    break;
-  default:
-    fail(`Subcomando desconhecido: "${subcommand ?? ''}". Use "card" ou "finish".`);
+  switch (subcommand) {
+    case 'card':
+      await readCard();
+      break;
+    case 'finish':
+      await finishCard(rest[0]);
+      break;
+    default:
+      fail(`Subcomando desconhecido: "${subcommand ?? ''}". Use "card" ou "finish".`);
+  }
 }

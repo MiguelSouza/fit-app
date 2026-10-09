@@ -37,7 +37,7 @@ nodes:
   # 4. Validação determinística, sem IA (ajuste conforme os scripts forem existindo)
   - id: validar
     depends_on: [implementar]
-    bash: "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm format:check"
+    bash: "pnpm lint && pnpm typecheck && pnpm test && pnpm test:archon && pnpm build && pnpm format:check"
 
   # 5. Revisão com contexto limpo
   - id: revisar

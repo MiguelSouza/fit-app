@@ -40,6 +40,25 @@ Um `.env` **dentro** do repositório não serve: o Archon invoca os scripts com
 Além disso: `bun` (os scripts rodam nele), `gh` autenticado (abre o PR) e
 Docker, quando o card mexer com o banco local.
 
+## Testes deste tooling
+
+```bash
+pnpm test:archon
+```
+
+Fora do `pnpm test` de propósito: aquele é a suíte do produto, e o CI (card
+F-12) não deveria ter de instalar o `bun` só para rodar os testes do tooling. O
+nó `validar` do workflow roda os dois.
+
+O caminho do arquivo é explícito no script porque `bun test` não varre pasta
+começando com ponto.
+
+O que está coberto é o parser de `## Depende de`. É o único ponto aqui que pode
+**falhar aberto**: se ele devolve vazio, todo card parece liberado e o workflow
+começa a trabalhar em card com dependência em aberto. A primeira versão fazia
+exatamente isso — um regex com `\s*$` e flag `m` fechava a captura na primeira
+posição. Daí o teste.
+
 ## Por que o Trello não passa por IA
 
 O conector do Trello do claude.ai **não existe dentro do Archon**: nós Claude de
