@@ -31,9 +31,17 @@ pnpm db:start          # sobe Postgres, Auth e Storage no Docker
 ```
 
 O primeiro `db:start` baixa as imagens do Docker e leva alguns minutos; os
-seguintes sobem em segundos. No fim ele imprime as URLs e as chaves locais —
-copie `anon key`, `service_role key` e `JWT secret` para o seu `.env`
-(`pnpm exec supabase status` imprime de novo quando precisar).
+seguintes sobem em segundos. No fim ele imprime as URLs e o par de chaves novo
+do Supabase (`Publishable` e `Secret`), que ainda não usamos.
+
+As três chaves que o `.env` pede saem do `status` em formato de ambiente:
+
+```bash
+pnpm exec supabase status -o env   # ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET
+```
+
+Copie as três para o seu `.env`. Pode rodar quando quiser: os valores são sempre
+os mesmos, antes e depois de um `db:stop`.
 
 As chaves locais são geradas a partir de um segredo fixo e público do Supabase
 CLI, iguais em toda máquina: não são segredo e não servem para nada fora do seu
@@ -53,12 +61,12 @@ produção: Postgres, Auth e Storage.
 
 Portas (todas em `127.0.0.1`, definidas no `supabase/config.toml`):
 
-| Porta   | Serviço                                                     |
-| ------- | ----------------------------------------------------------- |
-| `54321` | API do Supabase — é por onde Auth e Storage respondem       |
-| `54322` | Postgres (`postgresql://postgres:postgres@127.0.0.1:54322`) |
-| `54323` | Studio, para olhar o banco pelo navegador                   |
-| `54324` | caixa de e-mail de teste: tudo que o Auth manda cai aqui    |
+| Porta   | Serviço                                                         |
+| ------- | --------------------------------------------------------------- |
+| `54321` | API do Supabase — é por onde Auth e Storage respondem           |
+| `54322` | Postgres (`postgresql://postgres:postgres@127.0.0.1:54322`)     |
+| `54323` | Studio, para olhar o banco pelo navegador                       |
+| `54324` | caixa de e-mail de teste (Mailpit): o que o Auth manda cai aqui |
 
 Em **produção** o banco não é esse: são dois projetos Supabase hospedados
 (staging e produção) na região de **São Paulo**, ao lado da API na AWS

@@ -21,7 +21,7 @@ CLI, então atualizar o CLI não congela um padrão velho no repositório.
 | Auth                 | ligado      | emite o JWT que a API valida (ADR 0002)                           |
 | Storage              | ligado      | anexos do paciente                                                |
 | Studio               | ligado      | olhar o banco pelo navegador                                      |
-| Caixa de e-mail      | ligado      | ler o que o Auth manda, sem sair da máquina                       |
+| Caixa de e-mail      | ligado      | ler o que o Auth manda, sem sair da máquina (Mailpit)             |
 | Data API (PostgREST) | só `public` | cliente não fala com o banco; os schemas de domínio ficam fora    |
 | Realtime             | desligado   | ninguém assina o banco                                            |
 | Edge Functions       | desligado   | regra de negócio é da API NestJS                                  |
