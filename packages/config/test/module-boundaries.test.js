@@ -8,12 +8,21 @@ import apiConfig, { apiModules } from '../eslint/api.js';
 const RULE = 'no-restricted-imports';
 
 /**
- * The file doing the import in every case: a `nutrition` use case. The path is
- * made up on purpose. `lintText` never reads the disk, and `apps/api` has no
- * code yet (card F-05); all that matters is that the path matches the `files`
- * of the config.
+ * The file doing the import in every case: a `nutrition` use case, named the
+ * two ways eslint may see it. `files` is matched against the path relative to
+ * the config file being applied, and eslint 10 applies the one nearest to the
+ * linted file — so the same file is `apps/api/src/modules/...` when the root
+ * config answers for it and `src/modules/...` when `apps/api/eslint.config.mjs`
+ * does (which is what `pnpm --filter api lint` and `turbo run lint` run). Both
+ * are checked, because a boundary that only holds from the root is a boundary
+ * that is off where the code is.
+ *
+ * The paths are made up: `lintText` never reads the disk.
  */
-const importerPath = 'apps/api/src/modules/nutrition/application/create-plan.ts';
+const importerPaths = [
+  'apps/api/src/modules/nutrition/application/create-plan.ts',
+  'src/modules/nutrition/application/create-plan.ts',
+];
 
 const eslint = new ESLint({
   overrideConfigFile: true,
@@ -27,9 +36,10 @@ const eslint = new ESLint({
 
 /**
  * @param {string} source the import specifier
+ * @param {string} importerPath the file doing the import
  * @returns {Promise<string[]>} the boundary rule messages, if any
  */
-async function boundaryErrors(source) {
+async function errorsFrom(source, importerPath) {
   const [result] = await eslint.lintText(
     `import { thing } from '${source}';\nexport const used = thing;\n`,
     { filePath: importerPath },
@@ -45,6 +55,30 @@ async function boundaryErrors(source) {
   );
 
   return result.messages.filter((m) => m.ruleId === RULE).map((m) => m.message);
+}
+
+/**
+ * The same import judged under every name the importer can have, which must
+ * come out the same: the boundary cannot depend on which eslint invocation is
+ * asking.
+ *
+ * @param {string} source the import specifier
+ * @returns {Promise<string[]>} the boundary rule messages, if any
+ */
+async function boundaryErrors(source) {
+  const [first, ...rest] = await Promise.all(
+    importerPaths.map((importerPath) => errorsFrom(source, importerPath)),
+  );
+
+  for (const [index, errors] of rest.entries()) {
+    assert.deepEqual(
+      errors,
+      first,
+      `'${source}' is judged differently from '${importerPaths[index + 1]}' than from '${importerPaths[0]}'`,
+    );
+  }
+
+  return first ?? [];
 }
 
 test('the boundary closes an internal file of another module', async () => {
@@ -114,9 +148,14 @@ test('every module in CLAUDE.md has its boundary configured', async () => {
     .flatMap((pattern) => (typeof pattern === 'string' ? [pattern] : pattern));
 
   for (const moduleName of apiModules) {
-    assert.ok(
-      configured.includes(`**/apps/api/src/modules/${moduleName}/**/*.ts`),
-      `module '${moduleName}' is in CLAUDE.md but has no boundary in lint`,
-    );
+    for (const pattern of [
+      `**/apps/api/src/modules/${moduleName}/**/*.ts`,
+      `**/src/modules/${moduleName}/**/*.ts`,
+    ]) {
+      assert.ok(
+        configured.includes(pattern),
+        `module '${moduleName}' is in CLAUDE.md but has no boundary in lint for '${pattern}'`,
+      );
+    }
   }
 });

@@ -83,6 +83,14 @@ Acrescentar um módulo de domínio é acrescentar o nome em `apiModules`, dentro
 aponta para ele também: editor e hook de pre-commit enxergam a regra em quem
 edita `apps/api` a partir da raiz do monorepo.
 
+Por isso o `files` da fronteira nomeia o mesmo arquivo de duas formas. O eslint
+10 aplica o config mais próximo do arquivo e casa o `files` contra o caminho
+relativo a ele, então o mesmo módulo é `apps/api/src/modules/...` quando o
+config da raiz responde e `src/modules/...` quando o de `apps/api` responde —
+que é o caso de `pnpm --filter api lint`, ou seja, do `turbo run lint`. Nomear
+só a primeira forma deixaria a fronteira desligada justamente onde o código
+está; o teste cobre as duas.
+
 Uma regra fica desligada lá, e não aqui: `consistent-type-imports`. O NestJS
 descobre a dependência de um construtor pelo metadado de tipo que
 `emitDecoratorMetadata` escreve, e esse metadado só existe para import de
