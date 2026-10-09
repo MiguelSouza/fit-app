@@ -13,6 +13,9 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:archon": "bun test ./.archon/scripts/trello.test.ts",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
@@ -25,6 +28,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.9.9",
+    "supabase": "2.120.0",
     "turbo": "^2.11.7",
     "typescript": "^6.0.3"
   }
