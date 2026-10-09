@@ -1,4 +1,4 @@
-# Gerados ou nao versionados
+# Generated or not versioned
 node_modules/
 dist/
 build/
@@ -7,12 +7,12 @@ coverage/
 .turbo/
 cdk.out/
 
-# Lockfile: formatado pelo pnpm, nao pelo prettier
+# Lockfile: formatted by pnpm, not by prettier
 pnpm-lock.yaml
 
-# apps/mobile e Flutter: formatado por `dart format`, nao pelo prettier
+# apps/mobile is Flutter: formatted by `dart format`, not by prettier
 apps/mobile/
 
-# .archon/ e propriedade do tooling do Archon (comandos e workflows), nao
-# codigo deste repositorio: o formato dele e ditado por quem o le.
+# .archon/ belongs to the Archon tooling (commands and workflows), not to this
+# repository: its format is dictated by whoever reads it.
 .archon/

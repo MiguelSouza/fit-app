@@ -4,9 +4,8 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /**
- * Caminhos que nenhum workspace deve lintar: artefatos de build e dependencias.
- * Exportado para que um consumidor possa reaproveitar a lista ao adicionar os
- * proprios ignores.
+ * Paths no workspace should lint: build artifacts and dependencies. Exported so
+ * a consumer can reuse the list when adding its own ignores.
  */
 export const ignores = [
   '**/node_modules/**',
@@ -19,35 +18,35 @@ export const ignores = [
 ];
 
 /**
- * Configuracao base de eslint (flat config) compartilhada por todo o monorepo.
+ * Shared eslint base config (flat config) for the whole monorepo.
  *
- * Nao inclui regras com type information (`recommendedTypeChecked`): cada
- * workspace que quiser isso deve ligar o `projectService` no proprio
- * `eslint.config.mjs`, porque o caminho do tsconfig e local.
+ * It does not enable the type-aware rules (`recommendedTypeChecked`): a
+ * workspace that wants them must turn `projectService` on in its own
+ * `eslint.config.mjs`, because the tsconfig path is local.
  */
 export default tseslint.config(
   { ignores },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    // Tudo aqui roda em Node (scripts, jobs, arquivos de config). Sem isto, o
-    // `no-undef` — que o typescript-eslint so desliga para arquivos TS — dispara
-    // em `process`, `console` e companhia nos arquivos `.js`/`.mjs`. Workspace
-    // que tambem roda no browser acrescenta `globals.browser` em cima disto.
+    // Everything here runs on Node (scripts, jobs, config files). Without this,
+    // `no-undef` — which typescript-eslint only turns off for TS files — fires on
+    // `process`, `console` and friends in plain `.js`/`.mjs` files. A workspace
+    // that also runs in the browser adds `globals.browser` on top of this.
     languageOptions: {
       globals: { ...globals.node },
     },
     linterOptions: {
-      // Um `eslint-disable` que deixou de ser necessario e erro: evita que a
-      // justificativa envelheca junto com o codigo.
+      // An `eslint-disable` that is no longer needed is an error: it keeps the
+      // justification from aging along with the code.
       reportUnusedDisableDirectives: 'error',
     },
     rules: {
-      // CLAUDE.md: proibido `any` sem comentario justificando. O escape hatch e
-      // `// eslint-disable-next-line @typescript-eslint/no-explicit-any -- <motivo>`.
+      // CLAUDE.md: no `any` without a comment justifying it. The escape hatch is
+      // `// eslint-disable-next-line @typescript-eslint/no-explicit-any -- <reason>`.
       '@typescript-eslint/no-explicit-any': 'error',
 
-      // Casa com `verbatimModuleSyntax` dos presets de tsconfig.
+      // Matches `verbatimModuleSyntax` in the tsconfig presets.
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
       '@typescript-eslint/no-unused-vars': [
@@ -60,6 +59,6 @@ export default tseslint.config(
       'prefer-const': 'error',
     },
   },
-  // Sempre por ultimo: desliga as regras de estilo que o prettier resolve.
+  // Always last: turns off the stylistic rules that prettier owns.
   prettier,
 );

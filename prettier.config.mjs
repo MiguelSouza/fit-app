@@ -1,3 +1,3 @@
-// Fonte unica da formatacao do monorepo. Workspaces que precisarem de ajuste
-// local devem reexportar isto e sobrescrever o minimo necessario.
+// Single source of formatting for the monorepo. A workspace that needs a local
+// tweak should re-export this and override the bare minimum.
 export { default } from '@fit-app/config/prettier';

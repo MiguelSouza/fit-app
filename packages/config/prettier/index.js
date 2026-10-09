@@ -1,8 +1,8 @@
 /**
- * Configuracao de prettier compartilhada por todo o monorepo.
+ * Prettier config shared by the whole monorepo.
  *
- * Os valores de encoding, fim de linha e indentacao espelham o `.editorconfig`
- * da raiz de proposito: as duas ferramentas precisam concordar.
+ * The encoding, end-of-line and indentation values mirror the root
+ * `.editorconfig` on purpose: both tools have to agree.
  *
  * @type {import('prettier').Config}
  */
@@ -19,8 +19,8 @@ const config = {
   endOfLine: 'lf',
   overrides: [
     {
-      // Em markdown, quebra de linha e conteudo: reformatar texto corrido
-      // poluiria o diff dos ADRs.
+      // In markdown a line break is content: reflowing prose would pollute the
+      // diff of the ADRs.
       files: '*.md',
       options: { proseWrap: 'preserve' },
     },

@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "@fit-app/config - base",
 
-  "//": "Somente compilerOptions independentes de caminho. O TypeScript resolve todo caminho relativo (include, exclude, outDir, rootDir, paths) contra o arquivo que o declara, nao contra quem faz o extends: por isso esses campos ficam a cargo de cada workspace.",
+  "//": "Path-independent compilerOptions only. TypeScript resolves every relative path (include, exclude, outDir, rootDir, paths) against the file that declares it, not against the file that extends it: that is why those fields are left to each workspace.",
 
   "compilerOptions": {
     "target": "ES2024",
