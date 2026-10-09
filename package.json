@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint && pnpm lint:root",
-    "lint:root": "eslint --no-error-on-unmatched-pattern \"*.mjs\" \"*.js\"",
+    "lint:root": "eslint --no-error-on-unmatched-pattern \"*.mjs\" \"*.js\" \".archon/scripts/**/*.ts\"",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",

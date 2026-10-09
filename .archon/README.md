@@ -3,8 +3,10 @@
 Tooling do [Archon](https://github.com/webdevtodayjason/archon) para este repositório:
 o workflow que leva um card do quadro Trello **Wellness** até o PR, sem merge.
 
-Isto não é código do produto. Não é lintado nem formatado junto com o resto
-(veja `.prettierignore`), porque o formato dele é ditado por quem o lê.
+Isto não é código do produto. O prettier não formata esta pasta
+(veja `.prettierignore`): o formato do YAML e do Markdown aqui é ditado por quem
+o lê, que é o Archon. O eslint, esse sim, vale para `scripts/*.ts` — é código
+que roda, e `pnpm lint` o cobre junto com os arquivos de configuração da raiz.
 
 ## Como rodar
 
