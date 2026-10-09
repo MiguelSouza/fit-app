@@ -13,6 +13,7 @@ rigor de tipos por conta própria.
 | `@fit-app/config/prettier`              | configuração de formatação                             |
 | `@fit-app/config/tsconfig/base.json`    | rigor de tipos; não emite nada                         |
 | `@fit-app/config/tsconfig/library.json` | `base` + emissão de `.js` e `.d.ts`, para `packages/*` |
+| `@fit-app/config/tsconfig/nest.json`    | `base` + decorators e CommonJS, para `apps/api`        |
 
 ## Como um workspace consome
 
@@ -78,9 +79,17 @@ casos de import (`pnpm --filter @fit-app/config test`).
 Acrescentar um módulo de domínio é acrescentar o nome em `apiModules`, dentro de
 `eslint/api.js` — o teste falha se um módulo do `CLAUDE.md` ficar sem fronteira.
 
-`apps/api` ainda não consome esse preset (o pacote está vazio até o card F-05),
-mas o `eslint.config.mjs` da raiz já aponta para ele: editor e hook de
-pre-commit enxergam a regra no primeiro arquivo de módulo que aparecer.
+`apps/api` consome esse preset no próprio `eslint.config.mjs`, e o da raiz
+aponta para ele também: editor e hook de pre-commit enxergam a regra em quem
+edita `apps/api` a partir da raiz do monorepo.
+
+Uma regra fica desligada lá, e não aqui: `consistent-type-imports`. O NestJS
+descobre a dependência de um construtor pelo metadado de tipo que
+`emitDecoratorMetadata` escreve, e esse metadado só existe para import de
+valor; a regra vê uma classe usada apenas como tipo de parâmetro, troca por
+`import type` e apaga o metadado. Como o desligamento vale só para quem tem
+decorator, ele mora no `eslint.config.mjs` de `apps/api` em vez de valer para o
+monorepo inteiro.
 
 ## Duas pegadinhas que valem ler
 
@@ -91,9 +100,11 @@ cada consumidor emitiria dentro de `packages/config/tsconfig/dist`. Por isso os
 presets só carregam opções independentes de caminho, e `include`, `outDir` e
 `rootDir` são sempre locais.
 
-**Os presets assumem ESM.** `module: NodeNext` com `verbatimModuleSyntax` exige
+**O `base` assume ESM.** `module: NodeNext` com `verbatimModuleSyntax` exige
 `"type": "module"` no `package.json` do workspace; sem isso o TypeScript resolve
-o arquivo como CommonJS e recusa `export` (TS1287).
+o arquivo como CommonJS e recusa `export` (TS1287). `apps/api` é justamente o
+caso contrário — um pacote CommonJS — e é por isso que o preset `nest` desliga
+`verbatimModuleSyntax`.
 
 ## `any` e o escape hatch
 
@@ -111,13 +122,11 @@ function adapt(raw: any) {}
 ## O que ainda não está aqui
 
 A regra 4 do `CLAUDE.md` ("Domínio puro": `domain/` não importa NestJS, Drizzle
-nem nada com I/O) não está no lint. Ela precisa da lista real de dependências de
-`apps/api`, que só existe com o código do card F-05; enquanto isso vale a
-revisão de PR. A fronteira de módulo foi em frente porque depende só dos nomes
-dos módulos, que o `CLAUDE.md` já fixa.
+nem nada com I/O) não está no lint — enquanto isso vale a revisão de PR. A
+fronteira de módulo foi em frente porque depende só dos nomes dos módulos, que o
+`CLAUDE.md` já fixa.
 
-Não há preset de tsconfig nem de eslint específicos para NestJS e Next.js. Eles
-dependem de decisões que só existem junto com o código de `apps/api` (card F-05)
-e `apps/web` (card F-13) — decorators e `emitDecoratorMetadata` num caso, JSX e
-`eslint-config-next` no outro. Cada um desses cards acrescenta o seu preset aqui,
-validado contra a aplicação real.
+Não há preset para Next.js: ele depende de decisões que só existem junto com o
+código de `apps/web` (card F-13) — JSX e `eslint-config-next`. Esse card
+acrescenta o seu preset aqui, validado contra a aplicação real, como o card F-05
+fez com o `tsconfig/nest.json`.
