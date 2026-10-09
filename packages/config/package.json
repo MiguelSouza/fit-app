@@ -2,12 +2,34 @@
   "name": "@fit-app/config",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Configuracao compartilhada de eslint, tsconfig e prettier",
+  "exports": {
+    "./eslint": "./eslint/base.js",
+    "./prettier": "./prettier/index.js",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/library.json": "./tsconfig/library.json"
+  },
   "scripts": {
-    "build": "echo \"[@fit-app/config] placeholder package, nothing to build yet (see card F-03)\"",
-    "dev": "echo \"[@fit-app/config] placeholder package, nothing to run yet (see card F-03)\"",
-    "lint": "echo \"[@fit-app/config] placeholder package, nothing to lint yet (see card F-03)\"",
-    "typecheck": "echo \"[@fit-app/config] placeholder package, nothing to typecheck yet (see card F-03)\"",
-    "test": "echo \"[@fit-app/config] placeholder package, no tests yet (see card F-03)\""
+    "build": "echo \"[@fit-app/config] nothing to build: the package ships plain config files\"",
+    "dev": "echo \"[@fit-app/config] nothing to run: the package ships plain config files\"",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"[@fit-app/config] no tests: the configs are exercised by lint and typecheck of every workspace\""
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "typescript-eslint": "^8.71.1"
+  },
+  "peerDependencies": {
+    "eslint": "^10.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "^6.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3"
   }
 }
