@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cliente TypeScript gerado a partir do OpenAPI da API",
+  "scripts": {
+    "build": "echo \"[@fit-app/api-client] placeholder package, nothing to build yet (see card F-09)\"",
+    "dev": "echo \"[@fit-app/api-client] placeholder package, nothing to run yet (see card F-09)\"",
+    "lint": "echo \"[@fit-app/api-client] placeholder package, nothing to lint yet (see card F-09)\"",
+    "typecheck": "echo \"[@fit-app/api-client] placeholder package, nothing to typecheck yet (see card F-09)\"",
+    "test": "echo \"[@fit-app/api-client] placeholder package, no tests yet (see card F-09)\""
+  }
+}

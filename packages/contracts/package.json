@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Schemas Zod, tipos e enums compartilhados: fonte da verdade dos DTOs",
+  "scripts": {
+    "build": "echo \"[@fit-app/contracts] placeholder package, nothing to build yet (see card F-09)\"",
+    "dev": "echo \"[@fit-app/contracts] placeholder package, nothing to run yet (see card F-09)\"",
+    "lint": "echo \"[@fit-app/contracts] placeholder package, nothing to lint yet (see card F-09)\"",
+    "typecheck": "echo \"[@fit-app/contracts] placeholder package, nothing to typecheck yet (see card F-09)\"",
+    "test": "echo \"[@fit-app/contracts] placeholder package, no tests yet (see card F-09)\""
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Seeds, gerador de pacientes sinteticos e importacao TACO/TBCA",
+  "scripts": {
+    "build": "echo \"[@fit-app/scripts] placeholder package, nothing to build yet (see card F-15)\"",
+    "dev": "echo \"[@fit-app/scripts] placeholder package, nothing to run yet (see card F-15)\"",
+    "lint": "echo \"[@fit-app/scripts] placeholder package, nothing to lint yet (see card F-15)\"",
+    "typecheck": "echo \"[@fit-app/scripts] placeholder package, nothing to typecheck yet (see card F-15)\"",
+    "test": "echo \"[@fit-app/scripts] placeholder package, no tests yet (see card F-15)\""
+  }
+}

@@ -1,0 +1,8 @@
+# apps/mobile is intentionally absent: it is a Flutter (Dart) app and is not a
+# pnpm package. It is built with the Flutter toolchain, not with turbo.
+packages:
+  - apps/api
+  - apps/web
+  - packages/*
+  - infra
+  - scripts

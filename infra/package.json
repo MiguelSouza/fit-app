@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/infra",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Infraestrutura AWS em CDK (sa-east-1)",
+  "scripts": {
+    "build": "echo \"[@fit-app/infra] placeholder package, nothing to build yet (see card B-01)\"",
+    "dev": "echo \"[@fit-app/infra] placeholder package, nothing to run yet (see card B-01)\"",
+    "lint": "echo \"[@fit-app/infra] placeholder package, nothing to lint yet (see card B-01)\"",
+    "typecheck": "echo \"[@fit-app/infra] placeholder package, nothing to typecheck yet (see card B-01)\"",
+    "test": "echo \"[@fit-app/infra] placeholder package, no tests yet (see card B-01)\""
+  }
+}
