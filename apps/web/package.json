@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Painel do profissional em Next.js (App Router)",
+  "scripts": {
+    "build": "echo \"[@fit-app/web] placeholder package, nothing to build yet (see card F-13)\"",
+    "dev": "echo \"[@fit-app/web] placeholder package, nothing to run yet (see card F-13)\"",
+    "lint": "echo \"[@fit-app/web] placeholder package, nothing to lint yet (see card F-13)\"",
+    "typecheck": "echo \"[@fit-app/web] placeholder package, nothing to typecheck yet (see card F-13)\"",
+    "test": "echo \"[@fit-app/web] placeholder package, no tests yet (see card F-13)\""
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@fit-app/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Configuracao compartilhada de eslint, tsconfig e prettier",
+  "scripts": {
+    "build": "echo \"[@fit-app/config] placeholder package, nothing to build yet (see card F-03)\"",
+    "dev": "echo \"[@fit-app/config] placeholder package, nothing to run yet (see card F-03)\"",
+    "lint": "echo \"[@fit-app/config] placeholder package, nothing to lint yet (see card F-03)\"",
+    "typecheck": "echo \"[@fit-app/config] placeholder package, nothing to typecheck yet (see card F-03)\"",
+    "test": "echo \"[@fit-app/config] placeholder package, no tests yet (see card F-03)\""
+  }
+}
