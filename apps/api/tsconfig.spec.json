@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.json",
+
+  "//": "How ts-jest compiles the tests. NestJS 12 ships ES modules only, and jest can only require one of those on Node 24.9 and up; emitting the tests as ES modules instead makes them load the framework the normal way, on any Node 24. The app itself still builds as CommonJS, which is what `nest build` and the official template do.",
+
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  }
+}

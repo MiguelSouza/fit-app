@@ -6,3 +6,13 @@ packages:
   - packages/*
   - infra
   - scripts
+
+# Install scripts are blocked by default; these are the ones that were read and
+# allowed. Jest brings both: `@parcel/watcher` (watch mode) and `unrs-resolver`
+# (module resolution). Neither compiles anything here — the watcher's script
+# only builds from source when `npm_config_build_from_source` is set, and the
+# resolver's only picks the prebuilt binary of the current platform. Without
+# them jest falls back to polling and to a slower resolver.
+allowBuilds:
+  '@parcel/watcher': true
+  unrs-resolver: true
