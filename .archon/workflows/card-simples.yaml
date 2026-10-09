@@ -58,17 +58,51 @@ nodes:
       Acrescente ao final de $ARTIFACTS_DIR/resumo.md uma seção "Revisão" com o que
       encontrou e o que corrigiu.
 
-  # 6. PR. Não mexa no Trello aqui: o passo 7 faz isso sem IA.
+  # 6. PR, sem IA: push e `gh pr create`. A URL vai para pr-url.txt, para o passo 7.
   - id: abrir-pr
     depends_on: [revisar]
-    prompt: |
-      Envie a branch e abra um PR para a main com o gh.
-      Se o comando gh não for encontrado, use "C:\Program Files\GitHub CLI\gh.exe".
-      - Título: "<ID do card> <título do card>", como estão em $ARTIFACTS_DIR/card.md
-      - Descrição: o link do card e o conteúdo de $ARTIFACTS_DIR/resumo.md
+    bash: |
+      set -eu
 
-      Escreva a URL do PR, e nada mais, em $ARTIFACTS_DIR/pr-url.txt.
-      NÃO faça merge. NÃO toque no Trello: o passo seguinte cuida disso.
+      # O `gh` costuma não estar no PATH que o Archon dá ao nó, e o nome cru
+      # sobrevive a `command -v gh || echo <caminho>`: a run do F-04 morreu em
+      # `gh: command not found` depois de já ter dado push, deixando branch sem
+      # PR. Então aqui cada candidato é validado, e `command -v` com caminho
+      # confirma que o arquivo existe e é executável.
+      GH=""
+      for candidato in gh \
+        "/c/Program Files/GitHub CLI/gh.exe" \
+        "/c/Program Files (x86)/GitHub CLI/gh.exe"; do
+        if command -v "$candidato" >/dev/null 2>&1; then
+          GH="$candidato"
+          break
+        fi
+      done
+
+      if [ -z "$GH" ]; then
+        echo "gh nao encontrado. Instale o GitHub CLI ou acrescente-o ao PATH." >&2
+        echo "PATH deste no: $PATH" >&2
+        exit 1
+      fi
+
+      # Antes do push, não depois: falhar aqui não deixa rastro no remoto.
+      if ! "$GH" auth status >/dev/null 2>&1; then
+        echo "gh achado em '$GH', mas sem autenticacao. Rode: gh auth login" >&2
+        exit 1
+      fi
+
+      TITULO="$(head -n 1 "$ARTIFACTS_DIR/card.md" | sed 's/^#* *//')"
+      if [ -z "$TITULO" ]; then
+        echo "Nao consegui o titulo na primeira linha de $ARTIFACTS_DIR/card.md" >&2
+        exit 1
+      fi
+
+      git push -u origin HEAD
+      "$GH" pr create \
+        --base main \
+        --title "$TITULO" \
+        --body-file "$ARTIFACTS_DIR/resumo.md" > "$ARTIFACTS_DIR/pr-url.txt"
+      cat "$ARTIFACTS_DIR/pr-url.txt"
 
   # 7. Trello de novo, sem IA: comenta o PR no card e move para "Revisão".
   - id: fechar-card

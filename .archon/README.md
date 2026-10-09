@@ -81,7 +81,7 @@ palavra** — é isso que o agente lê.
 | 3 | `implementar` | sim | Implementa o card em commits pequenos |
 | 4 | `validar` | não | `lint`, `typecheck`, `test`, `build` e `format:check` |
 | 5 | `revisar` | sim | Revisor com contexto limpo, que não escreveu o código |
-| 6 | `abrir-pr` | sim | Abre o PR e grava a URL em `pr-url.txt` |
+| 6 | `abrir-pr` | não | Abre o PR com o `gh` e grava a URL em `pr-url.txt` |
 | 7 | `fechar-card` | não | Comenta o PR no card e move para "Revisão" |
 
 O passo 1 **para a execução** se uma dependência não estiver em "Feito". É de
