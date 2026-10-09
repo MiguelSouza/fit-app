@@ -40,8 +40,12 @@ As três chaves que o `.env` pede saem do `status` em formato de ambiente:
 pnpm exec supabase status -o env   # ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET
 ```
 
-Copie as três para o seu `.env`. Pode rodar quando quiser: os valores são sempre
-os mesmos, antes e depois de um `db:stop`.
+Copie as três para o seu `.env`; a mesma chave `anon` vale para
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` e para `FLUTTER_SUPABASE_ANON_KEY`.
+
+O `status` só responde com o stack de pé: depois de um `db:stop` ele falha com
+`No such container`. Os valores, porém, não mudam de um start para o outro —
+pegue uma vez e pronto.
 
 As chaves locais são geradas a partir de um segredo fixo e público do Supabase
 CLI, iguais em toda máquina: não são segredo e não servem para nada fora do seu
