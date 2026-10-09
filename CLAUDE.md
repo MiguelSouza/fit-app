@@ -11,17 +11,17 @@ A IA é copiloto do profissional: aponta, nunca diagnostica.
 
 ## Stack
 
-| Parte | Tecnologia |
-| --- | --- |
-| API | NestJS (TypeScript strict), monólito modular, clean architecture pragmática |
-| Painel do profissional | Next.js (App Router), Tailwind, shadcn/ui, TanStack Query e Table, React Hook Form, Recharts |
-| App do paciente | Flutter (Dart), Riverpod |
-| Banco | Postgres no Supabase (região São Paulo), Drizzle ORM, um schema por módulo |
-| Login e arquivos | Supabase Auth (a API valida o JWT) e Supabase Storage |
-| Jobs | pg-boss |
-| Validação e contratos | Zod compartilhado + OpenAPI gerado pelo NestJS |
-| Infra | AWS sa-east-1 (ECS Fargate, ECR, ALB, Secrets Manager, CloudWatch) via AWS CDK; painel na Vercel |
-| Monorepo | Turborepo + pnpm |
+| Parte                  | Tecnologia                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| API                    | NestJS (TypeScript strict), monólito modular, clean architecture pragmática                      |
+| Painel do profissional | Next.js (App Router), Tailwind, shadcn/ui, TanStack Query e Table, React Hook Form, Recharts     |
+| App do paciente        | Flutter (Dart), Riverpod                                                                         |
+| Banco                  | Postgres no Supabase (região São Paulo), Drizzle ORM, um schema por módulo                       |
+| Login e arquivos       | Supabase Auth (a API valida o JWT) e Supabase Storage                                            |
+| Jobs                   | pg-boss                                                                                          |
+| Validação e contratos  | Zod compartilhado + OpenAPI gerado pelo NestJS                                                   |
+| Infra                  | AWS sa-east-1 (ECS Fargate, ECR, ALB, Secrets Manager, CloudWatch) via AWS CDK; painel na Vercel |
+| Monorepo               | Turborepo + pnpm                                                                                 |
 
 ## Estrutura do repositório
 
@@ -41,12 +41,12 @@ scripts/          seeds, gerador de pacientes sintéticos, importação TACO/TBC
 
 ## Módulos de domínio (apps/api/src/modules)
 
-| Módulo | Schema Postgres | Responsável por |
-| --- | --- | --- |
-| `identity` | `identity` | pessoas, organizações, vínculos, convites, consentimentos, registro de acessos |
-| `nutrition` | `nutrition` | alimentos, planos, refeições, opções, cálculo de macros, adesão |
-| `health` | `health` | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas |
-| `insights` | `insights` | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo |
+| Módulo      | Schema Postgres | Responsável por                                                                |
+| ----------- | --------------- | ------------------------------------------------------------------------------ |
+| `identity`  | `identity`      | pessoas, organizações, vínculos, convites, consentimentos, registro de acessos |
+| `nutrition` | `nutrition`     | alimentos, planos, refeições, opções, cálculo de macros, adesão                |
+| `health`    | `health`        | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas   |
+| `insights`  | `insights`      | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo        |
 
 Camadas dentro de cada módulo:
 
@@ -63,6 +63,7 @@ modules/<modulo>/
 ## Regras de arquitetura (não negociáveis)
 
 1. **Fronteira de módulo.** Um módulo nunca importa arquivos internos de outro; só o `index.ts` dele.
+   O lint garante: `@fit-app/config/eslint/api` quebra o build se alguém furar a fronteira.
 2. **Dono das tabelas.** Cada módulo só lê e escreve no próprio schema. Sem joins entre schemas no código.
    Precisa de dado de outro módulo? Chame o serviço público dele ou reaja a um evento.
 3. **Eventos internos** para efeitos colaterais entre módulos (ex.: `nutrition.plan.activated`,
@@ -98,7 +99,7 @@ modules/<modulo>/
 
 - TypeScript `strict`; proibido `any` sem comentário justificando.
 - Código, nomes e commits em inglês; textos de interface em português (pt-BR) e prontos para i18n.
-- Commits no padrão Conventional Commits (`feat(nutrition): ...`).
+- Commits no padrão Conventional Commits (`feat(nutrition): ...`); o `commitlint` bloqueia no `commit-msg`.
 - Erros de domínio são classes próprias, traduzidas para HTTP só na camada `presentation`.
 - Datas com `date-fns` / `date-fns-tz`; dinheiro em centavos (inteiro).
 - Migrações só via Drizzle Kit, revisadas no PR. Nunca alterar o banco de produção à mão.

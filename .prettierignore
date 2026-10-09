@@ -1,0 +1,18 @@
+# Generated or not versioned
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.turbo/
+cdk.out/
+
+# Lockfile: formatted by pnpm, not by prettier
+pnpm-lock.yaml
+
+# apps/mobile is Flutter: formatted by `dart format`, not by prettier
+apps/mobile/
+
+# .archon/ belongs to the Archon tooling (commands and workflows), not to this
+# repository: its format is dictated by whoever reads it.
+.archon/

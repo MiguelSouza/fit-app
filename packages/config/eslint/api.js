@@ -1,0 +1,79 @@
+import base from './base.js';
+
+/**
+ * The API domain modules. The source of truth is CLAUDE.md, section "Módulos de
+ * domínio": adding a module to this list is what turns its boundary on in lint.
+ */
+export const apiModules = ['identity', 'nutrition', 'health', 'insights'];
+
+/**
+ * The relative prefixes lint follows when looking for a module escape.
+ *
+ * An import that leaves module A and reaches inside module B always has the
+ * shape `(../)+<module B>/<internal>`: the module name comes right after the
+ * last `..`, because the modules are siblings under `src/modules`. Following
+ * only those prefixes is what avoids a false positive on a legitimate internal
+ * import such as `../domain/health/score`, where a module name shows up in the
+ * middle of the path.
+ *
+ * Five levels cover the folder depth CLAUDE.md foresees
+ * (`modules/<module>/<layer>/...`) with room to spare.
+ */
+const relativePrefixes = Array.from({ length: 5 }, (_, depth) =>
+  Array.from({ length: depth + 1 }, () => '..').join('/'),
+);
+
+/**
+ * The ways of spelling a module path that lint recognizes: a relative path, a
+ * path containing `modules/` (absolute from the app root) and the `@modules/`
+ * alias.
+ *
+ * @param {string} target the module whose internal files stay closed
+ * @returns {string[]} .gitignore-style patterns, which is what `no-restricted-imports` expects
+ */
+function internalPaths(target) {
+  return [
+    `**/modules/${target}/**`,
+    `@modules/${target}/**`,
+    ...relativePrefixes.map((prefix) => `${prefix}/${target}/**`),
+  ];
+}
+
+/**
+ * CLAUDE.md rule 1 ("Fronteira de módulo"): from inside a module, the other
+ * modules exist only through their `index.ts`.
+ *
+ * The pattern closes `<module>/<anything>` and lets `<module>` alone through,
+ * which is exactly the `index.ts` import. Importing your own module by relative
+ * path (`../domain/plan`) stays free.
+ *
+ * @param {string} current the module the linted file belongs to
+ */
+function moduleBoundaryRule(current) {
+  const patterns = apiModules
+    .filter((other) => other !== current)
+    .map((other) => ({
+      group: internalPaths(other),
+      message:
+        `Module boundary: '${current}' cannot import an internal file of '${other}'. ` +
+        `Import the whole module ('../../${other}' or '@modules/${other}'), which resolves ` +
+        `its index.ts, or react to an event instead. See CLAUDE.md, "Regras de arquitetura", rule 1.`,
+    }));
+
+  return {
+    files: [`**/apps/api/src/modules/${current}/**/*.ts`],
+    rules: {
+      'no-restricted-imports': ['error', { patterns }],
+    },
+  };
+}
+
+/**
+ * Eslint flat config for `apps/api`: the monorepo base plus the boundary
+ * between the domain modules.
+ *
+ * `apps/api` does not apply it yet (the package is empty until card F-05); the
+ * monorepo root already does, so editors and the pre-commit hook see the rule
+ * as soon as the first module file shows up.
+ */
+export default [...base, ...apiModules.map(moduleBoundaryRule)];

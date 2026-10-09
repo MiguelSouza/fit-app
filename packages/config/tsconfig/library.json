@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@fit-app/config - library (packages/*)",
+  "extends": "./base.json",
+
+  "//": "For packages that emit JavaScript and types for other workspaces to consume. `outDir`, `rootDir` and `include` must be local: see the comment in base.json.",
+
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true
+  }
+}
