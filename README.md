@@ -9,11 +9,11 @@ arquitetura, fronteiras de módulo, LGPD e convenções.
 
 ## Pré-requisitos
 
-| Ferramenta | Versão |
-| --- | --- |
-| Node | 24 LTS (ver [`.nvmrc`](./.nvmrc) — `nvm use`) |
-| pnpm | 12 (`corepack enable` usa a versão fixada em `packageManager`) |
-| Flutter | só para `apps/mobile` (ver card F-14) |
+| Ferramenta | Versão                                                         |
+| ---------- | -------------------------------------------------------------- |
+| Node       | 24 LTS (ver [`.nvmrc`](./.nvmrc) — `nvm use`)                  |
+| pnpm       | 12 (`corepack enable` usa a versão fixada em `packageManager`) |
+| Flutter    | só para `apps/mobile` (ver card F-14)                          |
 
 ## Como rodar
 
@@ -24,6 +24,8 @@ pnpm build            # build de todos os pacotes
 pnpm lint             # lint
 pnpm typecheck        # checagem de tipos
 pnpm test             # testes
+pnpm format           # formata o repositório com o prettier compartilhado
+pnpm format:check     # só verifica a formatação, sem reescrever nada
 ```
 
 Cada script da raiz delega ao turbo. Para rodar em um pacote só, use o filtro:
@@ -32,6 +34,11 @@ Cada script da raiz delega ao turbo. Para rodar em um pacote só, use o filtro:
 pnpm turbo run build --filter=@fit-app/api
 pnpm turbo run test  --filter=@fit-app/contracts
 ```
+
+`format` e `format:check` não passam pelo turbo: o prettier varre o repositório
+inteiro de uma vez, a partir do [`prettier.config.mjs`](./prettier.config.mjs) da
+raiz. O lint e a checagem de tipos são por workspace, e cada um herda as regras de
+[`@fit-app/config`](./packages/config/README.md).
 
 O app do paciente não passa pelo turbo — é Flutter:
 
@@ -57,9 +64,10 @@ scripts/          seeds, pacientes sintéticos, TACO/TBCA    @fit-app/scripts
 
 ## Estado atual
 
-Este commit entrega só o esqueleto do monorepo (card **F-01**). Os pacotes existem com
-scripts no-op para o `turbo` ter o que percorrer; o conteúdo real de cada um entra pelos
-cards indicados no `README.md` de cada pasta.
+O esqueleto do monorepo (card **F-01**) e a configuração compartilhada de eslint, tsconfig
+e prettier (card **F-03**, em `packages/config`) já estão de pé. Os demais pacotes seguem
+como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo real de
+cada um entra pelos cards indicados no `README.md` de cada pasta.
 
 ## Fluxo de trabalho
 
