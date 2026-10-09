@@ -17,7 +17,7 @@ rigor de tipos por conta própria.
 
 Declare o pacote como dependência de desenvolvimento:
 
-```jsonc
+```json
 // <workspace>/package.json
 {
   "type": "module",
@@ -25,12 +25,12 @@ Declare o pacote como dependência de desenvolvimento:
     "@fit-app/config": "workspace:*",
     "eslint": "^10.12.0",
     "prettier": "^3.9.9",
-    "typescript": "^6.0.3",
+    "typescript": "^6.0.3"
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-  },
+    "typecheck": "tsc --noEmit"
+  }
 }
 ```
 
