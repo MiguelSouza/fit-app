@@ -63,6 +63,7 @@ modules/<modulo>/
 ## Regras de arquitetura (não negociáveis)
 
 1. **Fronteira de módulo.** Um módulo nunca importa arquivos internos de outro; só o `index.ts` dele.
+   O lint garante: `@fit-app/config/eslint/api` quebra o build se alguém furar a fronteira.
 2. **Dono das tabelas.** Cada módulo só lê e escreve no próprio schema. Sem joins entre schemas no código.
    Precisa de dado de outro módulo? Chame o serviço público dele ou reaja a um evento.
 3. **Eventos internos** para efeitos colaterais entre módulos (ex.: `nutrition.plan.activated`,
@@ -98,7 +99,7 @@ modules/<modulo>/
 
 - TypeScript `strict`; proibido `any` sem comentário justificando.
 - Código, nomes e commits em inglês; textos de interface em português (pt-BR) e prontos para i18n.
-- Commits no padrão Conventional Commits (`feat(nutrition): ...`).
+- Commits no padrão Conventional Commits (`feat(nutrition): ...`); o `commitlint` bloqueia no `commit-msg`.
 - Erros de domínio são classes próprias, traduzidas para HTTP só na camada `presentation`.
 - Datas com `date-fns` / `date-fns-tz`; dinheiro em centavos (inteiro).
 - Migrações só via Drizzle Kit, revisadas no PR. Nunca alterar o banco de produção à mão.

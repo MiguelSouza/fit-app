@@ -38,7 +38,23 @@ pnpm turbo run test  --filter=@fit-app/contracts
 `format` e `format:check` não passam pelo turbo: o prettier varre o repositório
 inteiro de uma vez, a partir do [`prettier.config.mjs`](./prettier.config.mjs) da
 raiz. O lint e a checagem de tipos são por workspace, e cada um herda as regras de
-[`@fit-app/config`](./packages/config/README.md).
+[`@fit-app/config`](./packages/config/README.md). `pnpm lint` roda o turbo e
+depois o `lint:root`, que cobre os arquivos de configuração da própria raiz —
+eles não pertencem a nenhum workspace e ficariam de fora.
+
+## O que roda no commit
+
+`pnpm install` instala os hooks do git (husky, em [`.husky/`](./.husky)). A partir
+daí todo commit passa por dois portões:
+
+| Hook         | O que faz                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| `pre-commit` | `lint-staged`: eslint `--fix` e prettier, só nos arquivos em stage                               |
+| `commit-msg` | `commitlint`: a mensagem tem de ser [Conventional Commits](https://www.conventionalcommits.org/) |
+
+Nada disso substitui `pnpm lint` e `pnpm typecheck` — o hook só vê o que está em
+stage. Para um commit de emergência, `git commit --no-verify` pula os dois, e aí
+o CI é quem pega.
 
 O app do paciente não passa pelo turbo — é Flutter:
 

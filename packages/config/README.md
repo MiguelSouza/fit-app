@@ -9,6 +9,7 @@ rigor de tipos por conta própria.
 | Subpath                                 | Para que serve                                         |
 | --------------------------------------- | ------------------------------------------------------ |
 | `@fit-app/config/eslint`                | flat config base (ESLint 10 + typescript-eslint)       |
+| `@fit-app/config/eslint/api`            | a base + a fronteira entre os módulos de `apps/api`    |
 | `@fit-app/config/prettier`              | configuração de formatação                             |
 | `@fit-app/config/tsconfig/base.json`    | rigor de tipos; não emite nada                         |
 | `@fit-app/config/tsconfig/library.json` | `base` + emissão de `.js` e `.d.ts`, para `packages/*` |
@@ -53,6 +54,34 @@ TypeScript — crie `<workspace>/tsconfig.json`:
 Prettier não precisa de arquivo por workspace: o `prettier.config.mjs` da raiz
 vale para todo o repositório, e `pnpm format` / `pnpm format:check` rodam de lá.
 
+## A fronteira entre os módulos da API
+
+`eslint/api.js` transforma a regra 1 do `CLAUDE.md` ("Fronteira de módulo") em
+erro de lint: de dentro de um módulo de `apps/api/src/modules`, os outros
+módulos existem só pelo `index.ts`.
+
+```ts
+// apps/api/src/modules/nutrition/application/create-plan.ts
+import { Person } from '../../identity/domain/person'; // ✗ erro de lint
+import { Person } from '../../identity'; //              ✓ o index.ts do módulo
+import { Meal } from '../domain/meal'; //                ✓ o próprio módulo
+```
+
+A regra é o `no-restricted-imports` do eslint, sem plugin de terceiros. Ela
+reconhece as três formas de escrever o caminho (relativo, `modules/...` e o
+alias `@modules/...`) e **não** se confunde com uma pasta interna que por acaso
+tenha nome de módulo: `../domain/health/score` dentro de `nutrition` passa, mas
+`../../health/domain/score` não. Quem garante isso é
+[`test/module-boundaries.test.js`](./test/module-boundaries.test.js), com 21
+casos de import (`pnpm --filter @fit-app/config test`).
+
+Acrescentar um módulo de domínio é acrescentar o nome em `apiModules`, dentro de
+`eslint/api.js` — o teste falha se um módulo do `CLAUDE.md` ficar sem fronteira.
+
+`apps/api` ainda não consome esse preset (o pacote está vazio até o card F-05),
+mas o `eslint.config.mjs` da raiz já aponta para ele: editor e hook de
+pre-commit enxergam a regra no primeiro arquivo de módulo que aparecer.
+
 ## Duas pegadinhas que valem ler
 
 **Caminho relativo em `extends` não é relativo a quem faz o extends.** O
@@ -80,6 +109,12 @@ function adapt(raw: any) {}
 órfã quebra o lint em vez de virar entulho.
 
 ## O que ainda não está aqui
+
+A regra 4 do `CLAUDE.md` ("Domínio puro": `domain/` não importa NestJS, Drizzle
+nem nada com I/O) não está no lint. Ela precisa da lista real de dependências de
+`apps/api`, que só existe com o código do card F-05; enquanto isso vale a
+revisão de PR. A fronteira de módulo foi em frente porque depende só dos nomes
+dos módulos, que o `CLAUDE.md` já fixa.
 
 Não há preset de tsconfig nem de eslint específicos para NestJS e Next.js. Eles
 dependem de decisões que só existem junto com o código de `apps/api` (card F-05)
