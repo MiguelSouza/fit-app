@@ -6,6 +6,7 @@
   "description": "Configuracao compartilhada de eslint, tsconfig e prettier",
   "exports": {
     "./eslint": "./eslint/base.js",
+    "./eslint/api": "./eslint/api.js",
     "./prettier": "./prettier/index.js",
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/library.json": "./tsconfig/library.json"
@@ -15,7 +16,7 @@
     "dev": "echo \"[@fit-app/config] nothing to run: the package ships plain config files\"",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"[@fit-app/config] no tests: the configs are exercised by lint and typecheck of every workspace\""
+    "test": "node --test"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
@@ -29,6 +30,7 @@
     "typescript": "^6.0.0"
   },
   "devDependencies": {
+    "@types/node": "^24.9.2",
     "eslint": "^10.12.0",
     "prettier": "^3.9.9",
     "typescript": "^6.0.3"

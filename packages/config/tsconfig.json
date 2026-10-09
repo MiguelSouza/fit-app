@@ -2,7 +2,8 @@
   "extends": "./tsconfig/base.json",
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    "types": ["node"]
   },
-  "include": ["eslint/**/*.js", "prettier/**/*.js", "eslint.config.mjs"]
+  "include": ["eslint/**/*.js", "prettier/**/*.js", "test/**/*.js", "eslint.config.mjs"]
 }
