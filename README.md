@@ -9,11 +9,86 @@ arquitetura, fronteiras de módulo, LGPD e convenções.
 
 ## Pré-requisitos
 
-| Ferramenta | Versão                                                         |
-| ---------- | -------------------------------------------------------------- |
-| Node       | 24 LTS (ver [`.nvmrc`](./.nvmrc) — `nvm use`)                  |
-| pnpm       | 12 (`corepack enable` usa a versão fixada em `packageManager`) |
-| Flutter    | só para `apps/mobile` (ver card F-14)                          |
+| Ferramenta | Versão                                                                  |
+| ---------- | ----------------------------------------------------------------------- |
+| Node       | 24 LTS (ver [`.nvmrc`](./.nvmrc) — `nvm use`)                           |
+| pnpm       | 12 (`corepack enable` usa a versão fixada em `packageManager`)          |
+| Docker     | Engine 24+ com Compose, rodando (no Windows e no macOS, Docker Desktop) |
+| Flutter    | só para `apps/mobile` (ver card F-14)                                   |
+
+O **Supabase CLI não precisa de instalação global**: é uma devDependency da raiz,
+então o `pnpm install` já o traz na versão que o repositório inteiro usa. Chame-o
+pelos scripts `db:*` ou, para um comando solto, com `pnpm exec supabase <...>`.
+
+## Do zero ao banco rodando
+
+Depois do `git clone`, três comandos:
+
+```bash
+pnpm install           # workspace, Supabase CLI e hooks de git
+cp .env.example .env   # no PowerShell: Copy-Item .env.example .env
+pnpm db:start          # sobe Postgres, Auth e Storage no Docker
+```
+
+O primeiro `db:start` baixa as imagens do Docker e leva alguns minutos; os
+seguintes sobem em segundos. No fim ele imprime as URLs e o par de chaves novo
+do Supabase (`Publishable` e `Secret`), que ainda não usamos.
+
+As três chaves que o `.env` pede saem do `status` em formato de ambiente:
+
+```bash
+pnpm exec supabase status -o env   # ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET
+```
+
+Copie as três para o seu `.env`; a mesma chave `anon` vale para
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` e para `FLUTTER_SUPABASE_ANON_KEY`.
+
+O `status` só responde com o stack de pé: depois de um `db:stop` ele falha com
+`No such container`. Os valores, porém, não mudam de um start para o outro —
+pegue uma vez e pronto.
+
+As chaves locais são geradas a partir de um segredo fixo e público do Supabase
+CLI, iguais em toda máquina: não são segredo e não servem para nada fora do seu
+Docker. Mesmo assim o `.env` é ignorado pelo git — não há exceção.
+
+## Banco, autenticação e arquivos locais
+
+O ambiente local é o Supabase CLI, configurado em
+[`supabase/`](./supabase/README.md), rodando a mesma trinca que usamos em
+produção: Postgres, Auth e Storage.
+
+| Script          | O que faz                                                                         |
+| --------------- | --------------------------------------------------------------------------------- |
+| `pnpm db:start` | sobe os contêineres e imprime URLs e chaves                                       |
+| `pnpm db:stop`  | derruba os contêineres; o volume de dados fica, então o próximo start reaproveita |
+| `pnpm db:reset` | recria o banco do zero: roda as migrações e depois o `supabase/seed.sql`          |
+
+Portas (todas em `127.0.0.1`, definidas no `supabase/config.toml`):
+
+| Porta   | Serviço                                                         |
+| ------- | --------------------------------------------------------------- |
+| `54321` | API do Supabase — é por onde Auth e Storage respondem           |
+| `54322` | Postgres (`postgresql://postgres:postgres@127.0.0.1:54322`)     |
+| `54323` | Studio, para olhar o banco pelo navegador                       |
+| `54324` | caixa de e-mail de teste (Mailpit): o que o Auth manda cai aqui |
+
+Em **produção** o banco não é esse: são dois projetos Supabase hospedados
+(staging e produção) na região de **São Paulo**, ao lado da API na AWS
+**`sa-east-1`** — ver [ADR 0002](./docs/adr/0002-supabase-como-infraestrutura.md)
+e [ADR 0005](./docs/adr/0005-aws-sa-east-1-e-vercel.md). Nada aponta para eles a
+partir da sua máquina, e **dado real de paciente nunca entra em desenvolvimento
+ou teste**: os dados são sintéticos, gerados pelos scripts em
+[`scripts/`](./scripts/README.md).
+
+## Variáveis de ambiente
+
+[`.env.example`](./.env.example) lista todas as variáveis da API, do painel e do
+app, sem nenhum valor real, e diz de qual card cada bloco é. É o arquivo que se
+copia para `.env`.
+
+Nenhum segredo entra no repositório. O `.gitignore` barra `.env` e `.env.*`, com
+`.env.example` como única exceção. Em staging e produção os valores vivem no AWS
+Secrets Manager (`sa-east-1`) e nas variáveis de ambiente da Vercel.
 
 ## Como rodar
 
@@ -80,8 +155,9 @@ scripts/          seeds, pacientes sintéticos, TACO/TBCA    @fit-app/scripts
 
 ## Estado atual
 
-O esqueleto do monorepo (card **F-01**) e a configuração compartilhada de eslint, tsconfig
-e prettier (card **F-03**, em `packages/config`) já estão de pé. Os demais pacotes seguem
+O esqueleto do monorepo (card **F-01**), a configuração compartilhada de eslint, tsconfig
+e prettier (card **F-03**, em `packages/config`) e o ambiente local com Docker e Supabase
+CLI (card **F-04**, em `supabase/`) já estão de pé. Os demais pacotes seguem
 como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo real de
 cada um entra pelos cards indicados no `README.md` de cada pasta.
 
