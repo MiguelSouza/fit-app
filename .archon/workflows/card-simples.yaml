@@ -6,9 +6,11 @@ worktree:
   enabled: true
 
 nodes:
-  # 1. Lê o card no Trello e salva em $ARTIFACTS_DIR/card.md
+  # 1. Lê o card pela API do Trello, sem IA: não resume, não reescreve e não
+  #    inventa um card que não existe. Falha se uma dependência não estiver em
+  #    "Feito", e move o card para "Fazendo".
   - id: ler-card
-    command: ler-card
+    bash: 'bun .archon/scripts/trello.ts card > "$ARTIFACTS_DIR/card.md"'
 
   # 2. A cópia isolada (worktree) nasce sem node_modules
   - id: preparar
@@ -35,7 +37,7 @@ nodes:
   # 4. Validação determinística, sem IA (ajuste conforme os scripts forem existindo)
   - id: validar
     depends_on: [implementar]
-    bash: "pnpm turbo run lint typecheck build"
+    bash: "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm format:check"
 
   # 5. Revisão com contexto limpo
   - id: revisar
@@ -56,14 +58,19 @@ nodes:
       Acrescente ao final de $ARTIFACTS_DIR/resumo.md uma seção "Revisão" com o que
       encontrou e o que corrigiu.
 
-  # 6. PR e Trello
+  # 6. PR. Não mexa no Trello aqui: o passo 7 faz isso sem IA.
   - id: abrir-pr
     depends_on: [revisar]
     prompt: |
       Envie a branch e abra um PR para a main com o gh.
       Se o comando gh não for encontrado, use "C:\Program Files\GitHub CLI\gh.exe".
-      - Título: "<ID do card> <título do card>"
-      - Descrição: link do card e o conteúdo de $ARTIFACTS_DIR/resumo.md
+      - Título: "<ID do card> <título do card>", como estão em $ARTIFACTS_DIR/card.md
+      - Descrição: o link do card e o conteúdo de $ARTIFACTS_DIR/resumo.md
 
-      Depois, no Trello: comente o link do PR no card e mova o card para "Revisão".
-      NÃO faça merge.
+      Escreva a URL do PR, e nada mais, em $ARTIFACTS_DIR/pr-url.txt.
+      NÃO faça merge. NÃO toque no Trello: o passo seguinte cuida disso.
+
+  # 7. Trello de novo, sem IA: comenta o PR no card e move para "Revisão".
+  - id: fechar-card
+    depends_on: [abrir-pr]
+    bash: 'bun .archon/scripts/trello.ts finish "$(cat "$ARTIFACTS_DIR/pr-url.txt")"'
