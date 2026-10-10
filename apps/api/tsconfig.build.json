@@ -2,7 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.json",
 
-  "//": "What `nest build` and `nest start` compile: the app without its tests. `tsconfig.json` (the one editors and `pnpm typecheck` read) keeps the `.spec.ts` files so they are type-checked too.",
+  "//": "What `nest build` and `nest start` compile: the app alone, so `dist/main.js` stays where `pnpm --filter api start` expects it. `tsconfig.json` (the one editors and `pnpm typecheck` read) also keeps the `.spec.ts` files and the Drizzle Kit config, neither of which belongs in the image.",
 
-  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "drizzle.config.ts"]
 }
