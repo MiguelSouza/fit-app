@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { type Request } from 'express';
 
-import { InvalidAccessTokenError, readBearerToken } from './access-token';
+import { InvalidAccessTokenError, isRoutineRefusal, readBearerToken } from './access-token';
 import { setAuthenticatedUser } from './authenticated-user';
 import { IS_PUBLIC_ROUTE } from './public.decorator';
 import { SupabaseTokenVerifier } from './supabase-token-verifier';
@@ -57,9 +57,17 @@ export class SupabaseJwtGuard implements CanActivate {
       return true;
     } catch (error) {
       if (error instanceof InvalidAccessTokenError) {
-        // A reason code and the route. No token, no fragment of one, no user
-        // id — there is no verified user to name (CLAUDE.md, "Saúde e LGPD").
-        this.logger.debug(`access token refused (${error.reason})`);
+        // The reason code and nothing else. No token, no fragment of one, no
+        // user id — there is no verified user to name (CLAUDE.md, "Saúde e
+        // LGPD").
+        //
+        // A token nobody sent or one that simply expired is traffic, and stays
+        // at `debug`. A token that did not come from this project is the line
+        // someone will look for in CloudWatch, where the level is `info`.
+        const line = `access token refused (${error.reason})`;
+
+        if (isRoutineRefusal(error.reason)) this.logger.debug(line);
+        else this.logger.warn(line);
 
         throw new UnauthorizedException(REFUSED);
       }
@@ -70,8 +78,15 @@ export class SupabaseJwtGuard implements CanActivate {
   }
 
   /**
-   * `getAllAndOverride` so `@Public()` on the handler wins over the
-   * controller, which is how a mostly-open controller keeps one closed route.
+   * `getAllAndOverride`: the handler is asked first and the controller next,
+   * and the first of the two that says anything decides.
+   *
+   * The decorator only ever says "open", so this is a one way door: `@Public()`
+   * on a handler opens that route on an otherwise protected controller, and
+   * `@Public()` on a controller opens every route under it, including one added
+   * later that forgets to think about it. A protected route does not live on a
+   * public controller — it gets one of its own. Both halves are pinned in
+   * `supabase-jwt.guard.spec.ts`.
    */
   private isPublic(context: ExecutionContext): boolean {
     return (

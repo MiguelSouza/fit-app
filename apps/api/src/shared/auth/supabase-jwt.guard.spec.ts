@@ -56,6 +56,43 @@ class PublicExampleController {
   }
 }
 
+/**
+ * `@Public()` on one handler and not on the one next to it: the metadata is
+ * read per route, so the neighbour is still protected.
+ */
+@Controller({ path: 'mixed-example' })
+class MixedExampleController {
+  @Public()
+  @Get('open')
+  open(): { reached: boolean } {
+    return { reached: true };
+  }
+
+  @Get('closed')
+  closed(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
+    return user;
+  }
+}
+
+/**
+ * A whole controller marked `@Public()`, as `HealthController` is, with a
+ * second route next to the first: it is open too, and nothing written on the
+ * handler could have closed it.
+ */
+@Public()
+@Controller({ path: 'public-controller-example' })
+class PublicControllerExampleController {
+  @Get('first')
+  first(): { reached: boolean } {
+    return { reached: true };
+  }
+
+  @Get('second')
+  second(): { reached: boolean } {
+    return { reached: true };
+  }
+}
+
 /** The mistake `@CurrentUser()` on an open route is: a 500, not a 401. */
 @Controller({ path: 'public-asking-for-the-user' })
 class PublicAskingForTheUserController {
@@ -72,6 +109,8 @@ async function bootApp(): Promise<INestApplication> {
     controllers: [
       ProtectedExampleController,
       PublicExampleController,
+      MixedExampleController,
+      PublicControllerExampleController,
       PublicAskingForTheUserController,
     ],
   })
@@ -180,6 +219,23 @@ describe('the global authentication guard', () => {
   describe('public routes', () => {
     it('lets a @Public() route answer with no token', async () => {
       await get('/v1/public-example').expect(200, { reached: true });
+    });
+
+    it('reads @Public() per route, so the handler next to an open one is closed', async () => {
+      await get('/v1/mixed-example/open').expect(200, { reached: true });
+      await get('/v1/mixed-example/closed').expect(401);
+      await get('/v1/mixed-example/closed')
+        .set('authorization', `Bearer ${await signAccessToken()}`)
+        .expect(200);
+    });
+
+    it('opens every route of a controller marked @Public(), with no way back', async () => {
+      // The edge of a decorator that only says "open": marking a controller
+      // marks the routes somebody adds to it later too, and no handler can
+      // close one again. Hence the rule in `public.decorator.ts` — a
+      // controller is only marked when the whole of it is public.
+      await get('/v1/public-controller-example/first').expect(200);
+      await get('/v1/public-controller-example/second').expect(200);
     });
 
     it('keeps GET /v1/health open, for a probe that has no session', async () => {

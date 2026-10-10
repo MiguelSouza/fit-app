@@ -9,9 +9,13 @@ import { type AuthenticatedUser } from './authenticated-user';
  */
 
 /**
- * The `aud` Supabase Auth puts in the access token of a signed-in user. An
- * anonymous token or a service token does not carry it, which is exactly what
- * the audience check is for.
+ * The `aud` Supabase Auth puts in the access token of a signed-in user.
+ *
+ * Checking it is what tells a session apart from the project's other JWTs: the
+ * `anon` and `service_role` API keys are signed with this very secret, and the
+ * `anon` one ships inside the panel and the app, where anyone can read it.
+ * Neither carries `aud: authenticated` — nor a `sub` — so neither can stand in
+ * for a person.
  */
 export const AUTHENTICATED_AUDIENCE = 'authenticated';
 
@@ -31,6 +35,27 @@ export type InvalidAccessTokenReason =
   | 'audience'
   /** A claim we need is missing or unusable (`sub`, `role`, `exp`). */
   | 'claims';
+
+/**
+ * Reasons that belong to ordinary traffic: a client that has not signed in
+ * yet, and a session whose hour ran out between two requests. Both happen all
+ * day long and say nothing about anybody.
+ */
+const ROUTINE_REASONS: ReadonlySet<InvalidAccessTokenReason> = new Set(['missing', 'expired']);
+
+/**
+ * Whether a refusal is routine or worth a line in the production log.
+ *
+ * Everything outside `ROUTINE_REASONS` means a token this project did not
+ * issue — a forged signature, another project's secret, an algorithm we do not
+ * accept, an API key used as if it were a session. The default level in
+ * production is `info` (`shared/config/env.ts`), so a refusal logged at `debug`
+ * is not written at all: whoever investigates one of those has to find it
+ * there, which is why the two cases are not logged alike.
+ */
+export function isRoutineRefusal(reason: InvalidAccessTokenReason): boolean {
+  return ROUTINE_REASONS.has(reason);
+}
 
 /**
  * The token is not usable. Not a `DomainError`: authentication happens before

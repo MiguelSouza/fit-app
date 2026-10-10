@@ -109,8 +109,11 @@ audiência, a resposta é **401**, sempre com o mesmo texto:
 
 O motivo não vai para o cliente — a ação dele é a mesma nos quatro casos, e uma
 mensagem que distingue os casos é sonda para quem está testando token. Vai para
-o log, como código (`missing`, `malformed`, `algorithm`, `signature`,
-`expired`, `audience`, `claims`), sem o token nem pedaço dele.
+o log, como código, sem o token nem pedaço dele. Token ausente (`missing`) e
+token vencido (`expired`) são tráfego normal e saem em `debug`; os outros
+(`signature`, `algorithm`, `audience`, `claims`, `malformed`) são token que não
+foi este projeto que emitiu e saem em `warn`, que é o que aparece no CloudWatch
+com o `LOG_LEVEL` padrão de produção (`info`).
 
 ### `@CurrentUser()`
 
@@ -149,6 +152,12 @@ A assimetria é de propósito: esquecer o `@Public()` numa rota aberta dá 401 e
 alguém percebe; o contrário, uma rota de paciente aberta por esquecimento, não
 acontece. Hoje a única rota pública é a `GET /v1/health`, que uma sonda do ALB
 chama sem sessão. O aceite de convite entra com o `identity`.
+
+O decorator só sabe dizer "abra": no controller ele abre **todas** as rotas
+dele, inclusive uma acrescentada depois, e handler nenhum fecha de volta (não
+existe `@Public(false)`). Por isso o controller só é marcado quando ele é
+público inteiro, como o `HealthController`; rota protegida que cairia num
+controller assim ganha um controller próprio.
 
 Rota inexistente continua **404**, com ou sem token: um 401 ali contaria para um
 anônimo quais rotas existem. E `@CurrentUser()` numa rota `@Public()` é erro de

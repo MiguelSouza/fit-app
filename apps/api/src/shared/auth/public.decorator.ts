@@ -17,6 +17,12 @@ export const IS_PUBLIC_ROUTE = 'fit-app:auth:public';
  * no token, and the invitation flow of `identity`, where someone accepts an
  * invitation before having an account.
  *
+ * On a controller it opens **every** route under it, and no handler can close
+ * one back: there is no `@Public(false)`, because "open" is the only thing this
+ * decorator knows how to say. So a controller is marked only when the whole of
+ * it is public, as `HealthController` is; a protected route that would land on
+ * such a controller gets a controller of its own instead.
+ *
  * `@CurrentUser()` has nothing to return on a public route. A route that needs
  * the caller is not public.
  */

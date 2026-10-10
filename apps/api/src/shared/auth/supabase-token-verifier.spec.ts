@@ -82,6 +82,16 @@ describe('SupabaseTokenVerifier', () => {
     await expect(reasonOf(await signAccessToken({ without: ['aud'] }))).resolves.toBe('audience');
   });
 
+  it("refuses the project's own api keys, signed as they are with this secret", async () => {
+    // `anon` and `service_role` are JWTs the project signs with the very
+    // secret this verifier holds, and the `anon` one ships inside the panel and
+    // the app for anyone to read. What keeps one of them from passing as a
+    // person is that they carry no `aud: authenticated` and no `sub`.
+    const apiKey = await signAccessToken({ role: 'anon', without: ['aud', 'sub'] });
+
+    await expect(verifier.verify(apiKey)).rejects.toBeInstanceOf(InvalidAccessTokenError);
+  });
+
   it('refuses an unsigned token, however well formed', async () => {
     // `alg: none` is the oldest trick there is, and the one a pinned algorithm
     // list exists to stop.

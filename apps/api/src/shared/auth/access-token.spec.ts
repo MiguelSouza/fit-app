@@ -1,5 +1,6 @@
 import {
   InvalidAccessTokenError,
+  isRoutineRefusal,
   readAuthenticatedUser,
   readBearerToken,
   type InvalidAccessTokenReason,
@@ -101,5 +102,22 @@ describe('readAuthenticatedUser', () => {
   it('refuses claims that are not even an object', () => {
     expect(reasonOf(() => readAuthenticatedUser(null))).toBe('claims');
     expect(reasonOf(() => readAuthenticatedUser('pat_1'))).toBe('claims');
+  });
+});
+
+describe('isRoutineRefusal', () => {
+  it('counts a missing and an expired token as traffic', () => {
+    // Nobody signed in yet, and a session that ran out mid-use. Both happen
+    // all day and stay at `debug`.
+    expect(isRoutineRefusal('missing')).toBe(true);
+    expect(isRoutineRefusal('expired')).toBe(true);
+  });
+
+  it('counts anything this project did not issue as worth a log line', () => {
+    // These reach the production log, where the level is `info`: each one is a
+    // token that was made somewhere else.
+    for (const reason of ['signature', 'algorithm', 'audience', 'claims', 'malformed'] as const) {
+      expect(isRoutineRefusal(reason)).toBe(false);
+    }
   });
 });
