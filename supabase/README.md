@@ -33,11 +33,15 @@ A Data API expõe só o schema `public`. Os schemas de domínio (`identity`,
 
 ## Migrações
 
-Ainda não existe `migrations/`: não há schema. A pasta nasce com a primeira
-migração, que é gerada pelo **Drizzle Kit** e revisada no PR — nunca escrita à
-mão no banco, nunca aplicada à mão em produção. A partir daí o `pnpm db:reset`
-recria o banco local, replica todas as migrações em ordem e termina no
-`seed.sql`.
+Ainda não existe migração: não há schema. A primeira é gerada pelo **Drizzle
+Kit** (`pnpm db:generate`) e revisada no PR — nunca escrita à mão no banco,
+nunca aplicada à mão em produção.
+
+O Drizzle escreve em `apps/api/drizzle/`, não aqui: `migrations/` deste
+diretório continua sem existir, e o Supabase CLI não aplica nada do Drizzle. No
+local, quem aplica é o `pnpm db:migrate`. Então recriar o banco são dois
+comandos, nesta ordem: `pnpm db:reset` (banco limpo e `seed.sql`) e
+`pnpm db:migrate` (os quatro schemas de domínio de volta).
 
 ## Seed
 

@@ -16,3 +16,7 @@ packages:
 allowBuilds:
   '@parcel/watcher': true
   unrs-resolver: true
+  # drizzle-kit runs `drizzle.config.ts` and the schema files through esbuild;
+  # the install script only downloads the prebuilt binary for this platform.
+  # Without it drizzle-kit cannot read a TypeScript config at all.
+  esbuild: true

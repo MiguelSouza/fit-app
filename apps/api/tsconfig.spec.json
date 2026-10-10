@@ -4,8 +4,11 @@
 
   "//": "How ts-jest compiles the tests. NestJS 12 ships ES modules only, and jest can only require one of those on Node 24.9 and up; emitting the tests as ES modules instead makes them load the framework the normal way, on any Node 24. The app itself still builds as CommonJS, which is what `nest build` and the official template do.",
 
+  "//rootDir": "Every test is under `src`. Saying so is what keeps ts-jest from guessing a different root per directory (TS5011), now that `tsconfig.json` leaves `rootDir` to whoever emits.",
+
   "compilerOptions": {
     "module": "esnext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "rootDir": "src"
   }
 }

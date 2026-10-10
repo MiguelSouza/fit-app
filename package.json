@@ -16,6 +16,8 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
+    "db:generate": "pnpm --filter @fit-app/api db:generate",
+    "db:migrate": "pnpm --filter @fit-app/api db:migrate",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"

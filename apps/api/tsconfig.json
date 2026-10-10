@@ -6,10 +6,11 @@
 
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "types": ["node", "jest"]
   },
 
-  "include": ["src/**/*.ts"],
+  "//include": "`pnpm typecheck` reads this file, so it names everything that has to type-check: the app, its tests and `drizzle.config.ts`, which imports the API's own env loader and would otherwise break only when someone ran a migration. `rootDir` lives in `tsconfig.build.json` instead, because a file outside `src` is fine to check and not fine to emit.",
+
+  "include": ["src/**/*.ts", "drizzle.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
