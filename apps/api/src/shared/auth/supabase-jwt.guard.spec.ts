@@ -1,0 +1,205 @@
+import { Controller, Get, type INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+
+import { CurrentUser } from './current-user.decorator';
+import { type AuthenticatedUser } from './authenticated-user';
+import {
+  OTHER_JWT_SECRET,
+  TEST_JWT_SECRET,
+  TEST_USER_ID,
+  signAccessToken,
+} from './local-access-token.spec-support';
+import { Public } from './public.decorator';
+import { AppModule } from '../../app.module';
+import { configureApp } from '../../bootstrap';
+import { DATABASE_STATUS_PORT } from '../../health-check/application/ports/database-status.port';
+import { type ApiEnv } from '../config/env';
+import { ENV } from '../config/env.module';
+
+/**
+ * The guard as the API actually runs it: the real `AppModule`, booted the way
+ * `main.ts` boots it, with the global guard in front of every route.
+ *
+ * Two controllers are added to the testing module because there is no
+ * authenticated route in the API yet — F-08 is what makes the next card's
+ * routes protected by default. Everything else is production wiring: the
+ * guard, the verifier, the versioning and the error filter.
+ *
+ * Only the environment and the database port are overridden, as in
+ * `health.controller.spec.ts`: no `.env` and no Postgres needed.
+ */
+const env: ApiEnv = {
+  nodeEnv: 'test',
+  port: 0,
+  databaseUrl: 'postgresql://unused:unused@127.0.0.1:1/unused',
+  supabaseJwtSecret: TEST_JWT_SECRET,
+  corsAllowedOrigins: [],
+  logLevel: 'silent',
+};
+
+/** Stands in for the routes the domain cards will add: nothing special on it. */
+@Controller({ path: 'protected-example' })
+class ProtectedExampleController {
+  @Get()
+  get(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
+    return user;
+  }
+}
+
+@Controller({ path: 'public-example' })
+class PublicExampleController {
+  @Public()
+  @Get()
+  get(): { reached: boolean } {
+    return { reached: true };
+  }
+}
+
+/** The mistake `@CurrentUser()` on an open route is: a 500, not a 401. */
+@Controller({ path: 'public-asking-for-the-user' })
+class PublicAskingForTheUserController {
+  @Public()
+  @Get()
+  get(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
+    return user;
+  }
+}
+
+async function bootApp(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+    controllers: [
+      ProtectedExampleController,
+      PublicExampleController,
+      PublicAskingForTheUserController,
+    ],
+  })
+    .overrideProvider(ENV)
+    .useValue(env)
+    .overrideProvider(DATABASE_STATUS_PORT)
+    .useValue({ check: () => Promise.resolve({ name: 'database', status: 'up' }) })
+    .compile();
+
+  // `logger: false` only because one test below provokes a 500 on purpose:
+  // the error filter would print its stack in the middle of a green run.
+  const app = moduleRef.createNestApplication({ logger: false });
+  configureApp(app, env);
+
+  return app.init();
+}
+
+describe('the global authentication guard', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await bootApp();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  function get(path: string): request.Test {
+    return request(app.getHttpServer()).get(path);
+  }
+
+  describe('without a usable token', () => {
+    it('answers 401 when no token is sent', async () => {
+      const response = await get('/v1/protected-example').expect(401);
+
+      expect(response.body).toEqual({
+        error: { code: 'api.http_401', message: 'Sessão inválida ou expirada. Entre novamente.' },
+      });
+    });
+
+    it('answers 401 for an expired token', async () => {
+      await get('/v1/protected-example')
+        .set('authorization', `Bearer ${await signAccessToken({ expiresInSeconds: -1 })}`)
+        .expect(401);
+    });
+
+    it('answers 401 for a token signed with another secret', async () => {
+      await get('/v1/protected-example')
+        .set('authorization', `Bearer ${await signAccessToken({ secret: OTHER_JWT_SECRET })}`)
+        .expect(401);
+    });
+
+    it('answers 401 for a token of another audience', async () => {
+      await get('/v1/protected-example')
+        .set('authorization', `Bearer ${await signAccessToken({ audience: 'admin' })}`)
+        .expect(401);
+    });
+
+    it('answers 401 for something that is not a token', async () => {
+      await get('/v1/protected-example').set('authorization', 'Bearer nope').expect(401);
+      await get('/v1/protected-example').set('authorization', 'Basic dXNlcjpwYXNz').expect(401);
+    });
+
+    it('says the same thing whatever the reason was', async () => {
+      // The caller's move is the same in every case, and a message that tells
+      // the cases apart is a probe for whoever is trying tokens.
+      const [missing, expired] = await Promise.all([
+        get('/v1/protected-example'),
+        get('/v1/protected-example').set(
+          'authorization',
+          `Bearer ${await signAccessToken({ expiresInSeconds: -1 })}`,
+        ),
+      ]);
+
+      expect(missing.body).toEqual(expired.body);
+    });
+  });
+
+  describe('with a valid token', () => {
+    it('lets the request through and hands @CurrentUser() the right id', async () => {
+      const response = await get('/v1/protected-example')
+        .set('authorization', `Bearer ${await signAccessToken()}`)
+        .expect(200);
+
+      expect(response.body).toEqual({ id: TEST_USER_ID, role: 'authenticated' });
+    });
+
+    it('reads the id of whoever the token is for, not a fixed one', async () => {
+      const subject = '9a7b6c5d-4e3f-4a2b-8c1d-0e9f8a7b6c5d';
+
+      const response = await get('/v1/protected-example')
+        .set('authorization', `Bearer ${await signAccessToken({ subject })}`)
+        .expect(200);
+
+      expect(response.body).toMatchObject({ id: subject });
+    });
+
+    it('accepts the scheme written in any case', async () => {
+      await get('/v1/protected-example')
+        .set('authorization', `bearer ${await signAccessToken()}`)
+        .expect(200);
+    });
+  });
+
+  describe('public routes', () => {
+    it('lets a @Public() route answer with no token', async () => {
+      await get('/v1/public-example').expect(200, { reached: true });
+    });
+
+    it('keeps GET /v1/health open, for a probe that has no session', async () => {
+      await get('/v1/health').expect(200);
+    });
+
+    it('still answers 404 for an unknown route instead of 401', async () => {
+      // A 401 here would tell an anonymous caller which routes exist.
+      await get('/v1/not-a-route').expect(404);
+    });
+
+    it('treats asking for the caller on an open route as a bug, not a refusal', async () => {
+      const response = await get('/v1/public-asking-for-the-user').expect(500);
+
+      expect(response.body).toEqual({
+        error: {
+          code: 'api.internal_error',
+          message: 'Não foi possível concluir a operação. Tente novamente.',
+        },
+      });
+    });
+  });
+});
