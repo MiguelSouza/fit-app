@@ -6,6 +6,7 @@ import { API_VERSION, configureApp } from './bootstrap';
 import { loadLocalEnvFile } from './shared/config/env-file';
 import { EnvironmentError, type ApiEnv } from './shared/config/env';
 import { resolveEnv } from './shared/config/env.module';
+import { PinoLoggerService } from './shared/logging/pino-logger.service';
 
 /**
  * Reads the environment before anything else exists, and stops the process
@@ -34,7 +35,12 @@ async function bootstrap(): Promise<void> {
 
   const env = readEnvOrExit();
 
-  const app = await NestFactory.create(AppModule);
+  // `bufferLogs` holds the framework's own boot messages until the logger
+  // below is in place, so not even those go out unstructured.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.useLogger(app.get(PinoLoggerService));
+  app.flushLogs();
 
   configureApp(app, env);
 
