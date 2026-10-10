@@ -14,3 +14,4 @@ antigo como substituído por ele.
 | [0003](./0003-wearables-via-agregador.md)      | Wearables via agregador atrás de uma porta própria                              | aceito |
 | [0004](./0004-um-schema-por-modulo.md)         | Um schema Postgres por módulo                                                   | aceito |
 | [0005](./0005-aws-sa-east-1-e-vercel.md)       | AWS sa-east-1 com ECS Fargate e CDK; painel na Vercel                           | aceito |
+| [0006](./0006-logger-estruturado-com-pino.md)  | Logger estruturado com pino e redação por nome de campo                         | aceito |

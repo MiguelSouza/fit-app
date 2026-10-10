@@ -7,11 +7,12 @@ import { NutritionModule } from './modules/nutrition';
 import { HealthModule } from './modules/health';
 import { InsightsModule } from './modules/insights';
 import { EnvModule } from './shared/config/env.module';
+import { LoggingModule } from './shared/logging/logging.module';
 import { GlobalExceptionFilter } from './shared/presentation/global-exception.filter';
 
 /**
- * The composition root: the four domain modules of CLAUDE.md, the health check
- * and the global error handling.
+ * The composition root: the four domain modules of CLAUDE.md, the health
+ * check, the logging and the global error handling.
  *
  * Each module is imported through its `index.ts` and nothing else
  * (CLAUDE.md rule 1).
@@ -19,6 +20,7 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
 @Module({
   imports: [
     EnvModule,
+    LoggingModule,
     HealthCheckModule,
     IdentityModule,
     NutritionModule,

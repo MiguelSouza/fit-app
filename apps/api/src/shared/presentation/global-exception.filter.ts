@@ -9,6 +9,7 @@ import {
 import { type Response } from 'express';
 
 import { DomainError, type DomainErrorKind } from '../domain/domain-error';
+import { stackWithoutMessage } from '../logging/safe-error';
 
 /**
  * The only place in the API where a domain error becomes a status code
@@ -39,19 +40,6 @@ const INTERNAL_ERROR: ErrorResponseBody = {
     message: 'Não foi possível concluir a operação. Tente novamente.',
   },
 };
-
-/**
- * Everything the stack trace says minus its first line, which repeats the
- * message.
- *
- * An unexpected error is often the database driver's, and a Postgres message
- * quotes the value that broke the query ("Key (email)=(...) already exists").
- * That is personal data, and CLAUDE.md forbids logging it. The stack says
- * where it broke, which is what debugging needs.
- */
-function stackWithoutMessage(error: Error): string {
-  return (error.stack ?? '').split('\n').slice(1).join('\n');
-}
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
