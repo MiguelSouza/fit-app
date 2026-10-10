@@ -24,6 +24,7 @@ const env: ApiEnv = {
   port: 0,
   databaseUrl: 'postgresql://unused:unused@127.0.0.1:1/unused',
   corsAllowedOrigins: [],
+  logLevel: 'silent',
 };
 
 async function bootApp(database: ComponentHealth): Promise<INestApplication> {
