@@ -1,6 +1,6 @@
 import { type DestinationStream } from 'pino';
 
-import { createLogger } from './logger';
+import { createLogger, ERROR_WITHOUT_MESSAGE } from './logger';
 import { runWithCorrelationId } from './correlation-id';
 import { REDACTED } from './sensitive-data';
 import { type ApiEnv, type LogLevel } from '../config/env';
@@ -138,6 +138,28 @@ describe('createLogger', () => {
     expect(line).toMatchObject({ msg: 'query failed', err: { type: 'Error', code: '23505' } });
     expect(JSON.stringify(line)).not.toContain('ana@example.com');
     expect(String((line.err as { stack?: string }).stack)).toContain('logger.spec.ts');
+  });
+
+  it('does not let the error stand in for a message the call did not give', () => {
+    // Pino's own behaviour is `msg = err.message` when there is no message,
+    // which would undo the serializer above. Both ways of logging an error
+    // without a sentence go through the check.
+    const { logger, lines } = capturing();
+    const driverError = new Error(
+      'duplicate key value violates unique constraint (email)=(ana@example.com)',
+    );
+
+    logger.error({ err: driverError });
+    logger.error(driverError);
+
+    const written = lines();
+
+    expect(written).toHaveLength(2);
+    for (const line of written) {
+      expect(line.msg).toBe(ERROR_WITHOUT_MESSAGE);
+      expect(line.err).toMatchObject({ type: 'Error' });
+      expect(JSON.stringify(line)).not.toContain('ana@example.com');
+    }
   });
 
   it('writes the level as a label and the time in utc iso', () => {
