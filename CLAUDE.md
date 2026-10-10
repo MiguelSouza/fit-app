@@ -19,6 +19,7 @@ A IA é copiloto do profissional: aponta, nunca diagnostica.
 | Banco                  | Postgres no Supabase (região São Paulo), Drizzle ORM, um schema por módulo                       |
 | Login e arquivos       | Supabase Auth (a API valida o JWT) e Supabase Storage                                            |
 | Jobs                   | pg-boss                                                                                          |
+| Logs                   | pino (JSON no stdout), com redação automática dos campos sensíveis                               |
 | Validação e contratos  | Zod compartilhado + OpenAPI gerado pelo NestJS                                                   |
 | Infra                  | AWS sa-east-1 (ECS Fargate, ECR, ALB, Secrets Manager, CloudWatch) via AWS CDK; painel na Vercel |
 | Monorepo               | Turborepo + pnpm                                                                                 |
@@ -124,6 +125,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0003 Wearables via agregador atrás de uma porta própria
 - 0004 Um schema Postgres por módulo
 - 0005 AWS sa-east-1 com ECS Fargate e CDK; painel na Vercel
+- 0006 Logger estruturado com pino e redação por nome de campo
 
 ## Não faça
 
