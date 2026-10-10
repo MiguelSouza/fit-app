@@ -22,6 +22,8 @@ describe('isSensitiveKey', () => {
       'professional_notes',
       'checkInWeight',
       'check_in_values',
+      'lastCheckIn',
+      'patient_check_in',
       'weight',
       'mood',
     ]) {

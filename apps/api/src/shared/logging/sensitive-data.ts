@@ -62,10 +62,12 @@ const SENSITIVE_NAMES = new Set([
 
 /**
  * Suffixes, for the same fields spelled with a qualifier in front:
- * `patientName`, `contactEmail`, `accessToken`, `professional_phone`.
+ * `patientName`, `contactEmail`, `accessToken`, `professional_phone`,
+ * `lastCheckIn`.
  */
 const SENSITIVE_SUFFIXES = [
   'name',
+  'checkin',
   'email',
   'phone',
   'token',
@@ -79,7 +81,7 @@ const SENSITIVE_SUFFIXES = [
   'apikey',
 ];
 
-/** Prefixes, which is how a check-in field is usually written: `checkInWeight`. */
+/** Prefixes, for a field named after what it belongs to: `checkInWeight`. */
 const SENSITIVE_PREFIXES = ['checkin'];
 
 function normalize(key: string): string {
