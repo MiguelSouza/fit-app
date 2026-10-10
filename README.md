@@ -57,11 +57,17 @@ O ambiente local é o Supabase CLI, configurado em
 [`supabase/`](./supabase/README.md), rodando a mesma trinca que usamos em
 produção: Postgres, Auth e Storage.
 
-| Script          | O que faz                                                                         |
-| --------------- | --------------------------------------------------------------------------------- |
-| `pnpm db:start` | sobe os contêineres e imprime URLs e chaves                                       |
-| `pnpm db:stop`  | derruba os contêineres; o volume de dados fica, então o próximo start reaproveita |
-| `pnpm db:reset` | recria o banco do zero: roda as migrações e depois o `supabase/seed.sql`          |
+| Script             | O que faz                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `pnpm db:start`    | sobe os contêineres e imprime URLs e chaves                                               |
+| `pnpm db:stop`     | derruba os contêineres; o volume de dados fica, então o próximo start reaproveita         |
+| `pnpm db:reset`    | recria o banco do zero: roda as migrações e depois o `supabase/seed.sql`                  |
+| `pnpm db:generate` | gera o SQL da migração a partir dos arquivos de schema do Drizzle, em `apps/api/drizzle/` |
+| `pnpm db:migrate`  | aplica no banco local as migrações do Drizzle que ainda faltam                            |
+
+O `db:reset` é do Supabase CLI e não conhece as migrações do Drizzle: ele recria
+o banco e apaga os schemas de domínio. Depois de um reset, rode `pnpm db:migrate`
+para tê-los de volta — nessa ordem, sempre.
 
 Portas (todas em `127.0.0.1`, definidas no `supabase/config.toml`):
 

@@ -16,14 +16,16 @@ A API lê o `.env` da raiz do monorepo no começo do `main.ts`. Variável já
 exportada no shell ganha do arquivo, e em staging e produção não existe arquivo
 nenhum: os valores vêm da task definition e do AWS Secrets Manager (ADR 0005).
 
-| Script                        | O que faz                                     |
-| ----------------------------- | --------------------------------------------- |
-| `pnpm --filter api dev`       | `nest start --watch`                          |
-| `pnpm --filter api build`     | `nest build`, emite em `dist/`                |
-| `pnpm --filter api start`     | roda o `dist/main.js` já compilado            |
-| `pnpm --filter api test`      | jest, os testes `*.spec.ts` ao lado do código |
-| `pnpm --filter api lint`      | eslint, com a fronteira entre módulos         |
-| `pnpm --filter api typecheck` | `tsc --noEmit`                                |
+| Script                          | O que faz                                                       |
+| ------------------------------- | --------------------------------------------------------------- |
+| `pnpm --filter api dev`         | `nest start --watch`                                            |
+| `pnpm --filter api build`       | `nest build`, emite em `dist/`                                  |
+| `pnpm --filter api start`       | roda o `dist/main.js` já compilado                              |
+| `pnpm --filter api test`        | jest, os testes `*.spec.ts` ao lado do código                   |
+| `pnpm --filter api lint`        | eslint, com a fronteira entre módulos                           |
+| `pnpm --filter api typecheck`   | `tsc --noEmit`                                                  |
+| `pnpm --filter api db:generate` | `drizzle-kit generate`: escreve o SQL da migração em `drizzle/` |
+| `pnpm --filter api db:migrate`  | `drizzle-kit migrate`: aplica em `DATABASE_URL` o que falta     |
 
 ## Configuração
 
