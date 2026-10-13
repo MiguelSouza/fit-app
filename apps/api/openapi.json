@@ -1,0 +1,204 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Estado do processo e das suas dependências",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "description": "Provisório: responde um payload fixo, com o UUID nulo como `personId`. Passa a ler a pessoa autenticada quando o módulo identity tiver gente dentro.",
+        "operationId": "MeController_get_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Identidade de quem fez a chamada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Identidade de quem fez a chamada",
+        "tags": [
+          "Me"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "fit-app API",
+    "description": "API da plataforma para nutricionistas esportivos.\n\nOs schemas vêm de `packages/contracts` (Zod) e são a fonte da verdade dos DTOs:\neste documento é gerado a partir deles, e o cliente de cada plataforma é gerado\na partir deste documento (`pnpm api:generate`).\n\nTodo erro responde no mesmo envelope, `{ \"error\": { \"code\", \"message\" } }`, em que\n`code` é a chave de i18n do cliente.",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/SystemStatus"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentCheck"
+            },
+            "description": "Um resultado por componente"
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "additionalProperties": false,
+        "description": "Estado do processo e das suas dependências"
+      },
+      "SystemStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "degraded"
+        ],
+        "description": "Estado do sistema como um todo"
+      },
+      "ComponentCheck": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nome do componente",
+            "example": "database"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "latencyMs": {
+            "description": "Tempo de resposta do componente, em milissegundos",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "additionalProperties": false,
+        "description": "Resultado da checagem de um componente"
+      },
+      "ComponentStatus": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ],
+        "description": "Estado de um componente"
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id da pessoa no módulo identity"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PersonRole"
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Fuso horário da pessoa, no formato IANA",
+            "example": "America/Sao_Paulo"
+          }
+        },
+        "required": [
+          "personId",
+          "role",
+          "timeZone"
+        ],
+        "additionalProperties": false,
+        "description": "Identidade de quem fez a chamada"
+      },
+      "PersonRole": {
+        "type": "string",
+        "enum": [
+          "professional",
+          "patient"
+        ],
+        "description": "Papel da pessoa na plataforma"
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "description": "Corpo de erro de toda a API"
+      },
+      "ApiErrorDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identificador estável do erro, usado como chave de i18n pelo cliente",
+            "example": "nutrition.plan.not_found"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Texto em pt-BR, pronto para exibir. Nunca carrega dado de paciente",
+            "example": "Plano não encontrado."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

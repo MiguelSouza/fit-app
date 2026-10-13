@@ -16,3 +16,10 @@ apps/mobile/
 # .archon/ belongs to the Archon tooling (commands and workflows), not to this
 # repository: its format is dictated by whoever reads it.
 .archon/
+
+# Generated from the API itself by `pnpm api:generate`, and read by the
+# generators of the clients. Prettier would collapse the short arrays that
+# `JSON.stringify` writes expanded, and every regeneration would show up as a
+# formatting diff.
+apps/api/openapi.json
+packages/api-client/src/generated/

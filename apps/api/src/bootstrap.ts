@@ -1,5 +1,6 @@
 import { VersioningType, type INestApplication } from '@nestjs/common';
 
+import { serveOpenApiDocs } from './openapi';
 import { type ApiEnv } from './shared/config/env';
 import { createSchemaValidationPipe } from './shared/presentation/schema-validation';
 
@@ -12,7 +13,7 @@ export const API_VERSION = '1';
 
 /**
  * Everything the HTTP app needs beyond its modules: URI versioning, the
- * validation of every request against its schema, and CORS.
+ * validation of every request against its schema, CORS and the `/docs`.
  *
  * It lives apart from `main.ts` so the end-to-end test boots the app exactly
  * as production does. If this ran inside `bootstrap()`, a test would be
@@ -33,6 +34,10 @@ export function configureApp(app: INestApplication, env: ApiEnv): void {
   if (env.corsAllowedOrigins.length > 0) {
     app.enableCors({ origin: [...env.corsAllowedOrigins], credentials: true });
   }
+
+  // Outside production only, and after the routes exist: the document is read
+  // from the app itself.
+  serveOpenApiDocs(app, env, API_VERSION);
 
   // Lets `onApplicationShutdown` run on SIGTERM, which is how ECS stops a
   // task: without it the connection pool is never closed.
