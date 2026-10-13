@@ -6,8 +6,16 @@
   "scripts": {
     "build": "echo \"[@fit-app/scripts] placeholder package, nothing to build yet (see card F-15)\"",
     "dev": "echo \"[@fit-app/scripts] placeholder package, nothing to run yet (see card F-15)\"",
-    "lint": "echo \"[@fit-app/scripts] placeholder package, nothing to lint yet (see card F-15)\"",
-    "typecheck": "echo \"[@fit-app/scripts] placeholder package, nothing to typecheck yet (see card F-15)\"",
+    "generate:dart-client": "node generate-dart-client.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "echo \"[@fit-app/scripts] placeholder package, no tests yet (see card F-15)\""
+  },
+  "devDependencies": {
+    "@fit-app/config": "workspace:*",
+    "@types/node": "^24.9.2",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3"
   }
 }

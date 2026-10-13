@@ -13,6 +13,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:archon": "bun test ./.archon/scripts/trello.test.ts",
+    "api:generate": "pnpm --filter @fit-app/api openapi:write && pnpm --filter @fit-app/api-client generate && pnpm --filter @fit-app/scripts generate:dart-client",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",

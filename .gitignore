@@ -26,6 +26,10 @@ cdk.out/
 .cdk.staging/
 
 # Flutter / Dart (apps/mobile)
+# The Dart client is generated from apps/api/openapi.json by `pnpm api:generate`,
+# and is only usable after `dart run build_runner build` writes the built_value
+# part files — which belongs to the Flutter workspace, not to this repository.
+apps/mobile/packages/api_client/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
