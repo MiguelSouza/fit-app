@@ -19,7 +19,7 @@
     "dev": "tsc --watch --preserveWatchOutput",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"[@fit-app/contracts] no tests: the schemas are declarations, and what they produce is asserted where they are used (apps/api, openapi-document.spec.ts)\""
+    "test": "echo \"[@fit-app/contracts] no tests: the schemas are declarations, and what they produce is asserted where they are used (apps/api, openapi.spec.ts)\""
   },
   "dependencies": {
     "zod": "^4.6.5"
