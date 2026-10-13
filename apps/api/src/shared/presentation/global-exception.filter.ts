@@ -6,6 +6,7 @@ import {
   type ArgumentsHost,
   type ExceptionFilter,
 } from '@nestjs/common';
+import { type ErrorResponse } from '@fit-app/contracts';
 import { type Response } from 'express';
 
 import { DomainError, type DomainErrorKind } from '../domain/domain-error';
@@ -24,15 +25,12 @@ const STATUS_BY_KIND: Readonly<Record<DomainErrorKind, HttpStatus>> = {
   rule_violation: HttpStatus.UNPROCESSABLE_ENTITY,
 };
 
-/** Error body every endpoint of the API answers with. */
-export interface ErrorResponseBody {
-  readonly error: {
-    /** Stable identifier, `<module>.<entity>.<problem>`; the client's i18n key. */
-    readonly code: string;
-    /** pt-BR text, safe to show. Never carries patient data. */
-    readonly message: string;
-  };
-}
+/**
+ * Error body every endpoint of the API answers with. The shape is
+ * `errorResponseSchema` in `@fit-app/contracts` (CLAUDE.md rule 7), which is
+ * also what the clients read it as.
+ */
+export type ErrorResponseBody = ErrorResponse;
 
 const INTERNAL_ERROR: ErrorResponseBody = {
   error: {

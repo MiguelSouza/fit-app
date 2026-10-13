@@ -1,7 +1,9 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { healthResponseSchema, type HealthResponse } from '@fit-app/contracts';
 
 import { CheckSystemHealthUseCase } from '../application/check-system-health.use-case';
-import { presentSystemHealth, type HealthResponse } from './health.response';
+import { SchemaResponse } from '../../shared/presentation/schema-response.decorator';
+import { presentSystemHealth } from './health.response';
 
 /**
  * `GET /v1/health`. The version comes from `defaultVersion` in `bootstrap.ts`,
@@ -24,6 +26,7 @@ export class HealthController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @SchemaResponse(healthResponseSchema, 'Estado do processo e das suas dependências')
   async get(): Promise<HealthResponse> {
     return presentSystemHealth(await this.checkSystemHealth.execute());
   }
