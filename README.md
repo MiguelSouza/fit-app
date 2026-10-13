@@ -41,7 +41,9 @@ pnpm exec supabase status -o env   # ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET
 ```
 
 Copie as três para o seu `.env`; a mesma chave `anon` vale para
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` e para `FLUTTER_SUPABASE_ANON_KEY`.
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` e para `FLUTTER_SUPABASE_ANON_KEY`. A
+`SUPABASE_JWT_SECRET` é obrigatória: é com ela que a API verifica o token de
+quem chama, e sem ela a API não sobe.
 
 O `status` só responde com o stack de pé: depois de um `db:stop` ele falha com
 `No such container`. Os valores, porém, não mudam de um start para o outro —

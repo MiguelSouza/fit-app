@@ -2,11 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.json",
 
-  "//": "What `nest build` and `nest start` compile: the app alone, so `dist/main.js` stays where `pnpm --filter api start` expects it. `tsconfig.json` (the one editors and `pnpm typecheck` read) also keeps the `.spec.ts` files and the Drizzle Kit config, neither of which belongs in the image.",
+  "//": "What `nest build` and `nest start` compile: the app alone, so `dist/main.js` stays where `pnpm --filter api start` expects it. `tsconfig.json` (the one editors and `pnpm typecheck` read) also keeps the `.spec.ts` files, their `.spec-support.ts` helpers and the Drizzle Kit config, none of which belongs in the image — a helper that signs access tokens least of all.",
 
   "compilerOptions": {
     "rootDir": "src"
   },
 
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "drizzle.config.ts"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.spec-support.ts", "drizzle.config.ts"]
 }
