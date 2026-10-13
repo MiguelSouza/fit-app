@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@fit-app/config/tsconfig/library.json",
+
+  "//": "`outDir`, `rootDir` and `include` are local because TypeScript resolves every path against the file that declares it — see the comment in the base preset.",
+
+  "//verbatimModuleSyntax": "Off for the same reason as in @fit-app/contracts: the package is emitted as CommonJS so that both the API and a bundler can read it, and the flag forbids `import`/`export` in a file emitted as CommonJS.",
+
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "verbatimModuleSyntax": false,
+    "types": []
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
