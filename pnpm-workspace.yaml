@@ -20,3 +20,8 @@ allowBuilds:
   # the install script only downloads the prebuilt binary for this platform.
   # Without it drizzle-kit cannot read a TypeScript config at all.
   esbuild: true
+  # `swagger-ui-dist`, which serves the `/docs` of the API outside production,
+  # brings this one: its install script only reports the install to the vendor's
+  # servers. We say no explicitly instead of leaving it undecided, because an
+  # undecided script fails `pnpm install` in pnpm 12.
+  '@scarf/scarf': false

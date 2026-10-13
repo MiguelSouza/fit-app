@@ -3,11 +3,31 @@
   "version": "0.0.0",
   "private": true,
   "description": "Schemas Zod, tipos e enums compartilhados: fonte da verdade dos DTOs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "echo \"[@fit-app/contracts] placeholder package, nothing to build yet (see card F-09)\"",
-    "dev": "echo \"[@fit-app/contracts] placeholder package, nothing to run yet (see card F-09)\"",
-    "lint": "echo \"[@fit-app/contracts] placeholder package, nothing to lint yet (see card F-09)\"",
-    "typecheck": "echo \"[@fit-app/contracts] placeholder package, nothing to typecheck yet (see card F-09)\"",
-    "test": "echo \"[@fit-app/contracts] placeholder package, no tests yet (see card F-09)\""
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"[@fit-app/contracts] no tests: the schemas are declarations, and what they produce is asserted where they are used (apps/api, openapi-document.spec.ts)\""
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@fit-app/config": "workspace:*",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3"
   }
 }
