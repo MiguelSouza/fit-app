@@ -6,6 +6,7 @@ import { IdentityModule } from './modules/identity';
 import { NutritionModule } from './modules/nutrition';
 import { HealthModule } from './modules/health';
 import { InsightsModule } from './modules/insights';
+import { AuthModule } from './shared/auth/auth.module';
 import { EnvModule } from './shared/config/env.module';
 import { LoggingModule } from './shared/logging/logging.module';
 import { GlobalExceptionFilter } from './shared/presentation/global-exception.filter';
@@ -16,11 +17,15 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
  *
  * Each module is imported through its `index.ts` and nothing else
  * (CLAUDE.md rule 1).
+ *
+ * `AuthModule` brings a global guard with it, so every route of every module
+ * below needs a valid Supabase token unless it says `@Public()`.
  */
 @Module({
   imports: [
     EnvModule,
     LoggingModule,
+    AuthModule,
     HealthCheckModule,
     IdentityModule,
     NutritionModule,
