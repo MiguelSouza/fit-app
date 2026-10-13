@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { Module, StandardSchemaSerializerInterceptor } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 
 import { HealthCheckModule } from './health-check/health-check.module';
 import { IdentityModule } from './modules/identity';
@@ -37,6 +37,11 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
     // be injected into and so a test that boots this module gets the same
     // error handling the API has.
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+
+    // Validates every response against the schema its route declares with
+    // `SchemaResponse`, and drops whatever the schema does not declare. A
+    // route without one is left alone.
+    { provide: APP_INTERCEPTOR, useClass: StandardSchemaSerializerInterceptor },
   ],
 })
 export class AppModule {}

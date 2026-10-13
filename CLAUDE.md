@@ -127,6 +127,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0005 AWS sa-east-1 com ECS Fargate e CDK; painel na Vercel
 - 0006 Logger estruturado com pino e redação por nome de campo
 - 0007 Autenticação por JWT do Supabase: guard global, HS256 e segredo compartilhado
+- 0008 Contratos em Zod, OpenAPI gerado pela API e um cliente por plataforma
 
 ## Não faça
 

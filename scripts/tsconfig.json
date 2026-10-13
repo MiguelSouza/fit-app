@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@fit-app/config/tsconfig/base.json",
+
+  "//": "The scripts are plain JavaScript, type-checked through their JSDoc: `allowJs` and `checkJs` are what make `pnpm typecheck` read them at all. Same arrangement as in packages/config.",
+
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["node"]
+  },
+
+  "include": ["*.mjs"]
+}

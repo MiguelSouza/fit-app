@@ -109,6 +109,7 @@ pnpm typecheck        # checagem de tipos
 pnpm test             # testes
 pnpm format           # formata o repositório com o prettier compartilhado
 pnpm format:check     # só verifica a formatação, sem reescrever nada
+pnpm api:generate     # regera o OpenAPI da API e os clientes TypeScript e Dart
 ```
 
 Cada script da raiz delega ao turbo. Para rodar em um pacote só, use o filtro:
@@ -124,6 +125,34 @@ raiz. O lint e a checagem de tipos são por workspace, e cada um herda as regras
 [`@fit-app/config`](./packages/config/README.md). `pnpm lint` roda o turbo e
 depois o `lint:root`, que cobre os arquivos de configuração da própria raiz —
 eles não pertencem a nenhum workspace e ficariam de fora.
+
+## Contratos e clientes gerados
+
+Todo DTO nasce como schema Zod em
+[`packages/contracts`](./packages/contracts/README.md) (`CLAUDE.md`, regra 7). A
+API valida entrada e saída contra esses schemas, e o resto é gerado:
+
+```
+packages/contracts  ──▶  apps/api/openapi.json  ──▶  packages/api-client (TypeScript)
+   (schemas Zod)           (gerado pela API)     └─▶  apps/mobile/packages/api_client (Dart)
+```
+
+```bash
+pnpm api:generate     # os três passos, nesta ordem
+```
+
+Mudou um schema? Rode isso e comite o `openapi.json` junto: ele é versionado, de
+propósito, para o painel e o app compilarem sem subir a API e para a mudança de
+contrato aparecer como diff no PR. Quem usava o campo antigo deixa de compilar —
+é esse o ponto. Os detalhes estão no
+[ADR 0008](./docs/adr/0008-contratos-em-zod-e-clientes-gerados.md).
+
+O cliente Dart é gerado em Docker (`openapi-generator`) e **não** é versionado:
+ele só compila depois do `build_runner`, no workspace Flutter do card F-14.
+
+A documentação interativa da API fica em
+[`/docs`](http://127.0.0.1:3333/docs) com a API local de pé — e não existe em
+produção.
 
 ## O que roda no commit
 
@@ -169,9 +198,12 @@ CLI (card **F-04**, em `supabase/`) já estão de pé. O esqueleto da API (card 
 `apps/api`) também: NestJS com os quatro módulos de domínio, tratamento global de erros e
 `GET /v1/health` — `pnpm --filter api dev` sobe a API em
 [http://127.0.0.1:3333](http://127.0.0.1:3333), e o
-[README de `apps/api`](./apps/api/README.md) tem o resto. Os demais pacotes seguem
-como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo real de
-cada um entra pelos cards indicados no `README.md` de cada pasta.
+[README de `apps/api`](./apps/api/README.md) tem o resto. Os contratos (card **F-09**)
+também: `packages/contracts` com os schemas Zod, o `openapi.json` gerado pela API, o
+`/docs` fora de produção e os clientes gerados em `packages/api-client` (TypeScript) e
+para o app (Dart). Os demais pacotes seguem como placeholders, com scripts no-op para o
+`turbo` ter o que percorrer; o conteúdo real de cada um entra pelos cards indicados no
+`README.md` de cada pasta.
 
 ## Fluxo de trabalho
 

@@ -3,11 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "description": "Cliente TypeScript gerado a partir do OpenAPI da API",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "echo \"[@fit-app/api-client] placeholder package, nothing to build yet (see card F-09)\"",
-    "dev": "echo \"[@fit-app/api-client] placeholder package, nothing to run yet (see card F-09)\"",
-    "lint": "echo \"[@fit-app/api-client] placeholder package, nothing to lint yet (see card F-09)\"",
-    "typecheck": "echo \"[@fit-app/api-client] placeholder package, nothing to typecheck yet (see card F-09)\"",
-    "test": "echo \"[@fit-app/api-client] placeholder package, no tests yet (see card F-09)\""
+    "generate": "openapi-typescript ../../apps/api/openapi.json --output src/generated/openapi.ts",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"[@fit-app/api-client] no tests: the types are generated, and what they have to carry is pinned in src/contract.ts, which `typecheck` reads\""
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@fit-app/config": "workspace:*",
+    "eslint": "^10.12.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3"
   }
 }

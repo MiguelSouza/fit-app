@@ -10,9 +10,10 @@ schema do Postgres e só é visto de fora pelo próprio `index.ts`.
 | `health`    | `health`    | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas   |
 | `insights`  | `insights`  | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo        |
 
-Por enquanto cada módulo tem só o `<modulo>.module.ts` e o `index.ts`: o
-conteúdo entra pelos cards de cada domínio. As pastas das quatro camadas já
-existem, com um `.gitkeep` cada, porque o git não versiona pasta vazia.
+Por enquanto cada módulo tem só o `<modulo>.module.ts` e o `index.ts` — a
+exceção é `identity`, que já responde o `GET /v1/me` provisório do card F-09. O
+resto do conteúdo entra pelos cards de cada domínio; as pastas das quatro camadas
+já existem, com um `.gitkeep` cada, porque o git não versiona pasta vazia.
 
 ## As camadas
 

@@ -16,16 +16,17 @@ A API lê o `.env` da raiz do monorepo no começo do `main.ts`. Variável já
 exportada no shell ganha do arquivo, e em staging e produção não existe arquivo
 nenhum: os valores vêm da task definition e do AWS Secrets Manager (ADR 0005).
 
-| Script                          | O que faz                                                       |
-| ------------------------------- | --------------------------------------------------------------- |
-| `pnpm --filter api dev`         | `nest start --watch`                                            |
-| `pnpm --filter api build`       | `nest build`, emite em `dist/`                                  |
-| `pnpm --filter api start`       | roda o `dist/main.js` já compilado                              |
-| `pnpm --filter api test`        | jest, os testes `*.spec.ts` ao lado do código                   |
-| `pnpm --filter api lint`        | eslint, com a fronteira entre módulos                           |
-| `pnpm --filter api typecheck`   | `tsc --noEmit`                                                  |
-| `pnpm --filter api db:generate` | `drizzle-kit generate`: escreve o SQL da migração em `drizzle/` |
-| `pnpm --filter api db:migrate`  | `drizzle-kit migrate`: aplica em `DATABASE_URL` o que falta     |
+| Script                            | O que faz                                                       |
+| --------------------------------- | --------------------------------------------------------------- |
+| `pnpm --filter api dev`           | `nest start --watch`                                            |
+| `pnpm --filter api build`         | `nest build`, emite em `dist/`                                  |
+| `pnpm --filter api start`         | roda o `dist/main.js` já compilado                              |
+| `pnpm --filter api openapi:write` | compila e escreve o `openapi.json` deste pacote                 |
+| `pnpm --filter api test`          | jest, os testes `*.spec.ts` ao lado do código                   |
+| `pnpm --filter api lint`          | eslint, com a fronteira entre módulos                           |
+| `pnpm --filter api typecheck`     | `tsc --noEmit`                                                  |
+| `pnpm --filter api db:generate`   | `drizzle-kit generate`: escreve o SQL da migração em `drizzle/` |
+| `pnpm --filter api db:migrate`    | `drizzle-kit migrate`: aplica em `DATABASE_URL` o que falta     |
 
 ## Configuração
 
@@ -54,7 +55,7 @@ conta como variável ausente, então o padrão vale.
 
 ## `GET /v1/health`
 
-Único endpoint por enquanto. Responde o estado do processo e do banco:
+Responde o estado do processo e do banco:
 
 ```bash
 curl http://127.0.0.1:3333/v1/health
@@ -169,13 +170,77 @@ O versionamento é por URI, com `defaultVersion: '1'`: todo controller responde
 sob `/v1` sem escrever isso no `@Controller`. Uma rota que precise mudar de
 forma declara `@Version('2')` sozinha, e o resto continua em `/v1`.
 
+## `GET /v1/me`
+
+Provisório, do card F-09: responde um payload fixo, com o UUID nulo como
+`personId` — que não é e nunca vai ser uma pessoa. Ele existe para ter um
+contrato de ponta a ponta (schema Zod, OpenAPI, cliente gerado) antes de haver
+gente no módulo `identity`.
+
+```bash
+curl http://127.0.0.1:3333/v1/me
+```
+
+```json
+{
+  "personId": "00000000-0000-0000-0000-000000000000",
+  "role": "professional",
+  "timeZone": "America/Sao_Paulo"
+}
+```
+
+Passa a ler quem chamou quando o token verificado e as tabelas de `identity`
+existirem. O contrato que ele responde já é o de verdade.
+
+## Contratos, validação e OpenAPI
+
+Todo DTO é um schema Zod em [`packages/contracts`](../../packages/contracts/README.md)
+(`CLAUDE.md`, regra 7). O NestJS 12 lê um Standard Schema, e um schema do Zod 4 é
+um — então o mesmo schema valida a entrada, valida a saída e documenta a rota:
+
+```ts
+@Get()
+@SchemaResponse(meResponseSchema, 'Identidade de quem fez a chamada')
+get(): MeResponse {
+  return PROVISIONAL_ME;
+}
+
+@Post()
+create(@Body({ schema: createPlanSchema }) body: CreatePlan) { ... }
+```
+
+| Onde                                     | O que acontece                                                            |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `@Body`, `@Query`, `@Param` com `schema` | valida a entrada antes do handler; o que sobra não declarado é descartado |
+| `SchemaResponse(schema, descrição)`      | documenta a rota no OpenAPI **e** valida a saída                          |
+
+A entrada recusada sai como `400` no envelope de erro de sempre, com o **nome**
+dos campos problemáticos e nenhum valor — a mensagem viaja na resposta e o
+cliente pode logá-la (`CLAUDE.md`, "Saúde e LGPD"). A saída que não casa com o
+schema é `500`: é bug de presenter, e o cliente não vê forma que o contrato não
+descreve. E campo que o schema não declara **não** é serializado, o que poda uma
+entidade que chegou inteira no presenter.
+
+O documento OpenAPI é lido do app montado, nunca escrito à mão:
+
+```bash
+pnpm api:generate     # na raiz: escreve o openapi.json e regera os clientes
+```
+
+[`openapi.json`](./openapi.json) é versionado — é dele que saem os clientes
+(TypeScript e Dart), então mudança de contrato aparece como diff no PR. A página
+interativa fica em [`/docs`](http://127.0.0.1:3333/docs) **fora de produção**; em
+produção ela não existe, porque é o mapa inteiro da API em uma página.
+
 ## Estrutura
 
 ```
 src/
   main.ts            bootstrap: lê o .env, cria o app, escuta a porta
-  bootstrap.ts       versionamento e CORS — o mesmo que o teste e2e usa
+  bootstrap.ts       versionamento, validação, CORS e /docs — o mesmo que o teste e2e usa
   app.module.ts      composition root: os 4 módulos, o health check, o filtro de erros
+  openapi.ts         monta o documento OpenAPI e serve o /docs
+  write-openapi.ts   escreve o openapi.json (é o `openapi:write`)
   modules/           os módulos de domínio (ver modules/README.md)
   health-check/      o GET /v1/health, em quatro camadas. É o exemplo a copiar
   shared/            o que atravessa módulo: env, logger, auth, pool do Postgres, erros de domínio
