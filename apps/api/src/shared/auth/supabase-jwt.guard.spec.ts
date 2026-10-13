@@ -1,5 +1,6 @@
 import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { type DestinationStream } from 'pino';
 import request from 'supertest';
 
 import { CurrentUser } from './current-user.decorator';
@@ -16,6 +17,8 @@ import { configureApp } from '../../bootstrap';
 import { DATABASE_STATUS_PORT } from '../../health-check/application/ports/database-status.port';
 import { type ApiEnv } from '../config/env';
 import { ENV } from '../config/env.module';
+import { createLogger, LOGGER } from '../logging/logger';
+import { PinoLoggerService } from '../logging/pino-logger.service';
 
 /**
  * The guard as the API actually runs it: the real `AppModule`, booted the way
@@ -257,5 +260,93 @@ describe('the global authentication guard', () => {
         },
       });
     });
+  });
+});
+
+/**
+ * The same guard, in front of an app that has the logger the API runs with, so
+ * what a refusal writes can be read back.
+ *
+ * The level is the whole point. The default level in production is `info`
+ * (`shared/config/env.ts`), so a refusal written at `debug` is not written at
+ * all: a token this project did not issue has to come out at `warn` or the
+ * reason code the README sends an investigator to read is not there. And it is
+ * the reason code alone — the token itself never reaches a line (CLAUDE.md,
+ * "Saúde e LGPD").
+ */
+describe('what a refused request writes to the log', () => {
+  const productionLevel: ApiEnv = { ...env, logLevel: 'info' };
+  const written: Record<string, unknown>[] = [];
+
+  const destination: DestinationStream = {
+    write(line: string): void {
+      written.push(JSON.parse(line) as Record<string, unknown>);
+    },
+  };
+
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+      controllers: [ProtectedExampleController],
+    })
+      .overrideProvider(ENV)
+      .useValue(productionLevel)
+      .overrideProvider(LOGGER)
+      .useValue(createLogger(productionLevel, destination))
+      .overrideProvider(DATABASE_STATUS_PORT)
+      .useValue({ check: () => Promise.resolve({ name: 'database', status: 'up' }) })
+      .compile();
+
+    app = moduleRef.createNestApplication();
+
+    // As `main.ts` does it: without this bridge a `Logger` call inside the
+    // guard goes to the console and no line exists to assert on.
+    app.useLogger(app.get(PinoLoggerService));
+    configureApp(app, productionLevel);
+
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(() => {
+    written.length = 0;
+  });
+
+  function refusals(): Record<string, unknown>[] {
+    return written.filter((line) => String(line.msg).startsWith('access token refused'));
+  }
+
+  it('writes a token this project did not issue at warn, by reason alone', async () => {
+    const token = await signAccessToken({ secret: OTHER_JWT_SECRET });
+
+    await request(app.getHttpServer())
+      .get('/v1/protected-example')
+      .set('authorization', `Bearer ${token}`)
+      .expect(401);
+
+    expect(refusals()).toEqual([
+      expect.objectContaining({
+        level: 'warn',
+        context: 'AuthGuard',
+        msg: 'access token refused (signature)',
+      }),
+    ]);
+
+    // Not the token, not a piece of it, and no id of anybody.
+    const everything = JSON.stringify(written);
+    for (const part of token.split('.')) expect(everything).not.toContain(part);
+  });
+
+  it('keeps a request with no token out of the production log', async () => {
+    await request(app.getHttpServer()).get('/v1/protected-example').expect(401);
+
+    // Nobody signed in yet is traffic, not an event: `debug`, which the
+    // production level does not write.
+    expect(refusals()).toEqual([]);
   });
 });
