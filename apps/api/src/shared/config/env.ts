@@ -73,9 +73,10 @@ const DATABASE_URL_MISSING =
   'is required: copy .env.example to .env and start the local stack with `pnpm db:start`';
 
 /**
- * Supabase generates a 40 character secret. Refusing anything shorter is what
- * keeps a placeholder like `changeme` from becoming the key that guards every
- * patient's data: HS256 is only as strong as the secret behind it.
+ * A floor, not the length of any secret Supabase hands out: the local stack's
+ * has 55 characters and a hosted project's has 40. Refusing anything shorter is
+ * what keeps a placeholder like `changeme` from becoming the key that guards
+ * every patient's data: HS256 is only as strong as the secret behind it.
  */
 const MIN_JWT_SECRET_LENGTH = 32;
 
@@ -83,8 +84,8 @@ const JWT_SECRET_MISSING =
   'is required: read it from `pnpm exec supabase status -o env` and put it in .env';
 
 const JWT_SECRET_TOO_SHORT =
-  `must be at least ${MIN_JWT_SECRET_LENGTH} characters: the one Supabase generates has 40, ` +
-  'and a short secret is a guessable signing key';
+  `must be at least ${MIN_JWT_SECRET_LENGTH} characters: every secret Supabase hands out is ` +
+  'longer than that, and a short one is a guessable signing key';
 
 const envSchema = z.object({
   NODE_ENV: blankToUndefined(

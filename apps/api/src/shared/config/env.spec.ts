@@ -9,7 +9,7 @@ import { EnvironmentError, loadEnv } from './env';
  */
 const DATABASE_URL = 'postgresql://postgres:s3cr3t@127.0.0.1:54322/postgres';
 
-/** 40 characters, the length Supabase generates. Not a real secret. */
+/** 40 characters, as long as a hosted project's secret. Not a real secret. */
 const SUPABASE_JWT_SECRET = 'local-development-jwt-secret-0123456789a';
 
 /** The smallest environment the API accepts, so a test states only its own subject. */

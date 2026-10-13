@@ -13,7 +13,7 @@ import { SignJWT } from 'jose';
  * from `tsconfig.build.json`, so a token signer never reaches `dist/`.
  */
 
-/** 40 characters, the length Supabase generates. Not a secret of anything. */
+/** 40 characters, as long as a hosted project's secret. Not a secret of anything. */
 export const TEST_JWT_SECRET = 'test-only-jwt-secret-0123456789abcdefghi';
 
 export const OTHER_JWT_SECRET = 'another-project-secret-0123456789abcdefg';
