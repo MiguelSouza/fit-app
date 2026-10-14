@@ -74,7 +74,9 @@ alias `@modules/...`) e **não** se confunde com uma pasta interna que por acaso
 tenha nome de módulo: `../domain/health/score` dentro de `nutrition` passa, mas
 `../../health/domain/score` não. Quem garante isso é
 [`test/module-boundaries.test.js`](./test/module-boundaries.test.js), com 21
-casos de import (`pnpm --filter @fit-app/config test`).
+casos de import (`pnpm --filter @fit-app/config test`, apelido de `test:unit`
+como em `apps/api`: o teste precisa só do Node, então entra no `pnpm test:unit`
+da raiz).
 
 Acrescentar um módulo de domínio é acrescentar o nome em `apiModules`, dentro de
 `eslint/api.js` — o teste falha se um módulo do `CLAUDE.md` ficar sem fronteira.
