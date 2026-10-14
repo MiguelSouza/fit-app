@@ -106,7 +106,9 @@ pnpm dev              # sobe tudo em modo de desenvolvimento
 pnpm build            # build de todos os pacotes
 pnpm lint             # lint
 pnpm typecheck        # checagem de tipos
-pnpm test             # testes
+pnpm test             # testes (o perfil rápido de cada workspace)
+pnpm test:unit        # os testes que não precisam de banco
+pnpm test:integration # os testes contra um Postgres descartável (precisa de Docker)
 pnpm format           # formata o repositório com o prettier compartilhado
 pnpm format:check     # só verifica a formatação, sem reescrever nada
 pnpm api:generate     # regera o OpenAPI da API e os clientes TypeScript e Dart
@@ -125,6 +127,12 @@ raiz. O lint e a checagem de tipos são por workspace, e cada um herda as regras
 [`@fit-app/config`](./packages/config/README.md). `pnpm lint` roda o turbo e
 depois o `lint:root`, que cobre os arquivos de configuração da própria raiz —
 eles não pertencem a nenhum workspace e ficariam de fora.
+
+Os testes são dois perfis: o `test:unit` precisa só do Node, e o
+`test:integration` sobe um Postgres descartável no Docker, migra, testa e
+descarta. `pnpm test` roda o perfil rápido de cada workspace, que é o que vale
+em todo push. Os detalhes estão no
+[README de `apps/api`](./apps/api/README.md#testes).
 
 ## Contratos e clientes gerados
 
@@ -203,7 +211,10 @@ também: `packages/contracts` com os schemas Zod, o `openapi.json` gerado pela A
 `/docs` fora de produção e os clientes gerados em `packages/api-client` (TypeScript) e
 para o app (Dart). E o encanamento interno da API (card **F-10**): barramento de eventos
 entre módulos e fila de jobs com pg-boss, cada um atrás de uma porta — ver
-[ADR 0009](./docs/adr/0009-eventos-internos-e-fila-de-jobs.md). Os demais pacotes seguem
+[ADR 0009](./docs/adr/0009-eventos-internos-e-fila-de-jobs.md). E os dois perfis de teste
+(card **F-11**): `pnpm test:unit` sem Docker e `pnpm test:integration` num Postgres
+descartável; as fábricas de profissional, paciente, vínculo e consentimento esperam as
+tabelas de `identity`, que são o que falta do card **F-07**. Os demais pacotes seguem
 como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo
 real de cada um entra pelos cards indicados no `README.md` de cada pasta.
 

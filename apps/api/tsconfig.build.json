@@ -8,5 +8,12 @@
     "rootDir": "src"
   },
 
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.spec-support.ts", "drizzle.config.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.integration-spec.ts",
+    "**/*.spec-support.ts",
+    "drizzle.config.ts"
+  ]
 }

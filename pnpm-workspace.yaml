@@ -25,3 +25,14 @@ allowBuilds:
   # servers. We say no explicitly instead of leaving it undecided, because an
   # undecided script fails `pnpm install` in pnpm 12.
   '@scarf/scarf': false
+  # The three below arrive with `@testcontainers/postgresql`, through
+  # `dockerode`, and all three are refused: the Docker daemon is reached over a
+  # named pipe or a local socket, never over SSH, and talking to it needs none
+  # of what these scripts build. `ssh2` compiles an optional native addon
+  # (`cpu-features`) that only speeds up an SSH handshake we never do, that
+  # addon's own script is a `node-gyp rebuild` needing a C++ toolchain on every
+  # machine, and `protobufjs`'s postinstall just prints a warning about the
+  # version range of whoever depends on it.
+  ssh2: false
+  cpu-features: false
+  protobufjs: false

@@ -12,6 +12,8 @@
     "lint:root": "eslint --no-error-on-unmatched-pattern \"*.mjs\" \"*.js\" \".archon/scripts/**/*.ts\"",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
     "test:archon": "bun test ./.archon/scripts/trello.test.ts",
     "api:generate": "turbo run build --filter=@fit-app/api... && pnpm --filter @fit-app/api openapi:write && pnpm --filter @fit-app/api-client generate && pnpm --filter @fit-app/scripts generate:dart-client",
     "db:start": "supabase start",

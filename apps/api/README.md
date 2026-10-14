@@ -16,17 +16,19 @@ A API lê o `.env` da raiz do monorepo no começo do `main.ts`. Variável já
 exportada no shell ganha do arquivo, e em staging e produção não existe arquivo
 nenhum: os valores vêm da task definition e do AWS Secrets Manager (ADR 0005).
 
-| Script                            | O que faz                                                       |
-| --------------------------------- | --------------------------------------------------------------- |
-| `pnpm --filter api dev`           | `nest start --watch`                                            |
-| `pnpm --filter api build`         | `nest build`, emite em `dist/`                                  |
-| `pnpm --filter api start`         | roda o `dist/main.js` já compilado                              |
-| `pnpm --filter api openapi:write` | compila e escreve o `openapi.json` deste pacote                 |
-| `pnpm --filter api test`          | jest, os testes `*.spec.ts` ao lado do código                   |
-| `pnpm --filter api lint`          | eslint, com a fronteira entre módulos                           |
-| `pnpm --filter api typecheck`     | `tsc --noEmit`                                                  |
-| `pnpm --filter api db:generate`   | `drizzle-kit generate`: escreve o SQL da migração em `drizzle/` |
-| `pnpm --filter api db:migrate`    | `drizzle-kit migrate`: aplica em `DATABASE_URL` o que falta     |
+| Script                               | O que faz                                                       |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `pnpm --filter api dev`              | `nest start --watch`                                            |
+| `pnpm --filter api build`            | `nest build`, emite em `dist/`                                  |
+| `pnpm --filter api start`            | roda o `dist/main.js` já compilado                              |
+| `pnpm --filter api openapi:write`    | compila e escreve o `openapi.json` deste pacote                 |
+| `pnpm --filter api test`             | apelido de `test:unit`                                          |
+| `pnpm --filter api test:unit`        | jest, os `*.spec.ts` ao lado do código; não precisa de Docker   |
+| `pnpm --filter api test:integration` | jest, os `*.integration-spec.ts`, num Postgres descartável      |
+| `pnpm --filter api lint`             | eslint, com a fronteira entre módulos                           |
+| `pnpm --filter api typecheck`        | `tsc --noEmit`                                                  |
+| `pnpm --filter api db:generate`      | `drizzle-kit generate`: escreve o SQL da migração em `drizzle/` |
+| `pnpm --filter api db:migrate`       | `drizzle-kit migrate`: aplica em `DATABASE_URL` o que falta     |
 
 ## Configuração
 
@@ -333,6 +335,7 @@ src/
   modules/           os módulos de domínio (ver modules/README.md)
   health-check/      o GET /v1/health, em quatro camadas. É o exemplo a copiar
   shared/            o que atravessa módulo: env, logger, auth, pool do Postgres, eventos, fila de jobs, erros de domínio
+    testing/         o Postgres descartável dos testes de integração (não vai para a imagem)
 ```
 
 `health-check` não é módulo de domínio: ele responde pelo estado do processo. O
@@ -440,16 +443,38 @@ ajudam a depurar.
 
 ## Testes
 
+São dois perfis, e a diferença entre eles é uma só: se o teste precisa de banco.
+
 ```bash
-pnpm --filter api test
+pnpm test:unit          # na raiz, via turbo: rápido, sem Docker
+pnpm test:integration   # sobe um Postgres descartável no Docker
 ```
 
-Os testes moram ao lado do código, em `*.spec.ts`, e `health-check` tem um
-exemplo de cada camada — a tabela está em
+| Perfil             | Arquivos                | Precisa de Docker | Config                                                         |
+| ------------------ | ----------------------- | ----------------- | -------------------------------------------------------------- |
+| `test:unit`        | `*.spec.ts`             | não               | [`jest.unit.config.mjs`](./jest.unit.config.mjs)               |
+| `test:integration` | `*.integration-spec.ts` | sim               | [`jest.integration.config.mjs`](./jest.integration.config.mjs) |
+
+O que os dois compartilham (o transform do ts-jest, o `rootDir`, a emissão em
+ES modules) está em [`jest.base.config.mjs`](./jest.base.config.mjs), que não
+nomeia teste nenhum de propósito: o perfil é só a lista de arquivos que ele lê.
+E o sufixo é o que separa os dois — `\.spec\.ts$` exige o ponto literal antes de
+`spec`, então um teste que quer banco não entra na rodada que não tem banco.
+
+`pnpm --filter api test` continua existindo e é apelido de `test:unit`: o que
+roda em todo push não depende de Docker.
+
+### O perfil rápido
+
+Os testes de unidade moram ao lado do código, em `*.spec.ts`, e `health-check`
+tem um exemplo de cada camada — a tabela está em
 [`src/modules/README.md`](./src/modules/README.md). Nada aqui precisa de banco
 no ar: os testes de ponta a ponta sobem o `AppModule` de verdade e trocam só o
 que não pode subir num teste — o ambiente, a porta do banco e, no teste de
 correlation id, o logger, que passa a escrever num stream que o teste lê.
+
+Teste de `domain/` é obrigatório (`CLAUDE.md`, "Testes") e vive aqui: regra pura
+não tem o que fazer esperando um contêiner.
 
 Os tokens dos testes de autenticação são assinados no próprio processo de
 teste, com um segredo de teste
@@ -460,9 +485,82 @@ de ter em mãos um token expirado, forjado ou de outra audiência. O arquivo nã
 `.spec.ts` (o jest não o lê como suíte) e está fora do `tsconfig.build.json`:
 assinador de token não vai para a imagem.
 
-Casos de uso que leem e escrevem dado de paciente vão precisar de Postgres real
-com Testcontainers, como manda o `CLAUDE.md` — e de dado sintético dos
-[`scripts/`](../../scripts/README.md), nunca dado real.
+### O Postgres descartável
+
+Caso de uso que lê e escreve dado de paciente é testado contra Postgres de
+verdade, com Testcontainers (`CLAUDE.md`, "Testes"): metade do que esses casos
+de uso garantem está escrita em SQL — um unique, um check, um cascade, "um plano
+ativo por paciente" — e repositório falso responde pelo código e deixa a metade
+do banco sem teste.
+
+O `globalSetup` do perfil sobe **um** contêiner para a rodada inteira, aplica
+nele as migrações de `drizzle/` e publica a string de conexão; o
+`globalTeardown` descarta o contêiner no fim. Está tudo em
+[`src/shared/testing`](./src/shared/testing/integration-postgres.spec-support.ts):
+
+| Passo    | O que acontece                                                                  |
+| -------- | ------------------------------------------------------------------------------- |
+| sobe     | `postgres:17-alpine`, o mesmo major do Supabase local e dos projetos hospedados |
+| migra    | as migrações de `drizzle/`, com a mesma tabela de controle do `pnpm db:migrate` |
+| testa    | as suítes, uma por vez (`maxWorkers: 1`): o banco é um só                       |
+| descarta | o contêiner morre e os dados com ele                                            |
+
+Banco descartável é o ponto: a rodada não herda linha da anterior, não precisa
+limpar nada depois de si e não deixa nada para trás. O que entrou nele era dado
+**sintético** — dado real de paciente não entra em desenvolvimento nem em teste
+(`CLAUDE.md`, "Testes"), e o gerador de pacientes sintéticos é o dos
+[`scripts/`](../../scripts/README.md) (card F-15).
+
+A pasta, a tabela de controle e o schema dela vêm de
+[`shared/database/migrations.ts`](./src/shared/database/migrations.ts), que o
+Drizzle Kit e o harness leem: banco de teste montado com controle diferente do
+banco de verdade não é o banco de verdade.
+
+> Hoje `drizzle/` ainda não tem migração — o card F-07 está bloqueado — e o
+> setup diz isso numa linha e segue, com o banco vazio. O harness aplica a
+> primeira migração no dia em que ela existir, sem mudança aqui.
+
+Um teste de integração pede a conexão ao harness, nunca à `DATABASE_URL` (essa é
+a da API e a do `db:migrate`):
+
+```ts
+import { integrationDatabaseUrl } from '../testing/integration-postgres.spec-support';
+
+const pool = new Pool({ connectionString: integrationDatabaseUrl() });
+```
+
+Fora do perfil de integração a função estoura com a frase que diz qual comando
+rodar — teste que caísse em outro banco seria teste escrevendo onde ninguém
+olha.
+
+O exemplo a copiar é
+[`pg-boss-job-queue.integration-spec.ts`](./src/shared/jobs/pg-boss-job-queue.integration-spec.ts):
+o teste de unidade do adaptador o guia com um cliente que o próprio teste
+escreveu, e prova o que o adaptador **pede** ao pg-boss; o de integração prova
+que o pg-boss **responde** — a fila é criada, o worker roda o job e as tabelas
+caem no schema `pgboss` e em nenhum outro.
+
+### Fábricas
+
+As fábricas que o card F-11 pede — criar profissional, paciente, vínculo e
+consentimento numa linha — **ainda não existem**, e por um motivo só: as tabelas
+de `identity` também não. O card F-07 parou antes de escrever os `pgTable`
+porque o SQL de referência que ele manda usar não está no repositório, e fábrica
+é código de `insert`: sem coluna, não há o que inserir.
+
+Quando elas entrarem, é aqui que moram (`src/shared/testing`), com o sufixo
+`.spec-support.ts` e três regras que já valem:
+
+- **Dado sintético, sempre.** Nome, e-mail e valor de check-in saem do gerador
+  dos [`scripts/`](../../scripts/README.md) (card F-15), nunca de paciente real.
+- **Consentimento é parte do cenário.** Profissional só vê paciente com vínculo
+  ativo **e** consentimento `share_with_professional` vigente, então a fábrica
+  cria o consentimento explicitamente: um teste que passa por esquecer o
+  consentimento é um teste que aprova um furo de LGPD.
+- **Nada de fábrica na imagem.** `.spec-support.ts` está fora do
+  `tsconfig.build.json`, como o assinador de token.
+
+### Como o jest roda
 
 O jest roda com `--experimental-vm-modules` e compila os testes como ES modules
 (`tsconfig.spec.json`). O motivo é o NestJS 12, que é publicado só como ESM:

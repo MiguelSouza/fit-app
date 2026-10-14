@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "//": "agentGuidance=false: CLAUDE.md is the single source of agent instructions in this repo, so turbo must not maintain an AGENTS.md block.",
+  "//": "Two notes, in the single key turbo accepts as a comment. agentGuidance=false: CLAUDE.md is the single source of agent instructions in this repo, so turbo must not maintain an AGENTS.md block. And test:integration is never cached: it passes or fails on a Postgres container, the Docker daemon is not part of the hash, and a cached pass would claim a database came up that never did.",
   "agentGuidance": false,
   "tasks": {
     "build": {
@@ -19,6 +19,13 @@
     },
     "test": {
       "dependsOn": ["^build"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   }
 }

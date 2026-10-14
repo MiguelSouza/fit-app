@@ -1,5 +1,10 @@
 import { defineConfig } from 'drizzle-kit';
 
+import {
+  MIGRATIONS_FOLDER,
+  MIGRATIONS_SCHEMA,
+  MIGRATIONS_TABLE,
+} from './src/shared/database/migrations';
 import { loadEnv } from './src/shared/config/env';
 import { loadLocalEnvFile } from './src/shared/config/env-file';
 
@@ -21,7 +26,7 @@ const env = loadEnv(process.env);
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/modules/*/infrastructure/*.schema.ts',
-  out: './drizzle',
+  out: `./${MIGRATIONS_FOLDER}`,
   dbCredentials: { url: env.databaseUrl },
 
   // Which schemas Drizzle Kit looks at in the database. It only reads the
@@ -34,8 +39,10 @@ export default defineConfig({
   schemaFilter: ['identity', 'nutrition', 'health', 'insights'],
 
   // The bookkeeping table lives in a schema of its own: `public` stays empty,
-  // and the four domain schemas hold domain tables only.
-  migrations: { table: '__drizzle_migrations', schema: 'drizzle' },
+  // and the four domain schemas hold domain tables only. The three constants
+  // are shared with the integration test harness, which applies these same
+  // migrations to a throwaway Postgres.
+  migrations: { table: MIGRATIONS_TABLE, schema: MIGRATIONS_SCHEMA },
 
   // Both of these only affect `push` in Drizzle Kit 0.31 (see the doc comment
   // on `Config` in the installed package): `verbose` prints the statements and
