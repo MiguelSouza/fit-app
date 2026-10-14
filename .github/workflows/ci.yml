@@ -1,0 +1,111 @@
+# The gate every change goes through before it can reach `main`: install, lint,
+# formatting, typecheck, the two test profiles and the build, on every pull
+# request and on every push to `main` (card F-12).
+#
+# One job, not six. The fixed cost of this pipeline is `pnpm install`, not the
+# tasks: lint, typecheck, both test profiles and the build together take seconds
+# on this repository, while a cold install takes minutes. Splitting the tasks
+# into parallel jobs would pay that install once per job to parallelise work
+# that is already fast, and would leave `main` with six required checks to keep
+# in sync instead of one.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The workflow only reads the repository. It publishes nothing, deploys nothing
+# and touches no secret.
+permissions:
+  contents: read
+
+# A new push to a pull request makes the run in flight pointless, so that run is
+# cancelled. A push to `main` is never cancelled: that run is the record of
+# whether the commit on `main` is good, and `main` is what the next `--affected`
+# comparison is made against.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # No run of this pipeline phones home.
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # The id of this job is the name of the status check `main` requires
+  # (`ci`). Renaming it renames the check, and a required check that stops
+  # reporting blocks every pull request — see "Proteção da `main`" in the
+  # README before touching this line.
+  ci:
+    runs-on: ubuntu-latest
+
+    # The budget card F-12 sets for the whole pipeline. It is written as a
+    # timeout so a CI that creeps past ten minutes fails and gets looked at,
+    # instead of quietly becoming the new normal.
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          # Every task below runs with `--affected`, which compares the branch
+          # against `main` — and what turbo cannot see it assumes changed, so a
+          # shallow checkout would silently turn every run into a full one. The
+          # whole history of this repository is a few megabytes.
+          fetch-depth: 0
+
+      - name: Install pnpm
+        # No version pinned here on purpose: the action reads `packageManager`
+        # from the root `package.json`, so the CI and a laptop run the same pnpm.
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          # The same file `nvm use` reads.
+          node-version-file: .nvmrc
+          # Caches the pnpm store, keyed by `pnpm-lock.yaml`. This is what keeps
+          # the install short while the lockfile does not move. It needs pnpm on
+          # the PATH, which is why it runs after the step above.
+          cache: pnpm
+
+      - name: Install dependencies
+        # `--frozen-lockfile` is already the default in CI, and is stated anyway:
+        # the lockfile is reviewed in the pull request, and a CI that quietly
+        # resolved a different dependency tree would be testing something nobody
+        # read.
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm turbo run lint --affected
+
+      - name: Lint the files at the root
+        # `pnpm lint` is `turbo run lint && pnpm lint:root`, and the two halves
+        # are separate steps because only the first takes `--affected`. The
+        # config files at the root belong to no workspace, so turbo never sees
+        # them; this is the half that does.
+        run: pnpm lint:root
+
+      - name: Check formatting
+        # Prettier is the other half of what the `pre-commit` hook runs, and the
+        # README promises that what `git commit --no-verify` skips the CI
+        # catches. It reads the whole repository from the root config, so there
+        # is nothing for `--affected` to narrow.
+        run: pnpm format:check
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck --affected
+
+      - name: Unit tests
+        run: pnpm turbo run test:unit --affected
+
+      - name: Integration tests
+        # Needs Docker: this profile starts a throwaway Postgres with
+        # Testcontainers and migrates it (`apps/api/jest.integration.config.mjs`).
+        # The Ubuntu runner ships a running daemon, so there is nothing to set up
+        # here.
+        run: pnpm turbo run test:integration --affected
+
+      - name: Build
+        run: pnpm turbo run build --affected
