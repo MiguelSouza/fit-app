@@ -9,6 +9,7 @@ import { InsightsModule } from './modules/insights';
 import { AuthModule } from './shared/auth/auth.module';
 import { EnvModule } from './shared/config/env.module';
 import { EventsModule } from './shared/events/events.module';
+import { JobsModule } from './shared/jobs/jobs.module';
 import { LoggingModule } from './shared/logging/logging.module';
 import { GlobalExceptionFilter } from './shared/presentation/global-exception.filter';
 
@@ -24,6 +25,8 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
  *
  * `EventsModule` is here so the bus exists once for the whole process: a
  * module that publishes or subscribes imports it too, and gets the same one.
+ * `JobsModule` is here for the same reason, and because the jobs it holds
+ * register themselves with the queue while the app starts.
  */
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
     LoggingModule,
     AuthModule,
     EventsModule,
+    JobsModule,
     HealthCheckModule,
     IdentityModule,
     NutritionModule,
