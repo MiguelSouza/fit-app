@@ -30,6 +30,15 @@ export interface ApiEnv {
   readonly supabaseJwtSecret: string;
   /** Origins allowed to call the API from a browser. Empty means "no browser". */
   readonly corsAllowedOrigins: readonly string[];
+  /**
+   * Whether this process runs the job queue: connects pg-boss, installs the
+   * schedules and works the queues (ADR 0009).
+   *
+   * On by default, because the API and its workers are the same ECS task. Off
+   * under jest and wherever the process only needs the modules wired without
+   * a database behind them — generating the OpenAPI document, for one.
+   */
+  readonly jobsEnabled: boolean;
   readonly logLevel: LogLevel;
 }
 
@@ -56,6 +65,17 @@ const DEFAULT_LOG_LEVEL: Readonly<Record<NodeEnv, LogLevel>> = {
   development: 'debug',
   test: 'silent',
   production: 'info',
+};
+
+/**
+ * Whether the queue runs when `JOBS_ENABLED` says nothing: yes while
+ * developing and in production, no under jest, where a worker would mean every
+ * suite needing a Postgres and a clock.
+ */
+const DEFAULT_JOBS_ENABLED: Readonly<Record<NodeEnv, boolean>> = {
+  development: true,
+  test: false,
+  production: true,
 };
 
 /**
@@ -130,6 +150,15 @@ const envSchema = z.object({
   LOG_LEVEL: blankToUndefined(
     z.enum(LOG_LEVELS, { error: `must be one of ${LOG_LEVELS.join(', ')}` }).optional(),
   ),
+
+  // A string, not `z.coerce.boolean()`: coercion reads every non-empty string
+  // as `true`, so `JOBS_ENABLED=no` would turn the workers on.
+  JOBS_ENABLED: blankToUndefined(
+    z
+      .enum(['true', 'false'], { error: "must be 'true' or 'false'" })
+      .transform((value) => value === 'true')
+      .optional(),
+  ),
 });
 
 /** Blank entries are dropped so a trailing comma is not read as an origin. */
@@ -170,8 +199,15 @@ export function loadEnv(source: NodeJS.ProcessEnv): ApiEnv {
     throw new EnvironmentError(describe(parsed.error));
   }
 
-  const { NODE_ENV, PORT, DATABASE_URL, SUPABASE_JWT_SECRET, CORS_ALLOWED_ORIGINS, LOG_LEVEL } =
-    parsed.data;
+  const {
+    NODE_ENV,
+    PORT,
+    DATABASE_URL,
+    SUPABASE_JWT_SECRET,
+    CORS_ALLOWED_ORIGINS,
+    LOG_LEVEL,
+    JOBS_ENABLED,
+  } = parsed.data;
 
   return {
     nodeEnv: NODE_ENV,
@@ -179,6 +215,7 @@ export function loadEnv(source: NodeJS.ProcessEnv): ApiEnv {
     databaseUrl: DATABASE_URL,
     supabaseJwtSecret: SUPABASE_JWT_SECRET,
     corsAllowedOrigins: readOrigins(CORS_ALLOWED_ORIGINS),
+    jobsEnabled: JOBS_ENABLED ?? DEFAULT_JOBS_ENABLED[NODE_ENV],
     logLevel: LOG_LEVEL ?? DEFAULT_LOG_LEVEL[NODE_ENV],
   };
 }

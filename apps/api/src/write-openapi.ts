@@ -37,7 +37,16 @@ if (target === undefined) {
  */
 loadLocalEnvFile();
 process.env['DATABASE_URL'] ??= 'postgresql://openapi:openapi@127.0.0.1:1/openapi';
+// Not a secret and not used to verify anything: no token is checked while a
+// document is being written. It is here because the environment refuses to
+// load without it, and because it has to be long enough to pass that check.
+process.env['SUPABASE_JWT_SECRET'] ??= 'openapi-generation-only-not-a-secret-0001';
 process.env['LOG_LEVEL'] ??= 'silent';
+
+// The one thing in `AppModule` that would reach for Postgres while the modules
+// are created: the queue connects, migrates its schema and starts working.
+// Nothing of that is in the document (ADR 0009).
+process.env['JOBS_ENABLED'] ??= 'false';
 
 async function writeDocument(file: string): Promise<void> {
   const env = resolveEnv();

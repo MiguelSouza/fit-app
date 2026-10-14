@@ -28,6 +28,7 @@ const env: ApiEnv = {
   databaseUrl: 'postgresql://unused:unused@127.0.0.1:1/unused',
   supabaseJwtSecret: TEST_JWT_SECRET,
   corsAllowedOrigins: [],
+  jobsEnabled: false,
   logLevel: 'silent',
 };
 

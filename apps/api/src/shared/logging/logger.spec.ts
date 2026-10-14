@@ -28,6 +28,7 @@ function envWith(logLevel: LogLevel): ApiEnv {
     databaseUrl: 'postgresql://unused:unused@127.0.0.1:1/unused',
     supabaseJwtSecret: 'unused-in-this-test-but-long-enough-0001',
     corsAllowedOrigins: [],
+    jobsEnabled: false,
     logLevel,
   };
 }
