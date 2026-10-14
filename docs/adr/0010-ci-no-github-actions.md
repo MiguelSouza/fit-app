@@ -12,11 +12,15 @@ mensagem, e `git commit --no-verify` pula os dois. O `README.md` já dizia, sobr
 o `--no-verify`, que "aí o CI é quem pega" — e o CI não existia.
 
 O que precisa ser verificado já está pronto e é barato. O repositório é um
-Turborepo com sete pacotes pnpm e tarefas uniformes (`lint`, `typecheck`,
-`test:unit`, `test:integration`, `build`), e o card F-11 separou os testes em
-dois perfis: o rápido, que precisa só do Node, e o de integração, que sobe um
-Postgres descartável com Testcontainers e portanto precisa de Docker. Medido
-nesta branch, com as dependências já instaladas, o conjunto inteiro —
+Turborepo com sete pacotes pnpm, todos com as mesmas tarefas de `lint`,
+`typecheck` e `build`, e o card F-11 separou os testes em dois perfis: o rápido,
+que precisa só do Node, e o de integração, que sobe um Postgres descartável com
+Testcontainers e portanto precisa de Docker. Os dois perfis existem onde há
+teste para rodar — hoje `test:unit` em `apps/api` e `packages/config`, e
+`test:integration` só em `apps/api` —, e é por isso que o CI chama as duas
+tarefas em vez do `test`: onde a tarefa não existe, o turbo não tem o que rodar.
+
+Medido nesta branch, com as dependências já instaladas, o conjunto inteiro —
 lint, formatação, typecheck, 151 testes unitários, os testes de integração com o
 contêiner e o build — fica na casa de **dezenas de segundos**. O custo fixo é
 outro: `pnpm install`, que em máquina fria é questão de minutos.
