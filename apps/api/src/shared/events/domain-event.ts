@@ -7,7 +7,7 @@
  * where the two sides agree on the name and on the payload.
  *
  * The name is always `<module>.<entity>.<fact in the past>`, lower case, three
- * parts — `event-catalogue.spec.ts` fails the build when one is not.
+ * parts — `domain-event.spec.ts` fails the build when one is not.
  *
  * **A payload carries ids and codes, never health or personal data.** It is
  * read by a handler that may log it, enqueue it or send it to a provider, and
@@ -29,8 +29,10 @@ export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
  *
  * `extends Record<DomainEventName, object>` is what keeps the two halves in
  * step: adding a name to the list above without describing its payload here
- * leaves it typed as `object`, and describing a payload for a name that is not
- * in the list is an error.
+ * leaves it typed as `object`. The other direction is `StrayEventPayload`, at
+ * the end of this file: `extends` alone would not catch a payload described for
+ * a name the list does not have, because an interface may always declare a
+ * member its base never had.
  *
  * Instants are ISO 8601 in UTC, as everything else in this codebase stores
  * time; a date that means a day in the patient's life (the night a sleep
@@ -61,3 +63,16 @@ export interface DomainEventPayloads extends Record<DomainEventName, object> {
 
 /** The payload of one event, for whoever publishes it or handles it. */
 export type DomainEventPayload<Name extends DomainEventName> = DomainEventPayloads[Name];
+
+/**
+ * A type that has to be empty. Anything else does not satisfy the constraint,
+ * and the error names what was found.
+ */
+type Nothing<Found extends never> = Found;
+
+/**
+ * The guard for a payload written for a name the catalogue does not list — a
+ * typo, or a name renamed in one of the two halves only. `never` while the two
+ * agree; the stray key stops the build.
+ */
+export type StrayEventPayload = Nothing<Exclude<keyof DomainEventPayloads, DomainEventName>>;

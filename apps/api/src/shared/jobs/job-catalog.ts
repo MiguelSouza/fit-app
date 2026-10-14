@@ -20,8 +20,10 @@ export type JobName = (typeof JOB_NAMES)[number];
  * What each job is given when it runs.
  *
  * `extends Record<JobName, object>` keeps the list above and the payloads here
- * in step: a name without a payload stays typed as `object`, and a payload for
- * a name that is not listed is an error.
+ * in step: a name without a payload stays typed as `object`. A payload written
+ * for a name that is not listed is `StrayJobPayload`, at the end of this file:
+ * `extends` alone would let it through, because an interface may always declare
+ * a member its base never had.
  */
 export interface JobPayloads extends Record<JobName, object> {
   /**
@@ -33,3 +35,16 @@ export interface JobPayloads extends Record<JobName, object> {
 
 /** The payload of one job, for whoever enqueues it or handles it. */
 export type JobPayload<Name extends JobName> = JobPayloads[Name];
+
+/**
+ * A type that has to be empty. Anything else does not satisfy the constraint,
+ * and the error names what was found.
+ */
+type Nothing<Found extends never> = Found;
+
+/**
+ * The guard for a payload written for a job the catalogue does not list — a
+ * typo, or a name renamed in one of the two halves only. `never` while the two
+ * agree; the stray key stops the build.
+ */
+export type StrayJobPayload = Nothing<Exclude<keyof JobPayloads, JobName>>;
