@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm run test:unit",
-    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.unit.config.mjs"
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.unit.config.mjs",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.integration.config.mjs"
   },
   "dependencies": {
     "@fit-app/contracts": "workspace:*",
