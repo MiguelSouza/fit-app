@@ -32,8 +32,8 @@ nenhum: os valores vêm da task definition e do AWS Secrets Manager (ADR 0005).
 
 As variáveis que a API usa hoje são `NODE_ENV`, `PORT` (3333 por padrão),
 `DATABASE_URL` (obrigatória), `SUPABASE_JWT_SECRET` (obrigatória, no mínimo 32
-caracteres), `CORS_ALLOWED_ORIGINS` e `LOG_LEVEL`. Todas estão descritas no
-[`.env.example`](../../.env.example).
+caracteres), `CORS_ALLOWED_ORIGINS`, `JOBS_ENABLED` e `LOG_LEVEL`. Todas estão
+descritas no [`.env.example`](../../.env.example).
 
 Elas são lidas e validadas uma vez, com Zod, em
 [`shared/config/env.ts`](./src/shared/config/env.ts), **antes** de o NestJS
@@ -232,6 +232,95 @@ pnpm api:generate     # na raiz: escreve o openapi.json e regera os clientes
 interativa fica em [`/docs`](http://127.0.0.1:3333/docs) **fora de produção**; em
 produção ela não existe, porque é o mapa inteiro da API em uma página.
 
+## Eventos entre módulos
+
+Um módulo não importa código de outro (`CLAUDE.md`, regra 1) nem lê a tabela
+dele (regra 2). Quando um fato de um importa para o outro, ele é anunciado
+(regra 3, ADR [0009](../../docs/adr/0009-eventos-internos-e-fila-de-jobs.md)).
+
+O nome e o payload de todo evento estão num catálogo só,
+[`shared/events/domain-event.ts`](./src/shared/events/domain-event.ts), no
+formato `<modulo>.<entidade>.<fato no passado>`. Quem publica pede a porta:
+
+```ts
+constructor(@Inject(EVENT_BUS) private readonly events: EventBusPort) {}
+
+await this.events.publish('nutrition.plan.activated', { planId, patientId, activatedAt });
+```
+
+Quem reage assina uma vez, quando o módulo sobe:
+
+```ts
+@Injectable()
+export class ReviewAlertRulesListener implements OnApplicationBootstrap {
+  constructor(@Inject(EVENT_BUS) private readonly events: EventBusPort) {}
+
+  onApplicationBootstrap(): void {
+    this.events.subscribe('nutrition.plan.activated', ({ patientId }) =>
+      this.reviewRules.execute(patientId),
+    );
+  }
+}
+```
+
+O barramento é **em memória**: publicar é uma chamada de função no mesmo
+processo. Ele espera os handlers — o que mantém legível a ordem do que acontece
+— e um handler que estoura vira linha de log, nunca exceção subindo para quem
+publicou. Por isso handler é curto: o que for lento ou precisar de nova
+tentativa vira job.
+
+O payload carrega **id e código, nunca dado de saúde ou pessoal**. Quem precisa
+do dado por trás do id pede ao módulo dono, com a checagem de consentimento que
+vem junto.
+
+## Jobs em fila
+
+Trabalho que não cabe dentro de uma requisição — lento, dependente de servidor
+de terceiro, agendado, ou que precisa ser tentado de novo — vai para a fila. É
+o **pg-boss**, no mesmo Postgres, no schema `pgboss` (ADR 0009).
+
+Um job é um provider que diz o próprio nome, a política de tentativas e, se for
+o caso, o cron — e se registra quando a aplicação sobe:
+
+```ts
+@Injectable()
+export class PingJob implements JobDefinition<'ping'>, OnApplicationBootstrap {
+  readonly name = 'ping';
+  readonly retry: JobRetryPolicy = {
+    maxAttempts: 3,
+    firstRetryDelaySeconds: 10,
+    backoff: 'exponential',
+    maxRetryDelaySeconds: 300,
+  };
+  readonly schedule: JobSchedule<'ping'> = { cron: '*/15 * * * *', payload: {} };
+
+  async onApplicationBootstrap(): Promise<void> {
+    await this.queue.register(this);
+  }
+
+  async handle(): Promise<void> { ... }
+}
+```
+
+Enfileirar sob demanda é `await this.queue.enqueue('ping', {})`.
+
+Duas coisas que o autor do job precisa saber:
+
+- **Estourar é como o job reporta falha.** É a exceção que faz a fila contar a
+  tentativa e esperar o backoff antes da próxima. Job que engole o próprio erro
+  é job que silenciosamente não aconteceu.
+- **Rodar duas vezes tem que ser seguro.** O mesmo payload chega de novo depois
+  de uma falha, e não pode cobrar duas vezes nem mandar dois e-mails.
+
+O payload também é só id e código: ele fica gravado numa tabela até o worker
+pegá-lo.
+
+`JOBS_ENABLED=false` troca a fila por uma que não faz nada. É o padrão em
+teste, e é o que o `pnpm api:generate` usa, porque ali a aplicação sobe só para
+ter as rotas lidas. O `ping` é o exemplo do card F-10: roda a cada quinze
+minutos e só escreve uma linha, que é o jeito mais barato de ver se os workers
+daquela task estão de pé.
+
 ## Estrutura
 
 ```
@@ -243,7 +332,7 @@ src/
   write-openapi.ts   escreve o openapi.json (é o `openapi:write`)
   modules/           os módulos de domínio (ver modules/README.md)
   health-check/      o GET /v1/health, em quatro camadas. É o exemplo a copiar
-  shared/            o que atravessa módulo: env, logger, auth, pool do Postgres, erros de domínio
+  shared/            o que atravessa módulo: env, logger, auth, pool do Postgres, eventos, fila de jobs, erros de domínio
 ```
 
 `health-check` não é módulo de domínio: ele responde pelo estado do processo. O

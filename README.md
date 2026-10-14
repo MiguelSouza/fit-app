@@ -201,9 +201,11 @@ CLI (card **F-04**, em `supabase/`) já estão de pé. O esqueleto da API (card 
 [README de `apps/api`](./apps/api/README.md) tem o resto. Os contratos (card **F-09**)
 também: `packages/contracts` com os schemas Zod, o `openapi.json` gerado pela API, o
 `/docs` fora de produção e os clientes gerados em `packages/api-client` (TypeScript) e
-para o app (Dart). Os demais pacotes seguem como placeholders, com scripts no-op para o
-`turbo` ter o que percorrer; o conteúdo real de cada um entra pelos cards indicados no
-`README.md` de cada pasta.
+para o app (Dart). E o encanamento interno da API (card **F-10**): barramento de eventos
+entre módulos e fila de jobs com pg-boss, cada um atrás de uma porta — ver
+[ADR 0009](./docs/adr/0009-eventos-internos-e-fila-de-jobs.md). Os demais pacotes seguem
+como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo
+real de cada um entra pelos cards indicados no `README.md` de cada pasta.
 
 ## Fluxo de trabalho
 
