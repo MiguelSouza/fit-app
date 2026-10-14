@@ -21,6 +21,7 @@ function envFor(nodeEnv: NodeEnv): ApiEnv {
     nodeEnv,
     port: 0,
     databaseUrl: 'postgresql://unused:unused@127.0.0.1:1/unused',
+    supabaseJwtSecret: 'unused-in-this-test-but-long-enough-0001',
     corsAllowedOrigins: [],
     logLevel: 'silent',
   };
