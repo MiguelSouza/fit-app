@@ -1,7 +1,10 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "//": "Two notes, in the single key turbo accepts as a comment. agentGuidance=false: CLAUDE.md is the single source of agent instructions in this repo, so turbo must not maintain an AGENTS.md block. And test:integration is never cached: it passes or fails on a Postgres container, the Docker daemon is not part of the hash, and a cached pass would claim a database came up that never did.",
+  "//": "Three notes, in the single key turbo accepts as a comment. agentGuidance=false: CLAUDE.md is the single source of agent instructions in this repo, so turbo must not maintain an AGENTS.md block. test:integration is never cached: it passes or fails on a Postgres container, the Docker daemon is not part of the hash, and a cached pass would claim a database came up that never did. And githubActionsRemoteBaseRefFallback: the CI runs every task with --affected, which compares the branch against main, but actions/checkout leaves a detached HEAD where main exists only as origin/main; without this flag turbo cannot resolve the base ref and falls back to treating every package as changed.",
   "agentGuidance": false,
+  "futureFlags": {
+    "githubActionsRemoteBaseRefFallback": true
+  },
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
