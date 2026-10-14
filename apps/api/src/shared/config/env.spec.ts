@@ -36,6 +36,7 @@ describe('loadEnv', () => {
         SUPABASE_JWT_SECRET,
         CORS_ALLOWED_ORIGINS: 'https://app.example.com, https://painel.example.com,',
         LOG_LEVEL: 'warn',
+        JOBS_ENABLED: 'false',
       }),
     ).toEqual({
       nodeEnv: 'production',
@@ -43,6 +44,7 @@ describe('loadEnv', () => {
       databaseUrl: DATABASE_URL,
       supabaseJwtSecret: SUPABASE_JWT_SECRET,
       corsAllowedOrigins: ['https://app.example.com', 'https://painel.example.com'],
+      jobsEnabled: false,
       logLevel: 'warn',
     });
   });
@@ -54,6 +56,7 @@ describe('loadEnv', () => {
       databaseUrl: DATABASE_URL,
       supabaseJwtSecret: SUPABASE_JWT_SECRET,
       corsAllowedOrigins: [],
+      jobsEnabled: true,
       logLevel: 'debug',
     });
   });
@@ -65,12 +68,15 @@ describe('loadEnv', () => {
 
   it('treats a variable set to nothing as a variable that is not set', () => {
     // `PORT=` in a `.env` is not a port, and must not arrive as 0.
-    expect(loadEnv({ ...REQUIRED, PORT: '', NODE_ENV: '', LOG_LEVEL: '' })).toEqual({
+    expect(
+      loadEnv({ ...REQUIRED, PORT: '', NODE_ENV: '', LOG_LEVEL: '', JOBS_ENABLED: '' }),
+    ).toEqual({
       nodeEnv: 'development',
       port: 3333,
       databaseUrl: DATABASE_URL,
       supabaseJwtSecret: SUPABASE_JWT_SECRET,
       corsAllowedOrigins: [],
+      jobsEnabled: true,
       logLevel: 'debug',
     });
   });
@@ -129,6 +135,20 @@ describe('loadEnv', () => {
     expect(message).not.toContain('s3cr3t');
     expect(message).not.toContain('postgres-but-wrong');
     expect(message).not.toContain('short-and-wrong');
+  });
+
+  it('runs the jobs everywhere but under jest, unless told otherwise', () => {
+    // A worker in a test suite would mean a Postgres and a clock behind every
+    // one of them (ADR 0009).
+    expect(loadEnv({ ...REQUIRED, NODE_ENV: 'test' }).jobsEnabled).toBe(false);
+    expect(loadEnv({ ...REQUIRED, NODE_ENV: 'production' }).jobsEnabled).toBe(true);
+    expect(loadEnv({ ...REQUIRED, NODE_ENV: 'test', JOBS_ENABLED: 'true' }).jobsEnabled).toBe(true);
+  });
+
+  it('rejects a JOBS_ENABLED that is not true or false', () => {
+    // `JOBS_ENABLED=no` must not read as "on", which is what a coerced
+    // boolean would have made of it.
+    expect(messageFor({ ...REQUIRED, JOBS_ENABLED: 'no' })).toContain('JOBS_ENABLED');
   });
 
   it('rejects a log level pino does not know', () => {

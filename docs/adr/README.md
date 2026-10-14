@@ -15,5 +15,6 @@ antigo como substituído por ele.
 | [0004](./0004-um-schema-por-modulo.md)                | Um schema Postgres por módulo                                                   | aceito |
 | [0005](./0005-aws-sa-east-1-e-vercel.md)              | AWS sa-east-1 com ECS Fargate e CDK; painel na Vercel                           | aceito |
 | [0006](./0006-logger-estruturado-com-pino.md)         | Logger estruturado com pino e redação por nome de campo                         | aceito |
-| [0007](./0007-autenticacao-por-jwt-do-supabase.md) | Autenticação por JWT do Supabase: guard global, HS256 e segredo compartilhado   | aceito |
+| [0007](./0007-autenticacao-por-jwt-do-supabase.md)    | Autenticação por JWT do Supabase: guard global, HS256 e segredo compartilhado   | aceito |
 | [0008](./0008-contratos-em-zod-e-clientes-gerados.md) | Contratos em Zod, OpenAPI gerado pela API e um cliente por plataforma           | aceito |
+| [0009](./0009-eventos-internos-e-fila-de-jobs.md)     | Eventos internos em memória e fila de jobs com pg-boss                          | aceito |

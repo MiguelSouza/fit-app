@@ -5,7 +5,6 @@ import { CheckSystemHealthUseCase } from '../application/check-system-health.use
 import { SchemaResponse } from '../../shared/presentation/schema-response.decorator';
 import { presentSystemHealth } from './health.response';
 import { Public } from '../../shared/auth/public.decorator';
-import { presentSystemHealth, type HealthResponse } from './health.response';
 
 /**
  * `GET /v1/health`. The version comes from `defaultVersion` in `bootstrap.ts`,

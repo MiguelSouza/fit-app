@@ -61,3 +61,24 @@ import { PersonRepository } from '../identity/infrastructure/person.repository';
 Quem garante isso é o `@fit-app/config/eslint/api`, e precisar de dado de outro
 módulo significa chamar o serviço público dele ou reagir a um evento
 (CLAUDE.md, regras 1 a 3).
+
+## Eventos e jobs
+
+Efeito colateral de um módulo em outro vai por evento, e trabalho pesado ou
+agendado vai para a fila. Os dois estão em `shared/`, cada um atrás de uma
+porta (ADR [0009](../../../../docs/adr/0009-eventos-internos-e-fila-de-jobs.md)):
+
+| O quê   | Porta       | Onde                                |
+| ------- | ----------- | ----------------------------------- |
+| Eventos | `EVENT_BUS` | [`shared/events`](../shared/events) |
+| Fila    | `JOB_QUEUE` | [`shared/jobs`](../shared/jobs)     |
+
+O nome e o payload de cada evento ficam no catálogo
+[`shared/events/domain-event.ts`](../shared/events/domain-event.ts), e os dos
+jobs em [`shared/jobs/job-catalog.ts`](../shared/jobs/job-catalog.ts) — um
+módulo acrescenta os seus lá, não num canto do próprio código. O passo a passo
+está no [README da API](../../README.md#eventos-entre-módulos).
+
+Um job que é de um módulo mora no `infrastructure/` dele, e o módulo o declara
+como provider; `shared/jobs/ping.job.ts` é o exemplo a copiar. O payload de um
+evento e o de um job carregam **id e código, nunca dado de saúde ou pessoal**.
