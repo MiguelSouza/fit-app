@@ -174,12 +174,88 @@ daí todo commit passa por dois portões:
 
 Nada disso substitui `pnpm lint` e `pnpm typecheck` — o hook só vê o que está em
 stage. Para um commit de emergência, `git commit --no-verify` pula os dois, e aí
-o CI é quem pega.
+[o CI é quem pega](#o-que-roda-no-ci).
 
 O app do paciente não passa pelo turbo — é Flutter:
 
 ```bash
 cd apps/mobile && flutter pub get && flutter run
+```
+
+## O que roda no CI
+
+Em todo PR e em todo push na `main`, o GitHub Actions roda
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml): um job só, chamado
+`ci`, com os passos nesta ordem.
+
+| Passo                     | Comando                                      |
+| ------------------------- | -------------------------------------------- |
+| Install                   | `pnpm install --frozen-lockfile`             |
+| Lint                      | `pnpm turbo run lint --affected`             |
+| Lint dos arquivos da raiz | `pnpm lint:root`                             |
+| Formatação                | `pnpm format:check`                          |
+| Typecheck                 | `pnpm turbo run typecheck --affected`        |
+| Testes unitários          | `pnpm turbo run test:unit --affected`        |
+| Testes de integração      | `pnpm turbo run test:integration --affected` |
+| Build                     | `pnpm turbo run build --affected`            |
+
+É a mesma lista que o [Como rodar](#como-rodar) manda rodar antes de empurrar, e
+nenhum passo é tolerante: o primeiro que falhar reprova o job e deixa o check
+`ci` vermelho.
+
+O Node sai do [`.nvmrc`](./.nvmrc) e o pnpm do `packageManager` do
+`package.json`, os mesmos arquivos que valem na sua máquina — não há uma segunda
+lista de versões para esquecer de atualizar. O cache é o _store_ do pnpm, com
+chave no `pnpm-lock.yaml`.
+
+`--affected` é o Turborepo rodando **só o que mudou**: os pacotes alterados
+entre a `main` e a branch, mais os que dependem deles. Mudança no `turbo.json`,
+no `package.json` da raiz ou no lockfile seleciona tudo, e `packages/config` é
+dependência de todos, então mexer nas regras compartilhadas também. Os dois
+passos sem `--affected` são os que o turbo não tem como estreitar: o
+`lint:root`, dos arquivos de configuração da raiz e dos scripts em `.archon/`,
+que não pertencem a workspace nenhum, e o `format:check`, que o prettier roda no
+repositório inteiro.
+
+Os testes de integração usam o Docker do próprio runner, sem passo de
+preparação. O job tem `timeout-minutes: 10`, que é o orçamento do card F-12
+escrito como limite: um CI que passar de dez minutos falha em vez de virar o
+novo normal em silêncio.
+
+Fora do CI ficam `apps/mobile` (é Flutter, precisa do SDK e entra no card F-14),
+`pnpm test:archon` (roda no `bun`, e é ferramenta do Archon) e qualquer deploy.
+O workflow só lê o repositório: `permissions: contents: read`, nenhum segredo.
+O porquê de cada escolha está no
+[ADR 0010](./docs/adr/0010-ci-no-github-actions.md).
+
+## Proteção da `main`
+
+A `main` não aceita push direto, de ninguém: toda mudança entra por PR, e o PR
+só pode ser mesclado com o check `ci` verde. Não é preciso aprovação de
+ninguém — o repositório tem um mantenedor, e o GitHub não deixa aprovar o
+próprio PR —, mas o PR é obrigatório. _Force push_ e remoção da branch estão
+bloqueados.
+
+Isso é configuração do GitHub, não arquivo do repositório: não aparece em diff
+de PR e não volta com `git revert`. Para ver como está:
+
+```bash
+gh api repos/MiguelSouza/fit-app/branches/main/protection
+```
+
+> [!IMPORTANT]
+> O check obrigatório se chama **`ci`**, que é o id do job no `ci.yml`.
+> Renomear o job sem atualizar a proteção faz o check obrigatório parar de
+> reportar, e aí todo PR fica travado em "esperando" — não vermelho, travado.
+> Mudou o nome? Atualize os dois.
+
+Para um reparo de emergência direto na `main`, o caminho é desligar o
+`enforce_admins`, fazer o que tem de ser feito e religar na mesma hora:
+
+```bash
+gh api -X DELETE repos/MiguelSouza/fit-app/branches/main/protection/enforce_admins
+# ... o reparo ...
+gh api -X POST   repos/MiguelSouza/fit-app/branches/main/protection/enforce_admins
 ```
 
 ## Estrutura
@@ -214,7 +290,11 @@ entre módulos e fila de jobs com pg-boss, cada um atrás de uma porta — ver
 [ADR 0009](./docs/adr/0009-eventos-internos-e-fila-de-jobs.md). E os dois perfis de teste
 (card **F-11**): `pnpm test:unit` sem Docker e `pnpm test:integration` num Postgres
 descartável; as fábricas de profissional, paciente, vínculo e consentimento esperam as
-tabelas de `identity`, que são o que falta do card **F-07**. Os demais pacotes seguem
+tabelas de `identity`, que são o que falta do card **F-07**. E o CI (card **F-12**):
+o [`ci.yml`](./.github/workflows/ci.yml) roda lint, typecheck, os dois perfis de teste e
+o build em todo PR e em todo push na `main`, com o turbo rodando só o que mudou, e a
+`main` só aceita PR com esse check verde — ver
+[ADR 0010](./docs/adr/0010-ci-no-github-actions.md). Os demais pacotes seguem
 como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo
 real de cada um entra pelos cards indicados no `README.md` de cada pasta.
 
@@ -223,4 +303,5 @@ real de cada um entra pelos cards indicados no `README.md` de cada pasta.
 O trabalho é organizado no quadro Trello **Wellness**. Um card = uma branch = um PR,
 nomeada com o ID do card (`feat/F-01-monorepo-turborepo`), commits em
 [Conventional Commits](https://www.conventionalcommits.org/). Quem abre o PR não faz
-merge. Detalhes no card "LEIA PRIMEIRO".
+merge, e [a `main` não deixa](#proteção-da-main) de outro jeito. Detalhes no card
+"LEIA PRIMEIRO".

@@ -129,6 +129,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0007 Autenticação por JWT do Supabase: guard global, HS256 e segredo compartilhado
 - 0008 Contratos em Zod, OpenAPI gerado pela API e um cliente por plataforma
 - 0009 Eventos internos em memória e fila de jobs com pg-boss
+- 0010 CI no GitHub Actions, um job com `turbo --affected`, e a `main` protegida
 
 ## Não faça
 
