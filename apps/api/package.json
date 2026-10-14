@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
+    "test": "pnpm run test:unit",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.unit.config.mjs"
   },
   "dependencies": {
     "@fit-app/contracts": "workspace:*",
