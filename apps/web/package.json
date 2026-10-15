@@ -4,10 +4,40 @@
   "private": true,
   "description": "Painel do profissional em Next.js (App Router)",
   "scripts": {
-    "build": "echo \"[@fit-app/web] placeholder package, nothing to build yet (see card F-13)\"",
-    "dev": "echo \"[@fit-app/web] placeholder package, nothing to run yet (see card F-13)\"",
-    "lint": "echo \"[@fit-app/web] placeholder package, nothing to lint yet (see card F-13)\"",
-    "typecheck": "echo \"[@fit-app/web] placeholder package, nothing to typecheck yet (see card F-13)\"",
-    "test": "echo \"[@fit-app/web] placeholder package, no tests yet (see card F-13)\""
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"[@fit-app/web] no tests yet: the panel is a skeleton of neutral screens, and CLAUDE.md puts Playwright on the critical flows (montar plano, revisar alerta), which do not exist yet\""
+  },
+  "dependencies": {
+    "@fit-app/api-client": "workspace:*",
+    "@hookform/resolvers": "^5.9.1",
+    "@radix-ui/react-label": "^2.1.17",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
+    "@tanstack/react-query": "^5.104.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.57.0",
+    "next": "^16.4.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-hook-form": "^7.90.0",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@fit-app/config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.9.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
   }
 }

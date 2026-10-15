@@ -19,3 +19,4 @@ antigo como substituído por ele.
 | [0008](./0008-contratos-em-zod-e-clientes-gerados.md) | Contratos em Zod, OpenAPI gerado pela API e um cliente por plataforma           | aceito |
 | [0009](./0009-eventos-internos-e-fila-de-jobs.md)     | Eventos internos em memória e fila de jobs com pg-boss                          | aceito |
 | [0010](./0010-ci-no-github-actions.md)                | CI no GitHub Actions, um job com `turbo --affected`, e a `main` protegida       | aceito |
+| [0011](./0011-sessao-do-painel-em-cookie.md)          | Sessão do painel em cookie, com o proxy do Next.js na frente das rotas          | aceito |

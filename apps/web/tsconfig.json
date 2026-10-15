@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@fit-app/config/tsconfig/next.json",
+
+  "//": "Only what depends on this package's paths. Everything Next.js needs — ESM, the bundler resolver, the automatic JSX runtime, the DOM globals and the `next` language service plugin — is in the shared preset, and every strict flag comes from the base through it.",
+
+  "//paths": "`@/*` is the alias of create-next-app, resolved against this file: in a preset it would point inside packages/config.",
+
+  "//incremental": "`next build` writes a lot of type information; without this, `tsc --noEmit` and the editor redo the whole program on every run.",
+
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "incremental": true
+  },
+
+  "//include": "`next-env.d.ts` carries the Next.js globals and `.next/types` the ones it generates per route, and both are outside `src`. `next.config.ts` is in the list because it is TypeScript too and would otherwise only break at `next build`.",
+
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

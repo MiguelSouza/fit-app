@@ -294,9 +294,17 @@ tabelas de `identity`, que são o que falta do card **F-07**. E o CI (card **F-1
 o [`ci.yml`](./.github/workflows/ci.yml) roda lint, typecheck, os dois perfis de teste e
 o build em todo PR e em todo push na `main`, com o turbo rodando só o que mudou, e a
 `main` só aceita PR com esse check verde — ver
-[ADR 0010](./docs/adr/0010-ci-no-github-actions.md). Os demais pacotes seguem
-como placeholders, com scripts no-op para o `turbo` ter o que percorrer; o conteúdo
-real de cada um entra pelos cards indicados no `README.md` de cada pasta.
+[ADR 0010](./docs/adr/0010-ci-no-github-actions.md). E o esqueleto do painel (card
+**F-13**, em `apps/web`): Next.js 16 com App Router, Tailwind 4 e shadcn/ui, login com
+Supabase Auth (entrar, sair e recuperar a senha), rotas protegidas e o menu com Fila,
+Pacientes, Convites e Ajustes — `pnpm --filter @fit-app/web dev` sobe o painel em
+[http://127.0.0.1:3000](http://127.0.0.1:3000), e o
+[README de `apps/web`](./apps/web/README.md) tem o resto, incluindo um ponto que ainda não
+fecha entre a sessão do painel e o guard da API. A sessão fica em cookie, para o servidor
+poder lê-la — ver [ADR 0011](./docs/adr/0011-sessao-do-painel-em-cookie.md).
+Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
+percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
+pasta.
 
 ## Fluxo de trabalho
 

@@ -130,6 +130,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0008 Contratos em Zod, OpenAPI gerado pela API e um cliente por plataforma
 - 0009 Eventos internos em memória e fila de jobs com pg-boss
 - 0010 CI no GitHub Actions, um job com `turbo --affected`, e a `main` protegida
+- 0011 Sessão do painel em cookie, com o proxy do Next.js na frente das rotas
 
 ## Não faça
 

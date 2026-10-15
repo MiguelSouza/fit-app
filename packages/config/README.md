@@ -6,14 +6,16 @@ rigor de tipos por conta própria.
 
 ## O que o pacote exporta
 
-| Subpath                                 | Para que serve                                         |
-| --------------------------------------- | ------------------------------------------------------ |
-| `@fit-app/config/eslint`                | flat config base (ESLint 10 + typescript-eslint)       |
-| `@fit-app/config/eslint/api`            | a base + a fronteira entre os módulos de `apps/api`    |
-| `@fit-app/config/prettier`              | configuração de formatação                             |
-| `@fit-app/config/tsconfig/base.json`    | rigor de tipos; não emite nada                         |
-| `@fit-app/config/tsconfig/library.json` | `base` + emissão de `.js` e `.d.ts`, para `packages/*` |
-| `@fit-app/config/tsconfig/nest.json`    | `base` + decorators e CommonJS, para `apps/api`        |
+| Subpath                                 | Para que serve                                           |
+| --------------------------------------- | -------------------------------------------------------- |
+| `@fit-app/config/eslint`                | flat config base (ESLint 10 + typescript-eslint)         |
+| `@fit-app/config/eslint/api`            | a base + a fronteira entre os módulos de `apps/api`      |
+| `@fit-app/config/eslint/web`            | a base + o que Next.js e React Hooks acrescentam         |
+| `@fit-app/config/prettier`              | configuração de formatação                               |
+| `@fit-app/config/tsconfig/base.json`    | rigor de tipos; não emite nada                           |
+| `@fit-app/config/tsconfig/library.json` | `base` + emissão de `.js` e `.d.ts`, para `packages/*`   |
+| `@fit-app/config/tsconfig/nest.json`    | `base` + decorators e CommonJS, para `apps/api`          |
+| `@fit-app/config/tsconfig/next.json`    | `base` + ESM, resolver de bundler e JSX, para `apps/web` |
 
 ## Como um workspace consome
 
@@ -129,14 +131,37 @@ function adapt(raw: any) {}
 `reportUnusedDisableDirectives` é erro também: quando o `any` sumir, a diretiva
 órfã quebra o lint em vez de virar entulho.
 
+## O preset do painel (Next.js)
+
+`eslint/web.js` e `tsconfig/next.json` entraram com o card F-13, validados contra
+a aplicação real, como o card F-05 fez com o `tsconfig/nest.json`.
+
+No eslint entram três coisas, e nada além: o `@next/eslint-plugin-next` em
+`core-web-vitals`, que pega o que só o framework vê — um `<a>` para rota interna,
+um `<script>` síncrono, um componente de cliente `async`; o
+`eslint-plugin-react-hooks` em `recommended-latest`, que na versão 7 é a análise
+do próprio React Compiler; e os globais de navegador, que a base não traz porque
+até este card todo workspace rodava em Node.
+
+O que **não** entra é o `eslint-config-next`. Ele traria um segundo preset de
+`typescript-eslint`, com parser e regras próprios, por cima do que a base já
+aplica no monorepo inteiro — duas configurações decidindo a mesma coisa. Os dois
+plugins acima são a parte dele que diz algo que a base não diz.
+
+As duas dependências de plugin moram **aqui**, e não em `apps/web`: o eslint
+resolve o plugin a partir do arquivo que faz o `import`, e esse arquivo é o
+preset.
+
+No tsconfig, o preset troca `module`, `moduleResolution` e `jsx`: o App Router
+compila tudo como ESM e resolve import como um bundler faz, e `nodenext` faria o
+TypeScript ler os `.tsx` de um pacote sem `type: module` como CommonJS e recusar
+todo `import` sob `verbatimModuleSyntax`. Todo flag de rigor da base fica de pé.
+É também por isso que `apps/web` é a exceção à segunda pegadinha acima: ele não
+precisa de `"type": "module"` no `package.json`.
+
 ## O que ainda não está aqui
 
 A regra 4 do `CLAUDE.md` ("Domínio puro": `domain/` não importa NestJS, Drizzle
 nem nada com I/O) não está no lint — enquanto isso vale a revisão de PR. A
 fronteira de módulo foi em frente porque depende só dos nomes dos módulos, que o
 `CLAUDE.md` já fixa.
-
-Não há preset para Next.js: ele depende de decisões que só existem junto com o
-código de `apps/web` (card F-13) — JSX e `eslint-config-next`. Esse card
-acrescenta o seu preset aqui, validado contra a aplicação real, como o card F-05
-fez com o `tsconfig/nest.json`.

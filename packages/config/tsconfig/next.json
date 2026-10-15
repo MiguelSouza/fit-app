@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@fit-app/config - next (apps/web)",
+  "extends": "./base.json",
+
+  "//": "What Next.js requires on top of the base, and nothing else. The App Router compiles every file as ESM and resolves imports the way a bundler does, so `module`, `moduleResolution` and `jsx` cannot stay as the base leaves them: `jsx: react-jsx` is the automatic runtime Next uses, and `nodenext` would make TypeScript read the `.tsx` files of a package without `\"type\": \"module\"` as CommonJS and refuse every `import` under `verbatimModuleSyntax`. `lib` gains the browser globals. Every strict flag of the base stays as it is. `paths`, `include` and `plugins` with a path are the consumer's: see the comment in base.json.",
+
+  "//next-does-not-rewrite-this": "`next build` offers to write these same options into the tsconfig of the app, but it gives up as soon as the file has an `extends` — which is exactly what apps/web has. The values below are therefore the only ones in play, and a build never edits a committed file.",
+
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "plugins": [{ "name": "next" }]
+  }
+}
