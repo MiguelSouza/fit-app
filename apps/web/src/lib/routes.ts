@@ -64,18 +64,44 @@ export function isSignedOutOnlyPath(pathname: string): boolean {
 }
 
 /**
- * Returns the path only if it is internal to this panel.
+ * An origin that resolves nothing, used only to ask the URL parser what a
+ * destination means. `.invalid` is reserved for exactly this (RFC 2606), so no
+ * name ever answers for it.
+ */
+const INTERNAL_ORIGIN = 'http://destino.invalid';
+
+/**
+ * Returns the path only if it is internal to this panel, normalized the way the
+ * browser will read it.
  *
  * The destination after sign-in arrives in the URL, which is to say from
  * outside. Without this filter, `?destino=https://somewhere.else` would turn
  * the sign-in screen into an open redirector — the attacker sends the link, the
  * person really does sign in, and lands on their site already trusting the
- * page. `//` is barred because it is the form that looks like a path: a browser
- * reads `//somewhere.else` as a protocol-relative URL.
+ * page.
+ *
+ * Checking the text is not enough, and this is the part that bites: the URL
+ * parser of a `http(s)` address reads a **backslash as a slash** and throws
+ * away tabs and line breaks, so `/\somewhere.else` and `/<tab>/somewhere.else`
+ * both start with a single `/` and both resolve to another host. So the
+ * destination is resolved against an origin that does not exist and only
+ * accepted if it stayed there — which is the same question the redirect is
+ * going to ask, asked once, here.
  */
 export function internalPath(value: string | null | undefined): string | undefined {
-  if (value == null) return undefined;
-  if (!value.startsWith('/') || value.startsWith('//')) return undefined;
+  if (value == null || !value.startsWith('/')) return undefined;
 
-  return value;
+  let resolved: URL;
+
+  try {
+    resolved = new URL(value, INTERNAL_ORIGIN);
+  } catch {
+    return undefined;
+  }
+
+  if (resolved.origin !== INTERNAL_ORIGIN) return undefined;
+
+  // What goes back is what the parser made of it, not what came in: whoever
+  // redirects then uses the very string that was checked.
+  return `${resolved.pathname}${resolved.search}${resolved.hash}`;
 }
