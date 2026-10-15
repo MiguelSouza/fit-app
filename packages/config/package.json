@@ -7,10 +7,12 @@
   "exports": {
     "./eslint": "./eslint/base.js",
     "./eslint/api": "./eslint/api.js",
+    "./eslint/web": "./eslint/web.js",
     "./prettier": "./prettier/index.js",
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/library.json": "./tsconfig/library.json",
-    "./tsconfig/nest.json": "./tsconfig/nest.json"
+    "./tsconfig/nest.json": "./tsconfig/nest.json",
+    "./tsconfig/next.json": "./tsconfig/next.json"
   },
   "scripts": {
     "build": "echo \"[@fit-app/config] nothing to build: the package ships plain config files\"",
@@ -22,7 +24,9 @@
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.4.1",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "typescript-eslint": "^8.71.1"
   },

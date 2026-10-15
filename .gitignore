@@ -8,6 +8,10 @@ build/
 .next/
 out/
 *.tsbuildinfo
+# Rewritten by every `next build`, and it points at `.next/types`, which only
+# exists after one. Committed, it would break `pnpm typecheck` anywhere the build
+# has not run yet — starting with the CI, which checks types before building.
+apps/web/next-env.d.ts
 
 # Turborepo
 .turbo/
