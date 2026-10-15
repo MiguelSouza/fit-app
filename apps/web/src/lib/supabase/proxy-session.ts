@@ -36,6 +36,12 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // together after the refresh.
   let response = NextResponse.next({ request });
 
+  // What `@supabase/ssr` asks for on a response that writes a session cookie,
+  // kept here because it has to survive a swap of the response: the library
+  // hands these over on the first cookie write and on no other, so reading them
+  // off a response that was replaced afterwards finds nothing.
+  const noStore: Record<string, string> = {};
+
   const { supabaseUrl, supabaseAnonKey } = publicEnv();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -56,7 +62,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
         // `Cache-Control: private, no-store` and friends. A response that
         // writes a session cookie must not be cached by any CDN: the next
         // person would be handed this person's token.
-        for (const [header, value] of Object.entries(headers)) {
+        Object.assign(noStore, headers);
+
+        for (const [header, value] of Object.entries(noStore)) {
           response.headers.set(header, value);
         }
       },
@@ -75,7 +83,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     url.search = '';
     url.searchParams.set(DESTINATION_PARAM, `${pathname}${request.nextUrl.search}`);
 
-    return redirectKeepingCookies(url, response);
+    return redirectKeepingCookies(url, response, noStore);
   }
 
   if (data.user && isSignedOutOnlyPath(pathname)) {
@@ -83,7 +91,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     url.pathname = HOME_PATH;
     url.search = '';
 
-    return redirectKeepingCookies(url, response);
+    return redirectKeepingCookies(url, response, noStore);
   }
 
   return response;
@@ -93,12 +101,26 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
  * Redirects without losing what the refresh has just written. Swapping the
  * response and forgetting the cookies throws the refreshed session away, and
  * what that looks like is being signed out of nowhere once an hour.
+ *
+ * The cache headers come along for the same reason they are set at all: this
+ * redirect carries the refreshed cookie too, and a cached redirect hands the
+ * next person this person's token. Only those headers cross over — copying
+ * `from` whole would bring `x-middleware-next` with it, which tells Next.js to
+ * carry on with the request instead of redirecting.
  */
-function redirectKeepingCookies(url: URL, from: NextResponse): NextResponse {
+function redirectKeepingCookies(
+  url: URL,
+  from: NextResponse,
+  noStore: Record<string, string>,
+): NextResponse {
   const redirect = NextResponse.redirect(url);
 
   for (const cookie of from.cookies.getAll()) {
     redirect.cookies.set(cookie);
+  }
+
+  for (const [header, value] of Object.entries(noStore)) {
+    redirect.headers.set(header, value);
   }
 
   return redirect;
