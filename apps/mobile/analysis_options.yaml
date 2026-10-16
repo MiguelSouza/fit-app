@@ -1,0 +1,35 @@
+# What `flutter analyze` checks in the app. It is the `pnpm lint` of
+# `apps/mobile` — the app is not a pnpm package and does not go through turbo
+# (`pnpm-workspace.yaml`), so this is the gate, and the README says to run it.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    # The Dart client is generated from the OpenAPI document of the API by
+    # `pnpm api:generate` and is not versioned (ADR 0008). Nobody edits it, so
+    # nobody can act on a lint about it — and the generator does leave a few
+    # unused imports behind.
+    - packages/**
+
+  errors:
+    # A `TODO` is a note, not a finding. Everything else stays at the level the
+    # lint set gives it.
+    todo: ignore
+
+linter:
+  rules:
+    # The repository writes strings in single quotes (prettier does it in the
+    # TypeScript packages); this keeps Dart from drifting.
+    prefer_single_quotes: true
+    # `print` in an app that handles health data is a leak waiting to happen:
+    # nothing about a patient may reach a device log (`CLAUDE.md`).
+    avoid_print: true
+
+# `dart format` wraps at 80 by default. The repository wraps at 100 everywhere
+# else (printWidth in packages/config/prettier), and two widths in one
+# repository is a diff waiting to happen.
+formatter:
+  page_width: 100

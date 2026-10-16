@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- The local API and the local Supabase answer over http, on 10.0.2.2
+         (the host, seen from the emulator). Android blocks cleartext traffic
+         by default, and this lifts the block in the debug build only: staging
+         and production are https, and the release manifest does not carry
+         this attribute. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
