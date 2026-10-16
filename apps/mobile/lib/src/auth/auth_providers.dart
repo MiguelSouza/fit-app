@@ -29,8 +29,19 @@ bool hasSession(GoTrueClient auth) => auth.currentSession != null;
 /// reason the class exists. It carries no session and no token — whoever needs
 /// one asks the Auth client at that moment.
 class SessionChanges extends ChangeNotifier {
-  SessionChanges(GoTrueClient auth) {
-    _subscription = auth.onAuthStateChange.listen((_) => notifyListeners());
+  SessionChanges(Stream<AuthState> changes) {
+    _subscription = changes.listen(
+      (_) => notifyListeners(),
+
+      // The stream carries errors as well as events, and the Auth client
+      // documents that a subscription without `onError` lets them out as
+      // unhandled errors — a token refresh with no network arrives here as an
+      // `AuthRetryableFetchException`, and Flutter would print it, with the
+      // Auth request in it. There is nothing to notify, because a session that
+      // really ended comes as a `signedOut` event and not as an error, and
+      // nothing to log (`CLAUDE.md`).
+      onError: (Object _) {},
+    );
   }
 
   late final StreamSubscription<AuthState> _subscription;
@@ -43,7 +54,7 @@ class SessionChanges extends ChangeNotifier {
 }
 
 final sessionChangesProvider = Provider<SessionChanges>((ref) {
-  final changes = SessionChanges(ref.watch(supabaseAuthProvider));
+  final changes = SessionChanges(ref.watch(supabaseAuthProvider).onAuthStateChange);
 
   ref.onDispose(changes.dispose);
 
