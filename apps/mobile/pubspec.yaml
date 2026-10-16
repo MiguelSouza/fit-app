@@ -1,0 +1,57 @@
+name: fit_app
+description: App do paciente da fit-app
+# Never published: this is the app, not a package.
+publish_to: 'none'
+
+# `versionName+versionCode` on Android, `CFBundleShortVersionString+CFBundleVersion`
+# on iOS. `flutter build` can override both (`--build-name`, `--build-number`),
+# which is what a release pipeline does.
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # pt-BR for the strings Flutter itself provides (date picker, text selection
+  # menu). Without it they answer in English under screens in Portuguese.
+  flutter_localizations:
+    sdk: flutter
+
+  # State and injection (CLAUDE.md names Riverpod for the app).
+  flutter_riverpod: ^3.4.3
+
+  # Routing, with the redirect that keeps a screen from opening without a
+  # session (`lib/src/app/router.dart`, ADR 0012).
+  go_router: ^18.1.0
+
+  # Supabase Auth: the one thing the app asks Supabase directly (rule 6 of
+  # CLAUDE.md). It brings the session and renews the token.
+  supabase_flutter: ^2.18.3
+
+  # The http client the generated Dart client is built on. It is a direct
+  # dependency because the app writes the interceptor that carries the token
+  # (`lib/src/api/api_client.dart`).
+  dio: ^5.11.1
+
+  # The API client, generated from `apps/api/openapi.json` by
+  # `pnpm api:generate` (ADR 0008). It is **not** versioned: a fresh clone runs
+  # that command once before `flutter pub get` (see the README).
+  fit_app_api_client:
+    path: packages/api_client
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The lint set of `analysis_options.yaml`, which is the `pnpm lint` of this
+  # app: `flutter analyze`.
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  # No asset and no font yet, on purpose: icon, splash and typeface are the
+  # design system (card OP-06), and the type tokens hold the platform family
+  # until then (`lib/src/core/theme/app_typography.dart`).
