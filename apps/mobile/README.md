@@ -56,9 +56,10 @@ flutter run \
 ```
 
 Com a API (`pnpm --filter api dev`) e o Supabase local (`pnpm db:start`) de pé.
-Esquecer um define derruba o app no primeiro frame dizendo qual faltou — de
-propósito: endereço padrão escondido no binário é build de staging falando com a
-máquina de alguém sem ninguém notar.
+Esquecer um dos três obrigatórios derruba o app no primeiro frame dizendo qual
+faltou (o `APP_ENV` tem padrão, e é o único que tem) — de propósito: endereço
+padrão escondido no binário é build de staging falando com a máquina de alguém
+sem ninguém notar.
 
 | Define              | O que é                                       | Padrão  |
 | ------------------- | --------------------------------------------- | ------- |
@@ -139,9 +140,11 @@ sabe se existe sessão.
 ## Dado de saúde e LGPD
 
 - **Nada é logado.** Nem o erro do Auth (ele carrega o e-mail da tentativa), nem
-  o corpo de uma resposta que não é o envelope de erro da API. O `debug` do
-  `supabase_flutter` fica desligado em todos os ambientes: o que ele imprime é o
-  tráfego do Auth, com a sessão dentro.
+  o corpo de uma resposta que não é o envelope de erro da API, nem o erro que o
+  stream do Auth entrega quando a renovação do token não encontra rede (a
+  assinatura tem `onError` para ele não escapar e virar linha impressa pelo
+  Flutter). O `debug` do `supabase_flutter` fica desligado em todos os
+  ambientes: o que ele imprime é o tráfego do Auth, com a sessão dentro.
 - **Uma mensagem só para falha de login**, como o 401 da API: dizer "este e-mail
   não existe" entrega quem tem conta na plataforma a quem está só tentando.
 - **A mensagem de erro que aparece na tela é a da API**, que o contrato garante

@@ -79,7 +79,10 @@ contrato garante em pt-BR e sem dado de paciente) e se foi 401. A exceção do
 cabeçalho desta é o token.
 
 **Nada é logado.** Nem o erro do Auth, que carrega o e-mail da tentativa; nem o
-corpo de uma resposta que não é o envelope; e o `debug` do `supabase_flutter`
+corpo de uma resposta que não é o envelope; nem o erro que o stream do Auth
+entrega quando uma renovação de token não encontra rede — a assinatura tem
+`onError` justamente para ele não escapar e virar linha impressa pelo Flutter,
+com a requisição do Auth dentro; e o `debug` do `supabase_flutter`
 fica **desligado em todos os ambientes**, porque o que ele imprime é o tráfego
 do Auth, sessão inclusa. Erro virou estado de tela, não linha de log.
 
@@ -98,9 +101,10 @@ Uma tela nova é um `GoRoute` e um arquivo em `lib/src/<assunto>/`, e já nasce
 protegida por não estar em `publicPaths`. Uma tela pública é o arquivo **mais**
 uma linha nessa lista — e esquecer a linha dá redirecionamento, não vazamento.
 
-Rodar o app exige quatro defines na linha de comando, e esquecer um derruba o
-app no primeiro frame com o nome do que falta. É mais ruidoso que um `.env` e é
-o preço de não ter endereço padrão escondido no binário. Os comandos prontos
+Rodar o app exige três defines obrigatórios na linha de comando — o `APP_ENV` é
+o quarto e tem padrão —, e esquecer um dos três derruba o app no primeiro frame
+com o nome do que falta. É mais ruidoso que um `.env` e é o preço de não ter
+endereço padrão escondido no binário. Os comandos prontos
 estão no [README do app](../../apps/mobile/README.md).
 
 Trocar o Supabase Auth por outro provedor mexe em dois arquivos
