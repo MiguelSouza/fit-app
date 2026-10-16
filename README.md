@@ -14,7 +14,7 @@ arquitetura, fronteiras de módulo, LGPD e convenções.
 | Node       | 24 LTS (ver [`.nvmrc`](./.nvmrc) — `nvm use`)                           |
 | pnpm       | 12 (`corepack enable` usa a versão fixada em `packageManager`)          |
 | Docker     | Engine 24+ com Compose, rodando (no Windows e no macOS, Docker Desktop) |
-| Flutter    | só para `apps/mobile` (ver card F-14)                                   |
+| Flutter    | 3.47+, só para `apps/mobile` (o `flutter doctor` diz o que falta)       |
 
 O **Supabase CLI não precisa de instalação global**: é uma devDependency da raiz,
 então o `pnpm install` já o traz na versão que o repositório inteiro usa. Chame-o
@@ -156,7 +156,8 @@ contrato aparecer como diff no PR. Quem usava o campo antigo deixa de compilar �
 [ADR 0008](./docs/adr/0008-contratos-em-zod-e-clientes-gerados.md).
 
 O cliente Dart é gerado em Docker (`openapi-generator`) e **não** é versionado:
-ele só compila depois do `build_runner`, no workspace Flutter do card F-14.
+ele só compila depois do `build_runner`, que roda dentro de `apps/mobile` — o
+passo a passo está no [README do app](./apps/mobile/README.md#antes-da-primeira-vez).
 
 A documentação interativa da API fica em
 [`/docs`](http://127.0.0.1:3333/docs) com a API local de pé — e não existe em
@@ -176,11 +177,16 @@ Nada disso substitui `pnpm lint` e `pnpm typecheck` — o hook só vê o que est
 stage. Para um commit de emergência, `git commit --no-verify` pula os dois, e aí
 [o CI é quem pega](#o-que-roda-no-ci).
 
-O app do paciente não passa pelo turbo — é Flutter:
+O app do paciente não passa pelo turbo — é Flutter, e o que vale nele é
+`flutter analyze` e `flutter test`, rodados à mão:
 
 ```bash
-cd apps/mobile && flutter pub get && flutter run
+cd apps/mobile && flutter analyze && flutter test
 ```
+
+Rodar o app pede os `--dart-define` de ambiente; a linha de comando pronta, para
+o emulador Android e para o simulador iOS, está no
+[README de `apps/mobile`](./apps/mobile/README.md#como-rodar).
 
 ## O que roda no CI
 
@@ -222,7 +228,8 @@ preparação. O job tem `timeout-minutes: 10`, que é o orçamento do card F-12
 escrito como limite: um CI que passar de dez minutos falha em vez de virar o
 novo normal em silêncio.
 
-Fora do CI ficam `apps/mobile` (é Flutter, precisa do SDK e entra no card F-14),
+Fora do CI ficam `apps/mobile` (é Flutter e precisa do SDK, então `flutter
+analyze` e `flutter test` são de quem empurra),
 `pnpm test:archon` (roda no `bun`, e é ferramenta do Archon) e qualquer deploy.
 O workflow só lê o repositório: `permissions: contents: read`, nenhum segredo.
 O porquê de cada escolha está no
@@ -301,7 +308,14 @@ Pacientes, Convites e Ajustes — `pnpm --filter @fit-app/web dev` sobe o painel
 [http://127.0.0.1:3000](http://127.0.0.1:3000), e o
 [README de `apps/web`](./apps/web/README.md) tem o resto, incluindo um ponto que ainda não
 fecha entre a sessão do painel e o guard da API. A sessão fica em cookie, para o servidor
-poder lê-la — ver [ADR 0011](./docs/adr/0011-sessao-do-painel-em-cookie.md).
+poder lê-la — ver [ADR 0011](./docs/adr/0011-sessao-do-painel-em-cookie.md). E o esqueleto
+do app do paciente (card **F-14**, em `apps/mobile`): Flutter com Riverpod e go_router,
+login e logout com Supabase Auth, tema escuro montado de tokens de cor e tipografia, os
+três ambientes por `--dart-define` e uma tela inicial protegida que mostra o
+`GET /v1/me` — o [README de `apps/mobile`](./apps/mobile/README.md) tem os comandos, e o
+[ADR 0012](./docs/adr/0012-esqueleto-do-app-do-paciente.md) o porquê de cada escolha.
+Ele herda o mesmo ponto aberto do painel: entrar e sair funcionam, e a chamada à API com
+a sessão real ainda responde 401.
 Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
 percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
 pasta.
