@@ -158,9 +158,16 @@ export function createRandom(seed: number): Random {
     },
 
     pick(items) {
+      // Checked before the draw, not after: an empty list would otherwise come
+      // out of `int(0, -1)` as a complaint about its bounds.
+      if (items.length === 0) throw new Error('pick() needs a non-empty list');
+
       const item = items[random.int(0, items.length - 1)];
 
-      if (item === undefined) throw new Error('pick() needs a non-empty list');
+      // Unreachable: the index is inside the length checked above. Here
+      // because `noUncheckedIndexedAccess` is on, and a draw that silently
+      // returned undefined would travel a long way before failing.
+      if (item === undefined) throw new Error('pick() drew outside the list');
 
       return item;
     },

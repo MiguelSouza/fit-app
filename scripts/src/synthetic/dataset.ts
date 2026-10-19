@@ -55,6 +55,14 @@ const ENROLLED_DAYS_BEFORE = 30;
 /** The most patients one run will produce: under the 480 distinct names. */
 export const MAX_PATIENTS = 400;
 
+/**
+ * The window a run may ask for. The floor is three weeks, which is the
+ * narrowest window the summary can still read a trend out of; the ceiling is
+ * two years, well past anything this data is for.
+ */
+export const MIN_DAYS = 21;
+export const MAX_DAYS = 730;
+
 export function generateDataset(options: DatasetOptions): SyntheticDataset {
   const { patients, seed, days, endDate } = options;
   const timezone = options.timezone ?? DEFAULT_TIMEZONE;
@@ -63,8 +71,8 @@ export function generateDataset(options: DatasetOptions): SyntheticDataset {
     throw new Error(`patients has to be an integer between 1 and ${MAX_PATIENTS}, got ${patients}`);
   }
 
-  if (!Number.isInteger(days) || days < 7 || days > 730) {
-    throw new Error(`days has to be an integer between 7 and 730, got ${days}`);
+  if (!Number.isInteger(days) || days < MIN_DAYS || days > MAX_DAYS) {
+    throw new Error(`days has to be an integer between ${MIN_DAYS} and ${MAX_DAYS}, got ${days}`);
   }
 
   if (!Number.isInteger(seed)) throw new Error(`seed has to be an integer, got ${seed}`);
