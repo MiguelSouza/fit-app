@@ -2,13 +2,15 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@fit-app/config/tsconfig/base.json",
 
-  "//": "The scripts are plain JavaScript, type-checked through their JSDoc: `allowJs` and `checkJs` are what make `pnpm typecheck` read them at all. Same arrangement as in packages/config.",
+  "//": "Nothing here is compiled: `tsc` only type-checks, and node runs both the `.mjs` and the `.ts` files as they are. `allowJs`/`checkJs` are what make `pnpm typecheck` read the JSDoc of the `.mjs` scripts (same arrangement as in packages/config); `allowImportingTsExtensions` and `erasableSyntaxOnly` are what keep the `.ts` ones runnable by node's type stripping, which needs the extension in the specifier and refuses any syntax that is more than a type annotation (enum, namespace, parameter property).",
 
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
     "types": ["node"]
   },
 
-  "include": ["*.mjs"]
+  "include": ["*.mjs", "src/**/*.ts", "test/**/*.ts"]
 }

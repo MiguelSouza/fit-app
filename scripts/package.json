@@ -2,14 +2,21 @@
   "name": "@fit-app/scripts",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Seeds, gerador de pacientes sinteticos e importacao TACO/TBCA",
   "scripts": {
-    "build": "echo \"[@fit-app/scripts] placeholder package, nothing to build yet (see card F-15)\"",
-    "dev": "echo \"[@fit-app/scripts] placeholder package, nothing to run yet (see card F-15)\"",
+    "build": "echo \"[@fit-app/scripts] nothing to build: node runs the TypeScript of this package directly (see README)\"",
+    "dev": "echo \"[@fit-app/scripts] nothing to run in watch mode: every script here is a one-shot command (see README)\"",
     "generate:dart-client": "node generate-dart-client.mjs",
+    "seed:synthetic": "node --disable-warning=ExperimentalWarning src/seed-synthetic.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"[@fit-app/scripts] placeholder package, no tests yet (see card F-15)\""
+    "test": "pnpm run test:unit",
+    "test:unit": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0"
   },
   "devDependencies": {
     "@fit-app/config": "workspace:*",

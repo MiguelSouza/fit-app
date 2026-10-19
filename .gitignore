@@ -57,3 +57,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Synthetic patients (`pnpm seed:synthetic`): generated data, reproducible from
+# its seed, and never committed.
+scripts/.synthetic/
