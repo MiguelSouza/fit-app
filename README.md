@@ -112,9 +112,12 @@ pnpm test:integration # os testes contra um Postgres descartável (precisa de Do
 pnpm format           # formata o repositório com o prettier compartilhado
 pnpm format:check     # só verifica a formatação, sem reescrever nada
 pnpm api:generate     # regera o OpenAPI da API e os clientes TypeScript e Dart
+pnpm seed:synthetic   # gera pacientes sintéticos (--patients 20, --help)
 ```
 
-Cada script da raiz delega ao turbo. Para rodar em um pacote só, use o filtro:
+Quase todo script da raiz delega ao turbo. As exceções são os `db:*` da seção
+anterior e o `seed:synthetic`, que chamam direto quem faz o trabalho. Para
+rodar em um pacote só, use o filtro:
 
 ```bash
 pnpm turbo run build --filter=@fit-app/api
@@ -316,6 +319,16 @@ três ambientes por `--dart-define` e uma tela inicial protegida que mostra o
 [ADR 0012](./docs/adr/0012-esqueleto-do-app-do-paciente.md) o porquê de cada escolha.
 Ele herda o mesmo ponto aberto do painel: entrar e sair funcionam, e a chamada à API com
 a sessão real ainda responde 401.
+E o gerador de pacientes sintéticos (card **F-15**, em `scripts/`):
+`pnpm seed:synthetic --patients 20` cria uma organização, uma nutricionista e N pacientes
+com 90 dias de atividades, sono, métricas diárias, check-ins, peso e adesão, em seis
+perfis prontos — estável, sobrecarga, perda de peso não planejada, adesão em queda,
+sumiu e energia baixa — a partir de uma semente fixa, e imprime no fim a tabela que diz
+quem precisa de atenção e por quê. Nomes e e-mails são inventados, o domínio é
+`.invalid` e não há documento nem telefone: nenhum dado real de paciente entra em
+desenvolvimento ou teste. A saída é json em `scripts/.synthetic`, não linhas no banco —
+escrever no Postgres espera as tabelas que faltam do **F-07**, como explica o
+[README de `scripts/`](./scripts/README.md).
 Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
 percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
 pasta.
