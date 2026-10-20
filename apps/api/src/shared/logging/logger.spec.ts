@@ -1,8 +1,8 @@
+import { REDACTED } from '@fit-app/observability';
 import { type DestinationStream } from 'pino';
 
 import { createLogger, ERROR_WITHOUT_MESSAGE } from './logger';
 import { runWithCorrelationId } from './correlation-id';
-import { REDACTED } from './sensitive-data';
 import { type ApiEnv, type LogLevel } from '../config/env';
 
 /**

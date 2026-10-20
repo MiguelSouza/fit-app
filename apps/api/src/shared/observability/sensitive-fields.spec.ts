@@ -1,9 +1,13 @@
-import { isSensitiveKey, redactSensitive, REDACTED, TRUNCATED } from './sensitive-data';
+import { isSensitiveKey, redactSensitive, REDACTED, TRUNCATED } from '@fit-app/observability';
 
 /**
  * The rule CLAUDE.md states ("Nunca logar dado de saúde nem dado pessoal"),
  * tested as a function: by field name, at any depth, without the caller having
  * to remember anything.
+ *
+ * The list itself lives in `@fit-app/observability`, because the Sentry filter
+ * of the panel needs the same one; the test stays here, which is where the
+ * logger that reads it runs.
  */
 describe('isSensitiveKey', () => {
   it('recognizes the fields the card lists, however they are spelled', () => {

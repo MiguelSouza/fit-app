@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@fit-app/config/tsconfig/library.json",
+
+  "//": "`outDir`, `rootDir` and `include` are local because TypeScript resolves every path against the file that declares it — see the comment in the base preset.",
+
+  "//verbatimModuleSyntax": "Off, like in the contracts package and for the same reason: this package is published as CommonJS (no `type` field in its package.json), because `apps/api` is a CommonJS bundle built by `@nestjs/cli` and `require`s it. Every strict flag of the base stays as it is.",
+
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "verbatimModuleSyntax": false,
+    "types": []
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

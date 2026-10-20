@@ -1,0 +1,30 @@
+{
+  "name": "@fit-app/observability",
+  "version": "0.0.0",
+  "private": true,
+  "description": "O que nunca sai num log nem num evento do Sentry: a lista de campos sensiveis e o filtro beforeSend",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"[@fit-app/observability] no tests here: this package has no runtime dependency to stand a test up against, and what it decides is asserted where it is used (apps/api/src/shared/observability and apps/api/src/shared/logging), against the real Sentry SDK and the real logger\""
+  },
+  "devDependencies": {
+    "@fit-app/config": "workspace:*",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3"
+  }
+}

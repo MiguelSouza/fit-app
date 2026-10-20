@@ -1,12 +1,16 @@
 /**
- * What never reaches a log line, masked automatically before the logger
- * serializes anything.
+ * What never leaves this platform, masked automatically before anything is
+ * serialized.
  *
  * CLAUDE.md ("Saúde e LGPD") is blunt about it: no health data and no personal
  * data in a log — not in CloudWatch, not in Sentry, not in Langfuse. Ids and
  * codes, yes. Leaving that to whoever writes the log call means it works until
  * someone logs a whole entity by accident, so the rule lives here instead, in
- * front of the serializer.
+ * front of the serializers: the logger of the API reads this list
+ * (`formatters.log`, in `apps/api/src/shared/logging/logger.ts`) and so does
+ * the Sentry filter of the API and of the panel (`scrub-event.ts`, next door).
+ * One list, because a field that is personal data in a log line is personal
+ * data in an error report too.
  *
  * Matching is by field name, and it errs on the side of masking: a `filename`
  * that comes out as `[redacted]` costs an inconvenience, an e-mail address that

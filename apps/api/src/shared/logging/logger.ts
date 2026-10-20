@@ -1,8 +1,8 @@
+import { redactSensitiveObject } from '@fit-app/observability';
 import pino from 'pino';
 
 import { type ApiEnv } from '../config/env';
 import { currentCorrelationId } from './correlation-id';
-import { redactSensitiveObject } from './sensitive-data';
 import { toSafeError } from './safe-error';
 
 /**

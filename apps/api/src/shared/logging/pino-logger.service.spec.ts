@@ -1,9 +1,9 @@
+import { REDACTED } from '@fit-app/observability';
 import { Logger } from '@nestjs/common';
 import { type DestinationStream as PinoDestination } from 'pino';
 
 import { createLogger } from './logger';
 import { PinoLoggerService } from './pino-logger.service';
-import { REDACTED } from './sensitive-data';
 import { type ApiEnv } from '../config/env';
 
 /**
