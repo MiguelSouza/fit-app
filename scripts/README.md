@@ -64,6 +64,16 @@ O `sumiu` é o único em que as três séries do paciente param e as duas do
 aparelho seguem: um corpo que continua sendo medido ao lado de uma pessoa que
 parou de responder é a assinatura inteira do perfil.
 
+**Os perfis são escritos para os 90 dias.** Cinco das seis assinaturas são
+tendências, e a tabela do fim compara três semanas contra três semanas; numa
+janela estreita essas duas médias viram uma semana cada, e uma semana de corpo
+tem ruído suficiente para esconder uma tendência de verdade — ou, mais
+raramente, para inventar uma. Em `--days 21` conte com alguns perfis
+problemáticos sem sinal na tabela e, aqui e ali, um `estavel` com sinal. A
+exceção é o `sumiu`: o silêncio é medido contra o tamanho da janela, então ele
+aparece em qualquer uma delas. Para julgar regra de alerta ou texto de IA, use
+a janela padrão.
+
 ### Reprodutibilidade
 
 A mesma semente e a mesma janela produzem exatamente os mesmos bytes. O
