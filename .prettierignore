@@ -23,3 +23,6 @@ apps/mobile/
 # formatting diff.
 apps/api/openapi.json
 packages/api-client/src/generated/
+
+# Output of `pnpm seed:synthetic`: generated json, not source
+scripts/.synthetic/
