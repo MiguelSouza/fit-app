@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { generateDataset } from '../src/synthetic/dataset.ts';
+import { generateDataset, MAX_DAYS, MIN_DAYS } from '../src/synthetic/dataset.ts';
 import { PROFILES, profileFor, profileById } from '../src/synthetic/profiles.ts';
 import { DETECTORS, detectorsFiringFor, summarize } from '../src/synthetic/summary.ts';
 
@@ -122,11 +122,14 @@ test('a stable patient trips no detector at all', () => {
 });
 
 test('sumiu stops answering while the wearable keeps reporting', () => {
-  const vanished = SUMMARIES.filter(({ patient }) => patient.profile === 'sumiu');
+  // The 90-day cohorts only: the counts below are the window the card asks for.
+  const vanished = COHORTS.flatMap((cohort) => cohort.patients).filter(
+    (patient) => patient.profile === 'sumiu',
+  );
 
   assert.ok(vanished.length > 0);
 
-  for (const { patient } of vanished) {
+  for (const patient of vanished) {
     const { sleep, dailyMetrics, checkIns, weights, adherence } = patient.series;
     const lastDay = sleep.at(-1)?.nightOf;
 
@@ -148,6 +151,45 @@ test('sumiu stops answering while the wearable keeps reporting', () => {
 
     // Roughly a third of the way in, which is what the profile says.
     assert.equal(adherence.length, 30, `${patient.code} logged ${adherence.length} days`);
+  }
+});
+
+/**
+ * The silence of `sumiu` is the one signal a narrow window can make
+ * unreachable: three weeks without a check-in does not fit inside a window of
+ * three weeks, and with a fixed threshold the profile came out invisible on
+ * every window under 42 days — exactly where there is least else to see. So
+ * the detector reads the silence against the width of the window, and this
+ * pins it on the widths where that rescaling is what decides the answer.
+ *
+ * Only this detector is asserted here. The other four read a trend off two
+ * means, and on the narrowest window each mean is seven days of a body: the
+ * noise is wide enough to hide a real trend and, more rarely, to invent one.
+ * They are asserted on the 90 days the card asks for, which is the window this
+ * generator exists to produce.
+ */
+test('sumiu is visible on every window the command accepts', () => {
+  const sumiu = DETECTORS.find((detector) => detector.profile === 'sumiu');
+
+  assert.ok(sumiu !== undefined);
+
+  for (const days of [MIN_DAYS, 22, 30, 41, 42, 60, MAX_DAYS]) {
+    for (const seed of [4_242, 1, 999_983]) {
+      // Five patients, because the fifth is always the one who vanishes.
+      const cohort = generateDataset({ patients: 5, seed, days, endDate: '2026-10-19' });
+      const patient = cohort.patients[4];
+
+      assert.ok(patient !== undefined);
+      assert.equal(patient.profile, 'sumiu');
+
+      const summary = summarize(patient, cohort.manifest.endDate, days);
+
+      assert.ok(
+        sumiu.fires(summary),
+        `on a window of ${days} days, ${patient.code} answered no check-in for ` +
+          `${summary.daysSinceLastCheckIn} days and the detector did not fire`,
+      );
+    }
   }
 });
 

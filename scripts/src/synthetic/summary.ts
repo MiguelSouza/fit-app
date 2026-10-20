@@ -26,6 +26,14 @@ export interface PatientSummary {
   readonly id: string;
   readonly profile: ProfileId;
 
+  /**
+   * How many days the window this summary read is. Carried here because a
+   * detector written in days of silence cannot be read without it: three weeks
+   * without a check-in is a lot of a 90-day window and more than all of a
+   * three-week one.
+   */
+  readonly windowDays: number;
+
   /** From the first weigh-in of the window to the last, in percent. */
   readonly weightChangePct: number | null;
 
@@ -140,6 +148,7 @@ export function summarize(
     code: patient.code,
     id: patient.id,
     profile: patient.profile,
+    windowDays: days,
 
     weightChangePct:
       firstWeight === undefined || lastWeight === undefined || weights.length < 2
@@ -189,18 +198,44 @@ export interface Detector {
   /** The profile this is meant to catch. */
   readonly profile: ProfileId;
 
-  /** What it looks for, in pt-BR, for the `--help` of the command. */
+  /** What it looks for, in pt-BR: the sentence a reader checks the table against. */
   readonly looksFor: string;
 
   fires(summary: PatientSummary): boolean;
 }
 
+/**
+ * How long a silence has to last to count as one, on a window of `days`.
+ *
+ * Three weeks is the answer that matters, and the only one on the 90 days the
+ * card asks for. But `--days` goes down to three weeks, and a patient cannot
+ * be silent for longer than the window they are read in: with a fixed 21 the
+ * detector was unreachable on anything under 42 days, and `sumiu` — the one
+ * profile whose whole signature is the silence — came out invisible on exactly
+ * the windows where there is least data to see anything else in.
+ *
+ * Half the window is the floor, which is always reachable: the profile stops
+ * answering a third of the way in, so the silence is the remaining two thirds
+ * of any window, and two thirds is more than a half by a margin that the
+ * check-in rate of a patient who is fine does not cross.
+ */
+function silenceThreshold(days: number): number {
+  return Math.min(21, Math.ceil(days / 2));
+}
+
 export const DETECTORS: readonly Detector[] = [
   {
     profile: 'sobrecarga',
-    looksFor: 'treino +35% ou mais e sono 35 min menor',
+    looksFor: 'treino +30% ou mais e sono 35 min menor',
+    // 30% and not 35%: the weekly volume cannot grow past what one session of
+    // the patient's own sports may last (`ACTIVITY_SHAPES`), so a patient whose
+    // mix is swimming and walking — 90 min a session — absorbs part of the
+    // +90% the profile asks for, and lands around +33%. Over a sweep of 500
+    // seeds that was the floor for `sobrecarga`, while no `estavel` patient
+    // got past +25%; and the two conditions never come close together on a
+    // patient who is fine, which is what makes the pair safe to loosen.
     fires: (summary) =>
-      (summary.trainingChangePct ?? 0) >= 35 && (summary.sleepChangeMin ?? 0) <= -35,
+      (summary.trainingChangePct ?? 0) >= 30 && (summary.sleepChangeMin ?? 0) <= -35,
   },
   {
     profile: 'perda-de-peso-nao-planejada',
@@ -215,8 +250,8 @@ export const DETECTORS: readonly Detector[] = [
   },
   {
     profile: 'sumiu',
-    looksFor: 'sem check-in há 21 dias ou mais',
-    fires: (summary) => summary.daysSinceLastCheckIn >= 21,
+    looksFor: 'sem check-in há 21 dias, ou há mais de metade da janela',
+    fires: (summary) => summary.daysSinceLastCheckIn >= silenceThreshold(summary.windowDays),
   },
   {
     profile: 'energia-baixa',
