@@ -5,8 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/app/fit_app.dart';
 import 'src/core/config/app_config.dart';
 import 'src/core/config/app_config_provider.dart';
+import 'src/core/observability/sentry.dart';
 
-/// Where the app starts, and the only place that knows the order of the three
+/// Where the app starts, and the only place that knows the order of the four
 /// things that have to happen before the first frame.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,13 +34,22 @@ Future<void> main() async {
     debug: false,
   );
 
-  runApp(
-    ProviderScope(
-      // The one override of the app: everything that needs an address reads
-      // `appConfigProvider`, so no widget and no provider touches a Dart
-      // define, and a test hands over the addresses it wants.
-      overrides: [appConfigProvider.overrideWithValue(config)],
-      child: const FitApp(),
-    ),
-  );
+  // Starts Sentry when this build has a DSN, and runs the app either way. The
+  // app goes inside it so that an error in the first frame is already in the
+  // zone the SDK watches (ADR 0013).
+  await runWithSentry(config, () {
+    // Who is using the app, by id, kept in step with the session. After
+    // `Supabase.initialize`, because it reads the session that was restored.
+    watchSessionForSentry(Supabase.instance.client.auth);
+
+    runApp(
+      ProviderScope(
+        // The one override of the app: everything that needs an address reads
+        // `appConfigProvider`, so no widget and no provider touches a Dart
+        // define, and a test hands over the addresses it wants.
+        overrides: [appConfigProvider.overrideWithValue(config)],
+        child: const FitApp(),
+      ),
+    );
+  });
 }

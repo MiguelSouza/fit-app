@@ -38,6 +38,34 @@ void main() {
     });
   });
 
+  group('AppConfig.from, for the optional defines', () {
+    test('a build with no Sentry define reports to nobody', () {
+      final config = AppConfig.from(
+        environment: 'local',
+        apiUrl: 'http://127.0.0.1:3333',
+        supabaseUrl: 'http://127.0.0.1:54321',
+        supabaseAnonKey: 'chave',
+      );
+
+      expect(config.sentryDsn, isNull);
+      expect(config.sentryRelease, isNull);
+    });
+
+    test('an empty define is a define nobody passed', () {
+      final config = AppConfig.from(
+        environment: 'staging',
+        apiUrl: 'https://api.exemplo.com',
+        supabaseUrl: 'https://projeto.supabase.co',
+        supabaseAnonKey: 'chave',
+        sentryDsn: '  ',
+        sentryRelease: ' app@1.2.3 ',
+      );
+
+      expect(config.sentryDsn, isNull);
+      expect(config.sentryRelease, 'app@1.2.3');
+    });
+  });
+
   group('AppConfig.parseEnvironment', () {
     test('reads the three names, in any case', () {
       expect(AppConfig.parseEnvironment('local'), AppEnvironment.local);

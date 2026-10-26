@@ -8,6 +8,7 @@ import '../auth/auth_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../shared/environment_badge.dart';
 import '../shared/screen_message.dart';
+import '../shared/sentry_check_button.dart';
 
 /// The home of the app, which only opens with a session (`router.dart`).
 ///
@@ -30,6 +31,9 @@ class HomeScreen extends ConsumerWidget {
         actions: <Widget>[
           const EnvironmentBadge(),
           const SizedBox(width: 8),
+
+          // Renders nothing on a production build, like the badge above it.
+          const SentryCheckButton(),
           IconButton(
             tooltip: 'Sair',
             icon: const Icon(Icons.logout),

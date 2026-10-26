@@ -36,6 +36,12 @@ dependencies:
   # (`lib/src/api/api_client.dart`).
   dio: ^5.11.1
 
+  # Errors (ADR 0013). The `beforeSend` that takes personal and health data
+  # out of an event lives in `lib/src/core/observability/`: the Dart twin of
+  # what the API and the panel use (`packages/observability`). Without the
+  # `SENTRY_DSN` define the SDK is never started.
+  sentry_flutter: ^10.2.0
+
   # The API client, generated from `apps/api/openapi.json` by
   # `pnpm api:generate` (ADR 0008). It is **not** versioned: a fresh clone runs
   # that command once before `flutter pub get` (see the README).
