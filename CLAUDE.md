@@ -131,6 +131,8 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0009 Eventos internos em memória e fila de jobs com pg-boss
 - 0010 CI no GitHub Actions, um job com `turbo --affected`, e a `main` protegida
 - 0011 Sessão do painel em cookie, com o proxy do Next.js na frente das rotas
+- 0012 Esqueleto do app do paciente: Riverpod, go_router, tema por tokens e `--dart-define`
+- 0013 Sentry nos três apps, com o filtro de dado sensível num pacote só
 
 ## Não faça
 

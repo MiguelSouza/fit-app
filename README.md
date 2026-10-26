@@ -279,6 +279,7 @@ packages/
   contracts/      schemas Zod, tipos e enums compartilhados @fit-app/contracts
   api-client/     cliente TypeScript gerado do OpenAPI      @fit-app/api-client
   config/         eslint, tsconfig, prettier compartilhados @fit-app/config
+  observability/  o que nunca sai num log nem num evento      @fit-app/observability
 infra/            AWS CDK                                   @fit-app/infra
 docs/adr/         registros de decisão de arquitetura
 scripts/          seeds, pacientes sintéticos, TACO/TBCA    @fit-app/scripts
@@ -329,6 +330,13 @@ quem precisa de atenção e por quê. Nomes e e-mails são inventados, o domíni
 desenvolvimento ou teste. A saída é json em `scripts/.synthetic`, não linhas no banco —
 escrever no Postgres espera as tabelas que faltam do **F-07**, como explica o
 [README de `scripts/`](./scripts/README.md).
+E os erros nos três apps (card **F-16**): Sentry na API, no painel e no app, cada um com
+ambiente e versão, o usuário identificado **só por id** e um `beforeSend` que tira do
+evento nome, e-mail, telefone, nota e valor de check-in — o mesmo filtro e a mesma lista
+de campos do log, agora em `packages/observability`, com um gêmeo em Dart dentro do app.
+Sem DSN ninguém reporta nada, que é o padrão em desenvolvimento; os três têm um jeito
+fora de produção de provocar um erro e conferir o que chega. O porquê de cada escolha
+está no [ADR 0013](./docs/adr/0013-sentry-nos-tres-apps.md).
 Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
 percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
 pasta.
