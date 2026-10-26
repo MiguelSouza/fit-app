@@ -1,8 +1,10 @@
+import * as Sentry from '@sentry/nextjs';
 import { redirect } from 'next/navigation';
 import { type ReactNode } from 'react';
 
 import { SideMenu } from '@/components/painel/side-menu';
 import { QueryProvider } from '@/components/query-provider';
+import { SentryUser } from '@/components/sentry-user';
 import { SIGN_IN_PATH } from '@/lib/routes';
 import { supabaseServerAuth } from '@/lib/supabase/server';
 
@@ -26,8 +28,15 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   if (data.user == null) redirect(SIGN_IN_PATH);
 
+  // Who an error of this request happened to, by id. The e-mail two lines
+  // below goes on the screen of the person it belongs to and nowhere else —
+  // never to Sentry (ADR 0013).
+  Sentry.setUser({ id: data.user.id });
+
   return (
     <QueryProvider>
+      <SentryUser id={data.user.id} />
+
       <div className="flex min-h-svh">
         <SideMenu accountEmail={data.user.email ?? ''} />
 
