@@ -155,3 +155,67 @@ describe('loadEnv', () => {
     expect(messageFor({ ...REQUIRED, LOG_LEVEL: 'loud' })).toContain('LOG_LEVEL');
   });
 });
+
+/**
+ * The three Sentry variables (ADR 0013). They travel together: a DSN on its
+ * own produces events nobody can act on, so turning the reporting on means
+ * saying which version is sending them.
+ */
+describe('loadEnv, for Sentry', () => {
+  const SENTRY_DSN = 'https://abc123@o1.ingest.sentry.io/42';
+
+  it('reports to nobody when no dsn is set, which is a laptop and a test run', () => {
+    expect(loadEnv(REQUIRED).sentry).toBeUndefined();
+    expect(loadEnv({ ...REQUIRED, SENTRY_DSN: '' }).sentry).toBeUndefined();
+  });
+
+  it('reads the dsn, the environment and the release', () => {
+    expect(
+      loadEnv({
+        ...REQUIRED,
+        SENTRY_DSN,
+        SENTRY_ENVIRONMENT: 'staging',
+        SENTRY_RELEASE: 'api@1a2b3c4',
+      }).sentry,
+    ).toEqual({ dsn: SENTRY_DSN, environment: 'staging', release: 'api@1a2b3c4' });
+  });
+
+  it('falls back to NODE_ENV when no environment is named', () => {
+    // A staging task runs with `NODE_ENV=production`, which is why the two
+    // are separate variables; without the explicit one, the node environment
+    // is the honest answer.
+    expect(
+      loadEnv({ ...REQUIRED, NODE_ENV: 'production', SENTRY_DSN, SENTRY_RELEASE: 'api@1a2b3c4' })
+        .sentry,
+    ).toEqual({ dsn: SENTRY_DSN, environment: 'production', release: 'api@1a2b3c4' });
+  });
+
+  it('refuses to start when the dsn is set and the release is not', () => {
+    expect(messageFor({ ...REQUIRED, SENTRY_DSN })).toContain('SENTRY_RELEASE');
+  });
+
+  it('rejects a dsn that is not the shape Sentry hands out', () => {
+    expect(
+      messageFor({
+        ...REQUIRED,
+        SENTRY_DSN: 'https://o1.ingest.sentry.io/42',
+        SENTRY_RELEASE: 'x',
+      }),
+    ).toContain('SENTRY_DSN');
+  });
+
+  it('rejects an environment with a space or a slash in it', () => {
+    expect(
+      messageFor({
+        ...REQUIRED,
+        SENTRY_DSN,
+        SENTRY_ENVIRONMENT: 'staging sa-east-1',
+        SENTRY_RELEASE: 'x',
+      }),
+    ).toContain('SENTRY_ENVIRONMENT');
+  });
+
+  it('never puts the dsn in the message', () => {
+    expect(messageFor({ ...REQUIRED, SENTRY_DSN })).not.toContain('abc123');
+  });
+});
