@@ -1,7 +1,7 @@
 # 0013. Sentry nos três apps, com o filtro de dado sensível num pacote só
 
 - **Status:** aceito
-- **Data:** 2026-10-20
+- **Data:** 2026-10-26
 
 ## Contexto
 
@@ -124,8 +124,9 @@ acontecer uma vez, o próximo passo é gerar o Dart a partir do TypeScript, e a�
 vira ADR novo.
 
 O app ganhou uma dependência nova (`sentry_flutter`), que traz os SDKs nativos
-de Android e iOS junto — é a primeira dependência do app com código nativo, e a
-build de iOS passa a baixá-la pelo Swift Package Manager.
+de Android e iOS junto: a partir da versão 10 eles chegam no iOS e no macOS pelo
+Swift Package Manager, então a primeira build depois deste card baixa mais coisa
+que antes.
 
 A pilha do painel só é legível em produção se a build subir os source maps, o
 que depende de `SENTRY_ORG`, `SENTRY_PROJECT` e `SENTRY_AUTH_TOKEN` existirem no
