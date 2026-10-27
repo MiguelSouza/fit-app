@@ -11,6 +11,7 @@ import { EnvModule } from './shared/config/env.module';
 import { EventsModule } from './shared/events/events.module';
 import { JobsModule } from './shared/jobs/jobs.module';
 import { LoggingModule } from './shared/logging/logging.module';
+import { ObservabilityModule } from './shared/observability/observability.module';
 import { GlobalExceptionFilter } from './shared/presentation/global-exception.filter';
 
 /**
@@ -23,6 +24,10 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
  * `AuthModule` brings a global guard with it, so every route of every module
  * below needs a valid Supabase token unless it says `@Public()`.
  *
+ * `ObservabilityModule` carries what Sentry needs from the app: the flush on
+ * shutdown and the route that provokes an error (ADR 0013). Starting the client
+ * is not its job — that happens in `instrument.ts`, before Nest exists.
+ *
  * `EventsModule` is here so the bus exists once for the whole process: a
  * module that publishes or subscribes imports it too, and gets the same one.
  * `JobsModule` is here for the same reason, and because the jobs it holds
@@ -32,6 +37,7 @@ import { GlobalExceptionFilter } from './shared/presentation/global-exception.fi
   imports: [
     EnvModule,
     LoggingModule,
+    ObservabilityModule,
     AuthModule,
     EventsModule,
     JobsModule,

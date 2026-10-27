@@ -27,8 +27,12 @@ function hostCapturing(captured: CapturedResponse): ArgumentsHost {
     },
   };
 
-  // The filter only ever calls `switchToHttp().getResponse()`.
-  return { switchToHttp: () => ({ getResponse: () => response }) } as unknown as ArgumentsHost;
+  // The two calls the filter makes on the host. The request is the one of a
+  // route nobody is signed in to, which is the case that has to keep working:
+  // an error can also be thrown before the guard ran.
+  return {
+    switchToHttp: () => ({ getResponse: () => response, getRequest: () => ({}) }),
+  } as unknown as ArgumentsHost;
 }
 
 function answerFor(exception: unknown): CapturedResponse {

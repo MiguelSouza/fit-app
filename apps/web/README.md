@@ -21,13 +21,17 @@ O painel sobe em [http://127.0.0.1:3000](http://127.0.0.1:3000). As três
 variáveis que ele lê estão no bloco `apps/web` do
 [`.env.example`](../../.env.example):
 
-| Variável                        | Para que serve                  |
-| ------------------------------- | ------------------------------- |
-| `NEXT_PUBLIC_API_URL`           | endereço da API                 |
-| `NEXT_PUBLIC_SUPABASE_URL`      | endereço do Supabase            |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave pública (anon) do projeto |
+| Variável                         | Para que serve                      |
+| -------------------------------- | ----------------------------------- |
+| `NEXT_PUBLIC_API_URL`            | endereço da API                     |
+| `NEXT_PUBLIC_SUPABASE_URL`       | endereço do Supabase                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | chave pública (anon) do projeto     |
+| `NEXT_PUBLIC_SENTRY_DSN`         | para onde vai o erro; vazio desliga |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | como o ambiente aparece na issue    |
+| `NEXT_PUBLIC_SENTRY_RELEASE`     | qual versão mandou (ver "Erros")    |
 
-As três vão para o navegador, e nenhuma é segredo. Chave de serviço não entra
+Todas vão para o navegador, e nenhuma é segredo — o DSN do Sentry também não:
+ele deixa mandar evento para o projeto, nunca ler. Chave de serviço não entra
 aqui: ela ignora RLS e só a API usa.
 
 O arquivo é o `.env` da **raiz**, um para o monorepo todo. O Next.js só procura
@@ -55,16 +59,24 @@ src/
     (painel)/            tudo que exige sessão: layout com menu + as 4 seções
     auth/callback        troca o código do link de e-mail por uma sessão
     auth/sign-out        encerra a sessão (POST)
+    global-error.tsx     a última tela: erro que escapou de tudo, e o relato ao Sentry
   components/
     ui/                  primitivos do shadcn/ui, neutros (card OP-06 veste)
     auth/                os três formulários de entrada
     painel/              menu lateral, cabeçalho de seção, cartão de identidade
+    debug/               só desenvolvimento: o botão que provoca o erro de teste
     query-provider.tsx   o cache do TanStack Query
+    sentry-user.tsx      diz ao Sentry quem está usando — só o id
   lib/
     env.ts               as NEXT_PUBLIC_*, validadas com Zod
     routes.ts            os caminhos, e quais são públicos
+    sentry.ts            as opções do Sentry, iguais nos três runtimes
     api/                 o cliente da API e as queries
     supabase/            Auth no navegador, no servidor e no proxy
+  instrumentation.ts        liga o Sentry no servidor (hook do Next.js)
+  instrumentation-client.ts liga o Sentry no navegador
+  sentry.server.config.ts   as opções, no runtime Node
+  sentry.edge.config.ts     as opções, no runtime edge
   proxy.ts               roda antes de toda requisição (era "middleware")
 ```
 
@@ -99,7 +111,8 @@ hora de cada requisição — `lib/api/client.ts`.
 ## Dado de saúde e LGPD
 
 - **Nada é logado.** Nem `console.log` de erro do Auth: o objeto de erro carrega
-  o e-mail da tentativa. Erro virou estado da tela, não linha de log.
+  o e-mail da tentativa. Erro virou estado da tela, não linha de log — e o que
+  vai para o Sentry passa pelo filtro (ver "Erros no Sentry").
 - **O e-mail da conta aparece no menu** porque é a conta de quem está olhando.
   Não passa por log nem vai para a API.
 - **Uma mensagem só para falha de login**, como o 401 da API: dizer "este e-mail
@@ -107,6 +120,56 @@ hora de cada requisição — `lib/api/client.ts`.
   recuperação de senha responde igual exista a conta ou não.
 - **`?destino=` é filtrado** (`internalPath`): sem isso a tela de entrada seria
   um redirecionador aberto.
+
+## Erros no Sentry
+
+Erro do painel vai para o Sentry (ADR
+[0013](../../docs/adr/0013-sentry-nos-tres-apps.md)), dos três lugares em que
+ele pode acontecer: o navegador (`instrumentation-client.ts`), o servidor que
+renderiza (`instrumentation.ts`, com `onRequestError`) e o edge
+(`sentry.edge.config.ts`). As opções são as mesmas nos três e estão em
+[`lib/sentry.ts`](./src/lib/sentry.ts) — uma cópia só, para nenhuma delas
+envelhecer sozinha.
+
+Sem `NEXT_PUBLIC_SENTRY_DSN` na build, o SDK nem é iniciado. O ambiente tem
+padrão `NODE_ENV` (preview na Vercel é build de produção e não devia aparecer
+como produção, daí a variável própria) e a versão, na Vercel, vem do commit do
+deploy sem ninguém configurar nada.
+
+O que sai no evento está em
+[`@fit-app/observability`](../../packages/observability/README.md), a mesma
+lista e o mesmo filtro da API: usuário é **só um id** (quem o informa é
+[`sentry-user.tsx`](./src/components/sentry-user.tsx), e o layout do painel no
+servidor), requisição fica em método e caminho, texto livre vira
+`[redacted]`. Duas coisas ficam desligadas de propósito: **tracing**, que não
+é o que este card pede, e **session replay**, que grava a tela — num painel que
+mostra paciente, isso é vídeo de dado de saúde saindo do navegador.
+
+O `withSentryConfig` no [`next.config.ts`](./next.config.ts) está lá por um
+motivo só: os **source maps**. Ele sobe os mapas e os apaga da saída, para a
+pilha na issue nomear nossos arquivos sem servir o código do painel a quem
+pedir. Precisa de `SENTRY_ORG`, `SENTRY_PROJECT` e `SENTRY_AUTH_TOKEN` no
+ambiente **da build** (na Vercel, nas configurações do projeto); sem eles ele
+pula o envio e a build passa igual — que é o que mantém um clone funcionando
+sem rede.
+
+### Conferir que está chegando
+
+Só em desenvolvimento existe `/debug/sentry` (dentro de `(painel)`, então
+exige sessão; em qualquer build de produção ela responde 404). Um botão estoura
+no navegador e um link estoura no servidor:
+
+```bash
+# no .env da raiz: NEXT_PUBLIC_SENTRY_DSN=... e NEXT_PUBLIC_SENTRY_RELEASE=web@local
+pnpm --filter @fit-app/web dev
+# entre no painel e abra http://127.0.0.1:3000/debug/sentry
+```
+
+A mensagem dos dois erros leva nome, e-mail e peso sintéticos. Na issue, os
+três precisam aparecer como `[redacted]` e o usuário, só como id — é essa
+metade que importa. O que o filtro faz é testado na API, contra o SDK real
+(`apps/api/src/shared/observability/sentry.spec.ts`), porque o filtro é o
+mesmo.
 
 ## O que ainda não tem
 

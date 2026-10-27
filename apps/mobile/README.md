@@ -35,9 +35,9 @@ depois do `build_runner`. Mudou o contrato? Repita os três comandos acima.
 
 ## Como rodar
 
-O app lê três valores obrigatórios, e Flutter não lê `.env`: eles entram por
-`--dart-define`. Os valores de desenvolvimento estão no bloco `apps/mobile` do
-[`.env.example`](../../.env.example).
+O app lê três valores obrigatórios (e dois opcionais, do Sentry), e Flutter não
+lê `.env`: eles entram por `--dart-define`. Os valores de desenvolvimento
+estão no bloco `apps/mobile` do [`.env.example`](../../.env.example).
 
 ```bash
 # Emulador Android: 127.0.0.1 é o próprio emulador, o host é 10.0.2.2
@@ -61,12 +61,14 @@ faltou (o `APP_ENV` tem padrão, e é o único que tem) — de propósito: ender
 padrão escondido no binário é build de staging falando com a máquina de alguém
 sem ninguém notar.
 
-| Define              | O que é                                       | Padrão  |
-| ------------------- | --------------------------------------------- | ------- |
-| `APP_ENV`           | `local`, `staging` ou `production`            | `local` |
-| `API_URL`           | endereço da API da fit-app                    | —       |
-| `SUPABASE_URL`      | endereço do Supabase                          | —       |
-| `SUPABASE_ANON_KEY` | chave pública (anon) do projeto               | —       |
+| Define              | O que é                                         | Padrão    |
+| ------------------- | ----------------------------------------------- | --------- |
+| `APP_ENV`           | `local`, `staging` ou `production`              | `local`   |
+| `API_URL`           | endereço da API da fit-app                      | —         |
+| `SUPABASE_URL`      | endereço do Supabase                            | —         |
+| `SUPABASE_ANON_KEY` | chave pública (anon) do projeto                 | —         |
+| `SENTRY_DSN`        | para onde vai o erro; sem ele, não vai nenhum   | sem envio |
+| `SENTRY_RELEASE`    | qual versão mandou (ver "Erros no Sentry")      | —         |
 
 A chave aqui é a **anon**, que é pública por definição. A chave de serviço
 ignora RLS, só a API usa, e não entra no app em nenhuma hipótese.
@@ -105,6 +107,7 @@ lib/
       me.dart                GET /v1/me
     core/
       config/                os ambientes, lidos dos defines
+      observability/         o Sentry: as opções, e o filtro do que pode sair
       theme/                 tokens de cor e de tipografia, e o ThemeData
     home/
       home_screen.dart       a tela inicial, protegida
@@ -152,6 +155,51 @@ sabe se existe sessão.
   genérico, e não vai para a tela nem para log.
 - **Nenhum dado de paciente é inventado em teste** — nem sintético: o teste da
   tela inicial usa o UUID nulo, o mesmo que o endpoint provisório responde.
+- **O que vai para o Sentry passa por um filtro** (ver "Erros no Sentry"): nome,
+  e-mail, nota e valor de check-in viram `[redacted]`, e o usuário é só um id.
+
+## Erros no Sentry
+
+Erro do app vai para o Sentry (ADR
+[0013](../../docs/adr/0013-sentry-nos-tres-apps.md)) — se, e só se, a build
+tiver o define `SENTRY_DSN`. Sem ele o SDK nem é iniciado, que é o que uma
+build da máquina de alguém deve fazer. O ambiente da issue é o `APP_ENV` que
+já está na linha de comando, e o `SENTRY_RELEASE` diz qual versão mandou.
+
+```bash
+flutter run \
+  --dart-define=APP_ENV=local \
+  --dart-define=API_URL=http://10.0.2.2:3333 \
+  --dart-define=SUPABASE_URL=http://10.0.2.2:54321 \
+  --dart-define=SUPABASE_ANON_KEY=<a chave anon> \
+  --dart-define=SENTRY_DSN=<o dsn do projeto> \
+  --dart-define=SENTRY_RELEASE=app@local
+```
+
+O que sai no evento está em
+[`lib/src/core/observability/`](./lib/src/core/observability/): `beforeSend`
+tira o que é de alguém, e é o **gêmeo em Dart** do filtro que a API e o painel
+usam (`packages/observability`). O app não consegue importar TypeScript, então
+são duas cópias da mesma regra, e elas mudam juntas. Usuário é **só um id**,
+mantido em dia com a sessão e apagado ao sair
+([`sentry.dart`](./lib/src/core/observability/sentry.dart)).
+
+Quatro coisas ficam desligadas de propósito, e estão escritas no código mesmo
+sendo o padrão do SDK — padrão não é decisão: `sendDefaultPii` (nome do
+aparelho, ip), `attachScreenshot` e `attachViewHierarchy` (a tela de um
+paciente, em imagem e em texto) e o **session replay**, que é a mesma coisa em
+vídeo.
+
+### Conferir que está chegando
+
+Fora de produção, a tela inicial mostra um botão de inseto na barra: ele estoura
+de propósito. A mensagem leva nome, e-mail e peso sintéticos — na issue, os três
+precisam aparecer como `[redacted]`, e o usuário, só como id. Em produção o
+botão não é renderizado, como o selo de ambiente ao lado dele.
+
+O que o filtro faz está em
+[`test/core/observability/scrub_event_test.dart`](./test/core/observability/scrub_event_test.dart),
+que lê o `toJson()` do evento — o que iria para o fio.
 
 ## O que ainda não tem
 

@@ -21,3 +21,4 @@ antigo como substituído por ele.
 | [0010](./0010-ci-no-github-actions.md)                | CI no GitHub Actions, um job com `turbo --affected`, e a `main` protegida                          | aceito |
 | [0011](./0011-sessao-do-painel-em-cookie.md)          | Sessão do painel em cookie, com o proxy do Next.js na frente das rotas                             | aceito |
 | [0012](./0012-esqueleto-do-app-do-paciente.md)        | Esqueleto do app do paciente: Riverpod, go_router, tema por tokens e ambientes por `--dart-define` | aceito |
+| [0013](./0013-sentry-nos-tres-apps.md)                | Sentry nos três apps, com o filtro de dado sensível num pacote só                                  | aceito |

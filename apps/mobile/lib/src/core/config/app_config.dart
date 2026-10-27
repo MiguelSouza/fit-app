@@ -46,6 +46,8 @@ class AppConfig {
     required this.apiUrl,
     required this.supabaseUrl,
     required this.supabaseAnonKey,
+    this.sentryDsn,
+    this.sentryRelease,
   });
 
   /// Reads the defines of this build and validates them.
@@ -61,6 +63,8 @@ class AppConfig {
     apiUrl: _apiUrl,
     supabaseUrl: _supabaseUrl,
     supabaseAnonKey: _supabaseAnonKey,
+    sentryDsn: _sentryDsn,
+    sentryRelease: _sentryRelease,
   );
 
   /// The same validation, on values given by hand. It is what the tests use,
@@ -70,6 +74,8 @@ class AppConfig {
     required String apiUrl,
     required String supabaseUrl,
     required String supabaseAnonKey,
+    String sentryDsn = '',
+    String sentryRelease = '',
   }) {
     final missing = <String>[
       if (apiUrl.trim().isEmpty) 'API_URL',
@@ -84,8 +90,14 @@ class AppConfig {
       apiUrl: apiUrl.trim(),
       supabaseUrl: supabaseUrl.trim(),
       supabaseAnonKey: supabaseAnonKey.trim(),
+      sentryDsn: _orNull(sentryDsn),
+      sentryRelease: _orNull(sentryRelease),
     );
   }
+
+  /// A define that came in empty is a define nobody passed. Used by the two
+  /// optional ones: the three above are mandatory and fail instead.
+  static String? _orNull(String value) => value.trim().isEmpty ? null : value.trim();
 
   /// Reads `APP_ENV`. An empty or unknown value is `local`: a build that failed
   /// to say where it is going is a build from somebody's machine, and treating
@@ -105,8 +117,21 @@ class AppConfig {
   /// Public (anon) key of the Supabase project.
   final String supabaseAnonKey;
 
+  /// Where an error of the app goes, or `null` when this build reports to
+  /// nobody — which is the default, and what a build from somebody's machine
+  /// should do (ADR 0013). The DSN is public by design: it allows sending an
+  /// event to the project and nothing else.
+  final String? sentryDsn;
+
+  /// Which version is sending: the version name of the build, or the commit.
+  /// Without it an issue cannot say whether the bug is still out there, so the
+  /// release pipeline passes it — but a missing one never stops the app.
+  final String? sentryRelease;
+
   static const String _appEnv = String.fromEnvironment('APP_ENV', defaultValue: 'local');
   static const String _apiUrl = String.fromEnvironment('API_URL');
   static const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String _sentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static const String _sentryRelease = String.fromEnvironment('SENTRY_RELEASE');
 }

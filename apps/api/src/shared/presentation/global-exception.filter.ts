@@ -7,10 +7,13 @@ import {
   type ExceptionFilter,
 } from '@nestjs/common';
 import { type ErrorResponse } from '@fit-app/contracts';
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
 
+import { authenticatedUserOf } from '../auth/authenticated-user';
 import { DomainError, type DomainErrorKind } from '../domain/domain-error';
+import { currentCorrelationId } from '../logging/correlation-id';
 import { stackWithoutMessage } from '../logging/safe-error';
+import { reportUnexpectedError, type ErrorReportContext } from '../observability/sentry';
 
 /**
  * The only place in the API where a domain error becomes a status code
@@ -44,13 +47,23 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('ExceptionFilter');
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const response = host.switchToHttp().getResponse<Response>();
-    const { status, body } = this.describe(exception);
+    const http = host.switchToHttp();
+    const response = http.getResponse<Response>();
+    const { status, body, unexpected } = this.describe(exception);
+
+    // Only the unexpected ones, and only after the decision above: a 404, a
+    // 403 and a 422 are answers this API gives on purpose, and sending them
+    // would drown the real failures (ADR 0013).
+    if (unexpected) reportUnexpectedError(exception, reportContext(http.getRequest<Request>()));
 
     response.status(status).json(body);
   }
 
-  private describe(exception: unknown): { status: HttpStatus; body: ErrorResponseBody } {
+  private describe(exception: unknown): {
+    status: HttpStatus;
+    body: ErrorResponseBody;
+    unexpected?: true;
+  } {
     if (exception instanceof DomainError) {
       return {
         status: STATUS_BY_KIND[exception.kind],
@@ -78,6 +91,25 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? stackWithoutMessage(exception) : undefined,
     );
 
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, body: INTERNAL_ERROR };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, body: INTERNAL_ERROR, unexpected: true };
   }
+}
+
+/**
+ * What goes to Sentry about the request that failed: an id for the caller, the
+ * route, and the correlation id that joins the event to the line the logger
+ * wrote for the same request.
+ *
+ * Not the body, not the headers, not the query string — the SDK is told not to
+ * collect any of them (`sentry.ts`) and the filter has no reason to put them
+ * back. The request may be missing entirely: a filter also catches what breaks
+ * outside an HTTP context.
+ */
+function reportContext(request: Request | undefined): ErrorReportContext {
+  return {
+    userId: request === undefined ? undefined : authenticatedUserOf(request)?.id,
+    method: request?.method,
+    path: request?.originalUrl?.split('?')[0],
+    correlationId: currentCorrelationId(),
+  };
 }

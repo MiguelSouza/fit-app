@@ -34,8 +34,9 @@ nenhum: os valores vêm da task definition e do AWS Secrets Manager (ADR 0005).
 
 As variáveis que a API usa hoje são `NODE_ENV`, `PORT` (3333 por padrão),
 `DATABASE_URL` (obrigatória), `SUPABASE_JWT_SECRET` (obrigatória, no mínimo 32
-caracteres), `CORS_ALLOWED_ORIGINS`, `JOBS_ENABLED` e `LOG_LEVEL`. Todas estão
-descritas no [`.env.example`](../../.env.example).
+caracteres), `CORS_ALLOWED_ORIGINS`, `JOBS_ENABLED`, `LOG_LEVEL` e as três do
+Sentry — `SENTRY_DSN`, `SENTRY_ENVIRONMENT` e `SENTRY_RELEASE` (ver "Erros no
+Sentry"). Todas estão descritas no [`.env.example`](../../.env.example).
 
 Elas são lidas e validadas uma vez, com Zod, em
 [`shared/config/env.ts`](./src/shared/config/env.ts), **antes** de o NestJS
@@ -327,7 +328,8 @@ daquela task estão de pé.
 
 ```
 src/
-  main.ts            bootstrap: lê o .env, cria o app, escuta a porta
+  instrument.ts      o primeiro import do main.ts: lê o .env e liga o Sentry antes de tudo
+  main.ts            bootstrap: valida o ambiente, cria o app, escuta a porta
   bootstrap.ts       versionamento, validação, CORS e /docs — o mesmo que o teste e2e usa
   app.module.ts      composition root: os 4 módulos, o health check, o filtro de erros
   openapi.ts         monta o documento OpenAPI e serve o /docs
@@ -371,7 +373,8 @@ O corpo é sempre o mesmo, e o `code` é a chave de i18n do cliente:
 
 Erro inesperado vira 500 com mensagem genérica. O log fica com o nome do erro e
 a pilha **sem a primeira linha**: a mensagem do driver pode citar o valor de uma
-coluna, e dado pessoal não entra em log (`CLAUDE.md`, "Saúde e LGPD").
+coluna, e dado pessoal não entra em log (`CLAUDE.md`, "Saúde e LGPD"). Esse — e
+só esse — também vai para o Sentry (ver "Erros no Sentry").
 
 ## Logs
 
@@ -408,7 +411,9 @@ coisa, o logger troca por `[redacted]` todo campo cujo **nome** seja sensível �
 nome, e-mail, telefone, token, notas, valores de check-in e vizinhos (senha,
 `authorization`, cookie, peso, humor, dor) — em qualquer profundidade e dentro
 de array. A lista está em
-[`shared/logging/sensitive-data.ts`](./src/shared/logging/sensitive-data.ts).
+[`@fit-app/observability`](../../packages/observability/README.md), porque o
+filtro do Sentry usa a mesma: campo que é dado pessoal em linha de log é dado
+pessoal em relatório de erro.
 
 ```ts
 logger.info({ patientId: 'pat_1', patient: { name: 'Ana Souza' } }, 'patient record opened');
@@ -440,6 +445,46 @@ A linha de fim de requisição é curta de propósito: método, rota, status e
 duração. Sem query string — é onde cai o que foi digitado em uma busca, muitas
 vezes o nome do paciente — e sem ip nem user agent, que são dado pessoal e não
 ajudam a depurar.
+
+## Erros no Sentry
+
+Erro inesperado vai para o log **e** para o Sentry (ADR
+[0013](../../docs/adr/0013-sentry-nos-tres-apps.md)). Só o inesperado: 404, 403
+e 422 são respostas que a API dá de propósito, e mandá-las afogaria a falha de
+verdade.
+
+Três variáveis, e elas andam juntas. Sem `SENTRY_DSN` a API não reporta nada —
+o erro fica no log, que é o que um notebook e o CI querem. Com DSN,
+`SENTRY_RELEASE` passa a ser **obrigatória** (a tag da imagem ou o sha do
+commit): evento que não diz a versão não responde se o bug ainda está no ar. O
+`SENTRY_ENVIRONMENT` tem padrão `NODE_ENV`, e existe porque a task de
+homologação roda com `NODE_ENV=production` e precisa aparecer como `staging`.
+
+O que sai no evento, e por quê, está em
+[`@fit-app/observability`](../../packages/observability/README.md): o usuário é
+**só um id**, a requisição fica em método e caminho, texto livre vira
+`[redacted]`, e `extra`, `contexts` e `tags` passam pela mesma máscara do log. A
+outra metade é o que o SDK nem chega a coletar — corpo, cookie, cabeçalho, query
+string, parâmetro de query do banco, variável local de quadro de pilha —, que
+está em [`shared/observability/sentry.ts`](./src/shared/observability/sentry.ts).
+Cada evento leva o `correlationId` como tag: é o que liga a issue do Sentry à
+linha no CloudWatch.
+
+### Conferir que está chegando
+
+Fora de produção existe `GET /v1/debug/sentry`, que estoura de propósito (em
+produção ela responde 404, e ela nunca entra no OpenAPI):
+
+```bash
+SENTRY_DSN=... SENTRY_RELEASE=api@local pnpm --filter api dev
+curl -i http://127.0.0.1:3333/v1/debug/sentry   # 500 com o envelope genérico
+```
+
+A issue aparece no projeto em segundos, e o que ela **não** tem é metade do
+teste: a mensagem do erro traz um nome e um e-mail sintéticos, e na issue os
+dois saem como `[redacted]`. A outra metade é automática, em
+[`shared/observability/sentry.spec.ts`](./src/shared/observability/sentry.spec.ts),
+que lê o envelope que o transporte receberia.
 
 ## Testes
 
