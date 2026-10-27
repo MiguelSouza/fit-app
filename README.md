@@ -279,7 +279,7 @@ packages/
   contracts/      schemas Zod, tipos e enums compartilhados @fit-app/contracts
   api-client/     cliente TypeScript gerado do OpenAPI      @fit-app/api-client
   config/         eslint, tsconfig, prettier compartilhados @fit-app/config
-  observability/  o que nunca sai num log nem num evento      @fit-app/observability
+  observability/  o que nunca sai num log nem num evento    @fit-app/observability
 infra/            AWS CDK                                   @fit-app/infra
 docs/adr/         registros de decisão de arquitetura
 scripts/          seeds, pacientes sintéticos, TACO/TBCA    @fit-app/scripts

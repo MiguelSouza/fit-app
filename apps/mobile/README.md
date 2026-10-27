@@ -167,7 +167,13 @@ build da máquina de alguém deve fazer. O ambiente da issue é o `APP_ENV` que
 já está na linha de comando, e o `SENTRY_RELEASE` diz qual versão mandou.
 
 ```bash
-flutter run   --dart-define=APP_ENV=local   --dart-define=API_URL=http://10.0.2.2:3333   --dart-define=SUPABASE_URL=http://10.0.2.2:54321   --dart-define=SUPABASE_ANON_KEY=<a chave anon>   --dart-define=SENTRY_DSN=<o dsn do projeto>   --dart-define=SENTRY_RELEASE=app@local
+flutter run \
+  --dart-define=APP_ENV=local \
+  --dart-define=API_URL=http://10.0.2.2:3333 \
+  --dart-define=SUPABASE_URL=http://10.0.2.2:54321 \
+  --dart-define=SUPABASE_ANON_KEY=<a chave anon> \
+  --dart-define=SENTRY_DSN=<o dsn do projeto> \
+  --dart-define=SENTRY_RELEASE=app@local
 ```
 
 O que sai no evento está em

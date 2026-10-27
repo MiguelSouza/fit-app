@@ -86,8 +86,10 @@ void _scrubRequest(SentryEvent event) {
 
   final String? url = request.url;
 
-  // A new request and not a cleaned up one: `data`, `headers` and `env` have
-  // no setters, so what is built here is exactly what may go.
+  // A new request and not a cleaned up one: `data` and `env` have no setter,
+  // so there is no way to empty them in place — and building it from the two
+  // fields that may go means a field the SDK adds next version does not go
+  // out by default.
   event.request = SentryRequest(
     url: url == null ? null : urlWithoutQuery(url),
     method: request.method,
