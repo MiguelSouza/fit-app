@@ -17,6 +17,17 @@ export const SIGN_IN_PATH = '/login';
 export const PASSWORD_RESET_PATH = '/recuperar-senha';
 export const NEW_PASSWORD_PATH = '/nova-senha';
 
+/**
+ * The first access of a professional: name, CRN and specialty, asked once
+ * (card I-01).
+ *
+ * It needs a session and it is **not** in the panel: whoever lands here has
+ * signed in and has no profile yet, so there is nothing for a side menu to
+ * open. It is not public either — the proxy turns it away without a session,
+ * like every path that is not on the list below.
+ */
+export const FIRST_ACCESS_PATH = '/primeiro-acesso';
+
 /** Trades the code of an e-mail link for a session (`app/auth/callback`). */
 export const AUTH_CALLBACK_PATH = '/auth/callback';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { type PersonRole } from '@fit-app/api-client';
+import { type PersonRole, type ProfessionalType } from '@fit-app/api-client';
 import { useQuery } from '@tanstack/react-query';
 
 import { Alert } from '@/components/ui/alert';
@@ -13,19 +13,25 @@ const ROLE_LABELS: Record<PersonRole, string> = {
   patient: 'Paciente',
 };
 
+/** pt-BR for each `professional_type` of the contract. */
+const PROFESSIONAL_TYPE_LABELS: Record<ProfessionalType, string> = {
+  nutritionist: 'Nutricionista',
+  trainer: 'Treinador',
+};
+
 /**
  * Who is using the panel, according to the API.
  *
  * It is `GET /v1/me` end to end, which is what card F-13 asks to prove: the
  * Supabase session becomes an `Authorization: Bearer` in the generated client,
  * the API validates the token and answers the contract, and what it answered
- * shows up here.
+ * shows up here. Since card I-01 that answer comes from the `identity` tables,
+ * and it carries what the first access registered: the professional type, the
+ * council number and the practice.
  *
  * The **name** is not among these fields, and that is not an oversight:
- * `MeResponse` answers id, role and time zone, and name and e-mail are personal
- * data that come with the profile endpoint of the `identity` module — the one
- * that logs the access (`packages/contracts/src/identity/me.ts`). When that
- * endpoint exists, this is where the name goes.
+ * `MeResponse` carries ids and codes, and the only free text in it is the name
+ * of the caller's own practice (`packages/contracts/src/identity/me.ts`).
  */
 export function IdentityCard() {
   const { data, error, isPending } = useQuery(meQuery);
@@ -51,6 +57,22 @@ export function IdentityCard() {
             <Field label="Papel" value={ROLE_LABELS[data.role]} />
             <Field label="Fuso horário" value={data.timeZone} />
             <Field label="Id da pessoa" value={data.personId} mono />
+
+            {data.professional != null ? (
+              <>
+                <Field label="Tipo" value={PROFESSIONAL_TYPE_LABELS[data.professional.type]} />
+                <Field label="Conselho" value={data.professional.councilNumber} />
+                <Field label="Especialidade" value={data.professional.specialty ?? '—'} />
+
+                {data.professional.organizations.map((organization) => (
+                  <Field
+                    key={organization.organizationId}
+                    label={organization.kind === 'solo' ? 'Consultório' : 'Clínica'}
+                    value={organization.name}
+                  />
+                ))}
+              </>
+            ) : null}
           </dl>
         ) : null}
       </CardContent>

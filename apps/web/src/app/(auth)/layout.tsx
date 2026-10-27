@@ -1,8 +1,12 @@
 import { type ReactNode } from 'react';
 
 /**
- * The layout of the sign-in screens: a centred card, with no menu and nothing
- * that needs a session — it is exactly where whoever has none lands.
+ * The layout of the screens outside the panel: a centred card, with no menu
+ * and no side navigation — where whoever cannot be in the panel yet lands.
+ *
+ * It is a shell and nothing else: it checks no session, and each page in the
+ * group says what it needs. The sign-in screens need none; the first access
+ * needs one and asks for it itself.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
