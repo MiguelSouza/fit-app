@@ -17,6 +17,14 @@ export type { components, operations, paths } from './generated/openapi';
 /** `GET /v1/me` */
 export type MeResponse = components['schemas']['MeResponse'];
 export type PersonRole = components['schemas']['PersonRole'];
+export type ProfessionalIdentity = components['schemas']['ProfessionalIdentity'];
+export type ProfessionalType = components['schemas']['ProfessionalType'];
+export type OrganizationMembership = components['schemas']['OrganizationMembership'];
+export type OrganizationKind = components['schemas']['OrganizationKind'];
+export type OrganizationRole = components['schemas']['OrganizationRole'];
+
+/** `POST /v1/professionals/me` */
+export type RegisterProfessionalRequest = components['schemas']['RegisterProfessionalRequest'];
 
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];

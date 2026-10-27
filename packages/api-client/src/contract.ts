@@ -1,4 +1,10 @@
-import { type HealthResponse, type MeResponse } from './index';
+import {
+  type HealthResponse,
+  type MeResponse,
+  type OrganizationMembership,
+  type ProfessionalIdentity,
+  type RegisterProfessionalRequest,
+} from './index';
 
 /**
  * The fields of the contract the clients read today, pinned at the type level.
@@ -15,6 +21,24 @@ import { type HealthResponse, type MeResponse } from './index';
  */
 type FieldsOf<Dto, Fields extends keyof Dto> = Fields;
 
-export type MeResponseFields = FieldsOf<MeResponse, 'personId' | 'role' | 'timeZone'>;
+export type MeResponseFields = FieldsOf<
+  MeResponse,
+  'personId' | 'role' | 'timeZone' | 'professional'
+>;
+
+export type ProfessionalIdentityFields = FieldsOf<
+  ProfessionalIdentity,
+  'type' | 'councilNumber' | 'specialty' | 'organizations'
+>;
+
+export type OrganizationMembershipFields = FieldsOf<
+  OrganizationMembership,
+  'organizationId' | 'name' | 'kind' | 'role'
+>;
+
+export type RegisterProfessionalRequestFields = FieldsOf<
+  RegisterProfessionalRequest,
+  'fullName' | 'councilNumber' | 'specialty' | 'professionalType'
+>;
 
 export type HealthResponseFields = FieldsOf<HealthResponse, 'status' | 'checks'>;
