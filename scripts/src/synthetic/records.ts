@@ -4,10 +4,11 @@ import type { LocalDate } from './time.ts';
 /**
  * The shape of what the generator produces.
  *
- * These are **not** the tables of the API. The four module schemas do not
- * exist yet — card F-07 stopped at wiring Drizzle Kit, and `drizzle/` holds no
- * migration — so there is nothing to insert into and nothing to import a type
- * from. What this file describes is the dataset: field names and units chosen
+ * These are **not** the tables of the API. The `nutrition`, `health` and
+ * `insights` schemas do not exist yet — the only one in `drizzle/` is
+ * `identity`, from card I-01 — so there is nothing to insert these series into
+ * and nothing to import a type from. What this file describes is the dataset:
+ * field names and units chosen
  * to match the vocabulary CLAUDE.md fixes for the `health` and `nutrition`
  * modules, so that the day the tables land the writer is a mapping and not a
  * redesign. See the README of this package for the seam.

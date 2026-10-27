@@ -300,8 +300,8 @@ para o app (Dart). E o encanamento interno da API (card **F-10**): barramento de
 entre módulos e fila de jobs com pg-boss, cada um atrás de uma porta — ver
 [ADR 0009](./docs/adr/0009-eventos-internos-e-fila-de-jobs.md). E os dois perfis de teste
 (card **F-11**): `pnpm test:unit` sem Docker e `pnpm test:integration` num Postgres
-descartável; as fábricas de profissional, paciente, vínculo e consentimento esperam as
-tabelas de `identity`, que são o que falta do card **F-07**. E o CI (card **F-12**):
+descartável; as fábricas de paciente, vínculo e consentimento esperam as tabelas desses
+três, que ainda não existem. E o CI (card **F-12**):
 o [`ci.yml`](./.github/workflows/ci.yml) roda lint, typecheck, os dois perfis de teste e
 o build em todo PR e em todo push na `main`, com o turbo rodando só o que mudou, e a
 `main` só aceita PR com esse check verde — ver
@@ -328,8 +328,8 @@ sumiu e energia baixa — a partir de uma semente fixa, e imprime no fim a tabel
 quem precisa de atenção e por quê. Nomes e e-mails são inventados, o domínio é
 `.invalid` e não há documento nem telefone: nenhum dado real de paciente entra em
 desenvolvimento ou teste. A saída é json em `scripts/.synthetic`, não linhas no banco —
-escrever no Postgres espera as tabelas que faltam do **F-07**, como explica o
-[README de `scripts/`](./scripts/README.md).
+escrever no Postgres espera as tabelas de `nutrition` e `health`, que ainda não existem,
+como explica o [README de `scripts/`](./scripts/README.md).
 E os erros nos três apps (card **F-16**): Sentry na API, no painel e no app, cada um com
 ambiente e versão, o usuário identificado **só por id** e um `beforeSend` que tira do
 evento nome, e-mail, telefone, nota e valor de check-in — o mesmo filtro e a mesma lista
@@ -337,6 +337,14 @@ de campos do log, agora em `packages/observability`, com um gêmeo em Dart dentr
 Sem DSN ninguém reporta nada, que é o padrão em desenvolvimento; os três têm um jeito
 fora de produção de provocar um erro e conferir o que chega. O porquê de cada escolha
 está no [ADR 0013](./docs/adr/0013-sentry-nos-tres-apps.md).
+E o cadastro do profissional (card **I-01**), que é a primeira fatia de domínio de pé: o
+schema `identity` no Postgres com `profile`, `professional`, `organization` e
+`organization_member`, o `POST /v1/professionals/me` que cria as quatro linhas numa
+transação e não duplica se for chamado de novo, o `GET /v1/me` lendo do banco quem está
+chamando, e no painel a tela de primeiro acesso que pergunta nome, CRN e especialidade.
+Todo nutricionista ganha a própria organização, do tipo `solo`, onde é `owner`. O porquê
+de cada escolha está no
+[ADR 0014](./docs/adr/0014-modelo-de-identidade-e-organizacao-solo.md).
 Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
 percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
 pasta.

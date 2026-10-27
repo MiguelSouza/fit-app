@@ -34,7 +34,8 @@ src/
   contract.ts            os campos que os clientes leem hoje, fixados no tipo
 ```
 
-`index.ts` dá nome aos DTOs (`MeResponse`, `HealthResponse`, `ErrorResponse`) e
+`index.ts` dá nome aos DTOs (`MeResponse`, `ProfessionalIdentity`,
+`RegisterProfessionalRequest`, `HealthResponse`, `ErrorResponse`) e
 expõe `createFitAppApiClient`, uma casca de três linhas em volta do
 [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/) — 6 kB, `fetch` por
 baixo, sem estado e sem credencial guardada: quem chama passa o token.

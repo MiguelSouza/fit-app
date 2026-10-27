@@ -86,12 +86,16 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// The three fields of `MeResponse`, typed by the contract.
+/// The three fields of `MeResponse` a patient's app has any use for, typed by
+/// the contract.
 ///
-/// The **name** is not among them, and that is not an oversight: `GET /v1/me`
-/// answers id, role and time zone, and name and e-mail are personal data that
-/// come with the profile endpoint of the `identity` module — the one that logs
-/// the access (`packages/contracts/src/identity/me.ts`).
+/// `professional` is the fourth, and it is not read here: it is the council
+/// number and the practices of a professional, and this app is the patient's.
+///
+/// The **name** is not in the response at all, and that is not an oversight:
+/// `MeResponse` carries ids and codes, and reading another person's profile is
+/// another endpoint — the one that logs the access
+/// (`packages/contracts/src/identity/me.ts`).
 class _Identity extends StatelessWidget {
   const _Identity({required this.me});
 
