@@ -1,3 +1,7 @@
+| `organization_member` | quem pertence a qual organização, e como (`owner`, `member`) |
+| `invitation` | o convite por link: hash do token, validade, aceite e revogação |
+| `invitation` | o convite por link: hash do token, validade, aceite e revogação |
+
 # @fit-app/api
 
 API NestJS: monólito modular com os módulos `identity`, `nutrition`, `health` e
@@ -262,6 +266,7 @@ No schema `identity`, e só nele (ADR
 | `professional`        | a metade profissional: tipo, número do conselho, especialidade     |
 | `organization`        | o consultório ou a clínica                                         |
 | `organization_member` | quem pertence a qual organização, e como (`owner`, `member`)       |
+| `invitation`          | o convite por link: hash do token, validade, aceite e revogação    |
 
 O `profile.id` é **nosso**, não o id do Supabase: o login é deles e o domínio é
 nosso (ADR [0002](../../docs/adr/0002-supabase-como-infraestrutura.md)), então o
@@ -271,6 +276,83 @@ schema deste módulo, e banco de teste não tem Auth dentro.
 
 A decisão está na ADR
 [0014](../../docs/adr/0014-modelo-de-identidade-e-organizacao-solo.md).
+
+## Convites: `/v1/invitations`
+
+As três rotas do card **I-02**, todas sobre a **organização de quem está
+chamando**: nenhuma recebe organização em caminho ou corpo, porque a prática sai
+do `sub` do token verificado. Convite de outra organização responde 404.
+
+### Criar o link
+
+```bash
+curl -X POST http://127.0.0.1:3333/v1/invitations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Ana","contact":"+55 11 90000-0000"}'
+```
+
+```json
+{
+  "invitation": {
+    "id": "6f1e0a3c-2d44-4a1e-9b0f-7c2a5d8e4b10",
+    "status": "pending",
+    "name": "Ana",
+    "contact": "+55 11 90000-0000",
+    "createdAt": "2026-10-29T13:00:00.000Z",
+    "expiresAt": "2026-11-12T13:00:00.000Z"
+  },
+  "token": "k3Jm9S2qQ1b7Xr4Lp8Zt0Nv6Hy5Cd3Aw2Ej1Uf7Gi0"
+}
+```
+
+Nome e contato são opcionais: convite sem nenhum dos dois é convite válido — o
+profissional já está conversando com a pessoa, e o nome existe para a lista
+dizer de quem era cada link.
+
+**O `token` é respondido aqui e em lugar nenhum mais.** O banco guarda só o
+SHA-256 dele, então nem a API nem um backup conseguem remontar o link: quem
+perder revoga e cria outro. O campo se chama `token` de propósito — é nome que a
+lista de mascaramento de `@fit-app/observability` cobre, então um objeto que
+caia num log sai com `[redacted]` no lugar.
+
+O link enviado ao paciente é `<origem do painel>/convite/<token>`, montado pelo
+painel. O token vai no caminho, nunca em query string.
+
+### Listar
+
+```bash
+curl http://127.0.0.1:3333/v1/invitations -H "Authorization: Bearer $TOKEN"
+```
+
+Convites da organização, do mais recente para o mais antigo, com `status` de
+cada um: `pending`, `accepted`, `expired` ou `revoked`. **Nenhum token e nenhum
+hash** vem aqui.
+
+A situação não é coluna: ela é lida de `expires_at`, `accepted_at` e
+`revoked_at` no instante da requisição. Coluna de status precisaria de um job
+virando `pending` em `expired` à meia-noite, e estaria errada até o job rodar.
+
+### Revogar
+
+```bash
+curl -X POST http://127.0.0.1:3333/v1/invitations/$ID/revoke \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+`POST .../revoke`, não `DELETE`: a linha fica, com o instante em que foi
+revogada, porque a lista tem de continuar dizendo que o link foi cancelado — e
+não que nunca existiu. Só convite **pendente** pode ser revogado; já aceito, já
+revogado ou expirado responde **409** (`identity.invitation.not_pending`). A
+condição está também no `where` do `update`, para que uma revogação e um aceite
+no mesmo instante sejam decididos pelo banco.
+
+Aceitar o convite é de outro card — o do vínculo profissional–paciente —, mas a
+regra dele já está escrita e testada em `domain/invitation.ts`: convite
+expirado, revogado ou já aceito não pode ser aceito.
+
+A decisão está na ADR
+[0015](../../docs/adr/0015-convite-por-link-com-token-hasheado.md).
 
 ## Contratos, validação e OpenAPI
 

@@ -23,3 +23,4 @@ antigo como substituído por ele.
 | [0012](./0012-esqueleto-do-app-do-paciente.md)            | Esqueleto do app do paciente: Riverpod, go_router, tema por tokens e ambientes por `--dart-define` | aceito |
 | [0013](./0013-sentry-nos-tres-apps.md)                    | Sentry nos três apps, com o filtro de dado sensível num pacote só                                  | aceito |
 | [0014](./0014-modelo-de-identidade-e-organizacao-solo.md) | Modelo de identidade: `profile` com id próprio, `professional` e organização solo                  | aceito |
+| [0015](./0015-convite-por-link-com-token-hasheado.md)     | Convite por link: token aleatório, guardado como hash, mostrado uma vez                            | aceito |
