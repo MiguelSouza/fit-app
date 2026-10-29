@@ -72,12 +72,16 @@ Revogar, do seu lado, só funciona em convite pendente, e a condição está
 instante sejam decididos pelo banco e não pelo que o processo leu um momento
 antes.
 
-**O link mora na origem do painel: `/convite/<token>`.** O token vai no
-caminho, nunca em query string — query string é a parte que vaza, para
-`Referer`, para analytics e para o log de quem estiver na frente, e é
-exatamente o que o filtro do Sentry desta plataforma descarta. A base é
+**O link mora na origem do painel: `/convite?token=<token>`.** A base é
 `location.origin`, a mesma origem onde o profissional já está, então não há
 variável de ambiente nova e não há como o link apontar para o host errado.
+
+O token vai na **query string** e não no caminho, que é o contrário do que se
+chutaria, e o motivo é o filtro desta plataforma: o `beforeSend` de
+`@fit-app/observability` mantém o caminho de uma URL — com id e tudo, porque é
+isso que faz uma issue legível — e descarta a query (`urlWithoutQuery`). Token
+no caminho sobreviveria num relato de erro da tela do paciente; na query ele
+some antes do evento sair do navegador.
 
 ## Consequências
 
@@ -86,9 +90,9 @@ variável de ambiente nova e não há como o link apontar para o host errado.
   de propósito: é nome que a lista de mascaramento de
   `@fit-app/observability` cobre, então um objeto que caia num log sai com
   `[redacted]` no lugar.
-- A lista (`GET /v1/invitations`) **não** tem como mostrar o link. A tela de
-  convites, por isso, não tem botão de copiar: tem "revogar" no que está
-  pendente, e o link aparece só na hora em que é gerado.
+- A lista (`GET /v1/invitations`) **não** tem como mostrar o link. Por isso o
+  botão de copiar fica no cartão de criação, no instante em que o link é
+  gerado, e a lista só tem "revogar" no que está pendente.
 - Reenviar o mesmo convite não existe e não vai existir nesta tabela: o próximo
   card que quiser "reenviar" cria um convite novo e revoga o antigo.
 - `name` e `contact` do convite são dado pessoal de alguém que ainda não é
@@ -96,7 +100,7 @@ variável de ambiente nova e não há como o link apontar para o host errado.
   que os digitou, e nunca para log nenhum — `contact` entrou na lista de
   campos mascarados, nos dois idiomas (TypeScript e o gêmeo em Dart).
 - O link gerado hoje aponta para uma rota do painel que **ainda não existe**:
-  `/convite/<token>` é do card do vínculo profissional–paciente, que é quem
+  `/convite?token=<token>` é do card do vínculo profissional–paciente, que é quem
   valida o token e cria a conta do paciente. O formato do link já está
   decidido, então aquele card preenche a tela sem mexer em nada do que foi
   gerado antes.

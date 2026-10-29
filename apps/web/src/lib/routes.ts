@@ -41,18 +41,32 @@ export const FIRST_ACCESS_PATH = '/primeiro-acesso';
 export const INVITE_PATH = '/convite';
 
 /**
- * The full link to send, from the token the API answered once.
+ * The parameter the token travels in: `/convite?token=...`.
  *
- * The token goes in the path and never in a query string: the query string is
- * the part that leaks — into `Referer`, into analytics, into the access log of
- * whatever sits in front — and this platform's own Sentry filter keeps a path
- * and drops a query for exactly that reason (`@fit-app/observability`).
+ * In the **query string** and not in the path, which is the opposite of what
+ * one would guess, and the reason is this platform's own scrubbing: the Sentry
+ * filter of `@fit-app/observability` keeps the path of a URL — ids and all,
+ * because that is what makes an issue readable — and throws the query string
+ * away (`urlWithoutQuery`). A token in the path would therefore survive into
+ * an error report of the patient's screen; in the query it is gone before the
+ * event leaves the browser.
+ */
+export const INVITE_TOKEN_PARAM = 'token';
+
+/**
+ * The full link to send, from the token the API answered once.
  *
  * @param origin where the panel is being served from (`location.origin`)
  * @param token the token of the invitation, in plain text
  */
 export function inviteLink(origin: string, token: string): string {
-  return `${origin}${INVITE_PATH}/${encodeURIComponent(token)}`;
+  const link = new URL(INVITE_PATH, origin);
+
+  // `URL` does the escaping, so a token with a `-` or a `_` in it — base64url
+  // has both — travels as itself and arrives as itself.
+  link.searchParams.set(INVITE_TOKEN_PARAM, token);
+
+  return link.toString();
 }
 
 /** Trades the code of an e-mail link for a session (`app/auth/callback`). */

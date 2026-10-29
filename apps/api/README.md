@@ -316,8 +316,8 @@ perder revoga e cria outro. O campo se chama `token` de propósito — é nome q
 lista de mascaramento de `@fit-app/observability` cobre, então um objeto que
 caia num log sai com `[redacted]` no lugar.
 
-O link enviado ao paciente é `<origem do painel>/convite/<token>`, montado pelo
-painel. O token vai no caminho, nunca em query string.
+O link enviado ao paciente é `<origem do painel>/convite?token=<token>`, montado
+pelo painel.
 
 ### Listar
 

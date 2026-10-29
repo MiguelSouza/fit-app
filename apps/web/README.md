@@ -215,17 +215,19 @@ perder o link revoga o convite e gera outro. O token fica no estado do
 componente e em lugar nenhum mais: nada de `localStorage`, nada no cache do
 TanStack Query, e ele some na próxima navegação.
 
-O link é `<origem do painel>/convite/<token>`, montado com `location.origin`: a
-origem onde o profissional já está, então não há variável de ambiente para
-configurar e não há como apontar para o host errado. O token vai no caminho e
-não em query string — query string vaza para `Referer`, para analytics e para o
-log de quem estiver na frente.
+O link é `<origem do painel>/convite?token=<token>`, montado com
+`location.origin`: a origem onde o profissional já está, então não há variável
+de ambiente para configurar e não há como apontar para o host errado. O token
+vai na **query string**, e não no caminho, por causa do filtro desta
+plataforma: o `beforeSend` de `@fit-app/observability` mantém o caminho de uma
+URL e joga a query fora, então token no caminho sobreviveria num relato de erro
+da tela do paciente e na query não.
 
 A situação do convite vem pronta da API e **não** é calculada aqui: `expirado`
 depende do instante da pergunta, e um relógio de navegador adiantado mostraria
 como morto um link que ainda funciona.
 
-> A rota `/convite/<token>`, que é o que o paciente abre, **ainda não existe
+> A rota `/convite`, que é o que o paciente abre, **ainda não existe
 > neste painel**: validar o token e criar a conta do paciente é o card do
 > vínculo profissional–paciente. O formato do link já está decidido, então
 > aquele card preenche a tela sem mexer no que é gerado aqui.
@@ -236,7 +238,7 @@ como morto um link que ainda funciona.
   aparecer nelas; o dado vem dos cards de cada módulo. Convites já tem conteúdo
   (card I-02).
 - **A tela que o paciente abre.** O link do convite aponta para
-  `/convite/<token>`, que é do card do vínculo profissional–paciente.
+  `/convite?token=<token>`, que é do card do vínculo profissional–paciente.
 - **O nome de quem entrou.** `GET /v1/me` responde id, papel, fuso horário e a
   metade profissional (tipo, conselho, especialidade e organizações) — o nome da
   pessoa não vem, e o único texto livre é o nome do consultório dela. Ver
