@@ -29,11 +29,31 @@ export interface paths {
         };
         /**
          * Identidade de quem fez a chamada
-         * @description Provisório: responde um payload fixo, com o UUID nulo como `personId`. Passa a ler a pessoa autenticada quando o módulo identity tiver gente dentro.
+         * @description Responde o perfil, o tipo de profissional e as organizações de quem está chamando. Quem entrou no Supabase Auth e ainda não concluiu o primeiro acesso não tem perfil, e a resposta é 404 — é o que leva o painel à tela de primeiro acesso.
          */
         get: operations["MeController_get_v1"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/professionals/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cadastro do profissional
+         * @description Cria o perfil, o profissional, a organização solo e o vínculo de owner, numa transação. Idempotente: chamar de novo responde o cadastro que já existe e não duplica nada. Sem `professionalType`, o cadastro é de `nutritionist`.
+         */
+        post: operations["ProfessionalsController_register_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -84,12 +104,56 @@ export interface components {
              * @example America/Sao_Paulo
              */
             timeZone: string;
+            professional?: components["schemas"]["ProfessionalIdentity"];
         };
         /**
          * @description Papel da pessoa na plataforma
          * @enum {string}
          */
         PersonRole: "professional" | "patient";
+        /** @description Dados profissionais de quem fez a chamada */
+        ProfessionalIdentity: {
+            type: components["schemas"]["ProfessionalType"];
+            /**
+             * @description Número do registro no conselho
+             * @example CRN-3 12345
+             */
+            councilNumber: string;
+            /** @description Especialidade declarada */
+            specialty?: string;
+            /** @description Organizações a que o profissional pertence */
+            organizations: components["schemas"]["OrganizationMembership"][];
+        };
+        /**
+         * @description Tipo do profissional. Só o nutricionista edita plano alimentar
+         * @enum {string}
+         */
+        ProfessionalType: "nutritionist" | "trainer";
+        /** @description Vínculo da pessoa com uma organização */
+        OrganizationMembership: {
+            /**
+             * Format: uuid
+             * @description Id da organização
+             */
+            organizationId: string;
+            /**
+             * @description Nome da organização
+             * @example Ana Souza
+             */
+            name: string;
+            kind: components["schemas"]["OrganizationKind"];
+            role: components["schemas"]["OrganizationRole"];
+        };
+        /**
+         * @description Tipo da organização: consultório individual ou clínica
+         * @enum {string}
+         */
+        OrganizationKind: "solo" | "clinic";
+        /**
+         * @description Papel da pessoa dentro da organização
+         * @enum {string}
+         */
+        OrganizationRole: "owner" | "member";
         /** @description Corpo de erro de toda a API */
         ErrorResponse: {
             error: components["schemas"]["ApiErrorDetail"];
@@ -105,6 +169,25 @@ export interface components {
              * @example Plano não encontrado.
              */
             message: string;
+        };
+        /** @description Dados do primeiro acesso de um profissional */
+        RegisterProfessionalRequest: {
+            /**
+             * @description Nome completo do profissional
+             * @example Ana Souza
+             */
+            fullName: string;
+            /**
+             * @description Número do registro no conselho
+             * @example CRN-3 12345
+             */
+            councilNumber: string;
+            /**
+             * @description Especialidade declarada
+             * @example Nutrição esportiva
+             */
+            specialty?: string;
+            professionalType?: components["schemas"]["ProfessionalType"];
         };
     };
     responses: never;
@@ -151,6 +234,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ProfessionalsController_register_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterProfessionalRequest"];
+            };
+        };
+        responses: {
+            /** @description Identidade do profissional cadastrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Corpo inválido: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A conta já é de um paciente: `identity.profile.not_professional` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Erro inesperado. É o envelope de erro de toda a API */

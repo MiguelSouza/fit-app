@@ -129,10 +129,13 @@ arquivo de onde veio.
 
 ### O que ainda não fecha: escrever no Postgres
 
-O gerador escreve **json**, e não linhas no banco. Os quatro schemas de módulo
-não existem: o card **F-07** ligou o Drizzle Kit e parou aí, `apps/api/drizzle/`
-não tem nenhuma migração e `apps/api/src/modules/*/infrastructure/` não tem
-nenhum arquivo `*.schema.ts`. Não há tabela em que inserir.
+O gerador escreve **json**, e não linhas no banco. O card **I-01** trouxe o
+primeiro schema, o `identity`, com `profile`, `professional`, `organization` e
+`organization_member` — mas é o que cadastra o profissional, não o que guarda o
+dado do paciente. `nutrition`, `health` e `insights` continuam sem nenhum
+arquivo `*.schema.ts`, e é lá que cairiam atividade, sono, métrica diária,
+check-in, peso e adesão. Não há tabela em que inserir o que este gerador
+produz.
 
 O que falta é um passo de escrita, não um redesenho. As séries em
 [`src/synthetic/records.ts`](./src/synthetic/records.ts) já usam o vocabulário

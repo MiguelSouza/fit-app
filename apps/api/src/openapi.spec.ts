@@ -82,6 +82,67 @@ describe('the openapi document', () => {
     });
   });
 
+  it('describes the professional half of the identity, optional and by reference', async () => {
+    app = await bootApp('test');
+
+    const document = buildOpenApiDocument(app, API_VERSION);
+
+    // Optional, which is to say outside `required`: a patient has no council
+    // number and belongs to no organization, and the generated client types it
+    // as a field that may not be there.
+    expect(document.components?.schemas?.['MeResponse']).toMatchObject({
+      properties: {
+        professional: { allOf: [{ $ref: '#/components/schemas/ProfessionalIdentity' }] },
+      },
+    });
+
+    expect(document.components?.schemas?.['ProfessionalIdentity']).toMatchObject({
+      type: 'object',
+      required: ['type', 'councilNumber', 'organizations'],
+      properties: {
+        type: { $ref: '#/components/schemas/ProfessionalType' },
+        organizations: { items: { $ref: '#/components/schemas/OrganizationMembership' } },
+      },
+    });
+
+    expect(document.components?.schemas?.['ProfessionalType']).toMatchObject({
+      type: 'string',
+      enum: ['nutritionist', 'trainer'],
+    });
+  });
+
+  it('describes POST /v1/professionals/me with the body of the contract', async () => {
+    app = await bootApp('test');
+
+    const document = buildOpenApiDocument(app, API_VERSION);
+    const route = document.paths['/v1/professionals/me']?.post;
+
+    // The body comes from the schema the handler declares in `@Body({ schema })`
+    // — one declaration validates the request and documents it, which is what
+    // keeps the generated client from being typed by hand (ADR 0008).
+    expect(route?.requestBody).toMatchObject({
+      required: true,
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/RegisterProfessionalRequest' },
+        },
+      },
+    });
+
+    // 200 and not 201: the endpoint is idempotent, and the clients type the
+    // answer by status code.
+    expect(route?.responses['200']).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/MeResponse' } },
+      },
+    });
+
+    expect(document.components?.schemas?.['RegisterProfessionalRequest']).toMatchObject({
+      type: 'object',
+      required: ['fullName', 'councilNumber'],
+    });
+  });
+
   it('describes the error envelope every client has to read', async () => {
     app = await bootApp('test');
 

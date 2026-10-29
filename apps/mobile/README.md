@@ -154,7 +154,7 @@ sabe se existe sessão.
   em pt-BR e sem dado de paciente. Corpo que não é o envelope recebe um texto
   genérico, e não vai para a tela nem para log.
 - **Nenhum dado de paciente é inventado em teste** — nem sintético: o teste da
-  tela inicial usa o UUID nulo, o mesmo que o endpoint provisório responde.
+  tela inicial usa o UUID nulo, que não é e nunca vai ser uma pessoa.
 - **O que vai para o Sentry passa por um filtro** (ver "Erros no Sentry"): nome,
   e-mail, nota e valor de check-in viram `[redacted]`, e o usuário é só um id.
 

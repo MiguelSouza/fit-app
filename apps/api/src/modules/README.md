@@ -10,10 +10,16 @@ schema do Postgres e só é visto de fora pelo próprio `index.ts`.
 | `health`    | `health`    | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas   |
 | `insights`  | `insights`  | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo        |
 
-Por enquanto cada módulo tem só o `<modulo>.module.ts` e o `index.ts` — a
-exceção é `identity`, que já responde o `GET /v1/me` provisório do card F-09. O
-resto do conteúdo entra pelos cards de cada domínio; as pastas das quatro camadas
-já existem, com um `.gitkeep` cada, porque o git não versiona pasta vazia.
+`nutrition`, `health` e `insights` ainda têm só o `<modulo>.module.ts` e o
+`index.ts`: o conteúdo entra pelos cards de cada domínio, e as pastas das quatro
+camadas já existem, com um `.gitkeep` cada, porque o git não versiona pasta
+vazia.
+
+`identity` é o primeiro módulo com as quatro camadas preenchidas (card I-01):
+as tabelas `profile`, `professional`, `organization` e `organization_member`, o
+cadastro do profissional e o `GET /v1/me`. Vínculos, convites, consentimentos e
+o serviço de acesso que o resto da API vai usar entram pelos cards deles — e
+saem pelo `index.ts` quando entrarem.
 
 ## As camadas
 

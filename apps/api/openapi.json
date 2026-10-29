@@ -24,7 +24,7 @@
     },
     "/v1/me": {
       "get": {
-        "description": "Provisório: responde um payload fixo, com o UUID nulo como `personId`. Passa a ler a pessoa autenticada quando o módulo identity tiver gente dentro.",
+        "description": "Responde o perfil, o tipo de profissional e as organizações de quem está chamando. Quem entrou no Supabase Auth e ainda não concluiu o primeiro acesso não tem perfil, e a resposta é 404 — é o que leva o painel à tela de primeiro acesso.",
         "operationId": "MeController_get_v1",
         "parameters": [],
         "responses": {
@@ -34,6 +34,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -52,6 +62,69 @@
         "summary": "Identidade de quem fez a chamada",
         "tags": [
           "Me"
+        ]
+      }
+    },
+    "/v1/professionals/me": {
+      "post": {
+        "description": "Cria o perfil, o profissional, a organização solo e o vínculo de owner, numa transação. Idempotente: chamar de novo responde o cadastro que já existe e não duplica nada. Sem `professionalType`, o cadastro é de `nutritionist`.",
+        "operationId": "ProfessionalsController_register_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterProfessionalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identidade do profissional cadastrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A conta já é de um paciente: `identity.profile.not_professional`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cadastro do profissional",
+        "tags": [
+          "Professionals"
         ]
       }
     }
@@ -146,6 +219,13 @@
             "minLength": 1,
             "description": "Fuso horário da pessoa, no formato IANA",
             "example": "America/Sao_Paulo"
+          },
+          "professional": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProfessionalIdentity"
+              }
+            ]
           }
         },
         "required": [
@@ -163,6 +243,94 @@
           "patient"
         ],
         "description": "Papel da pessoa na plataforma"
+      },
+      "ProfessionalIdentity": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ProfessionalType"
+          },
+          "councilNumber": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Número do registro no conselho",
+            "example": "CRN-3 12345"
+          },
+          "specialty": {
+            "description": "Especialidade declarada",
+            "type": "string",
+            "minLength": 1
+          },
+          "organizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationMembership"
+            },
+            "description": "Organizações a que o profissional pertence"
+          }
+        },
+        "required": [
+          "type",
+          "councilNumber",
+          "organizations"
+        ],
+        "additionalProperties": false,
+        "description": "Dados profissionais de quem fez a chamada"
+      },
+      "ProfessionalType": {
+        "type": "string",
+        "enum": [
+          "nutritionist",
+          "trainer"
+        ],
+        "description": "Tipo do profissional. Só o nutricionista edita plano alimentar"
+      },
+      "OrganizationMembership": {
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id da organização"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nome da organização",
+            "example": "Ana Souza"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OrganizationKind"
+          },
+          "role": {
+            "$ref": "#/components/schemas/OrganizationRole"
+          }
+        },
+        "required": [
+          "organizationId",
+          "name",
+          "kind",
+          "role"
+        ],
+        "additionalProperties": false,
+        "description": "Vínculo da pessoa com uma organização"
+      },
+      "OrganizationKind": {
+        "type": "string",
+        "enum": [
+          "solo",
+          "clinic"
+        ],
+        "description": "Tipo da organização: consultório individual ou clínica"
+      },
+      "OrganizationRole": {
+        "type": "string",
+        "enum": [
+          "owner",
+          "member"
+        ],
+        "description": "Papel da pessoa dentro da organização"
       },
       "ErrorResponse": {
         "type": "object",
@@ -198,6 +366,43 @@
           "message"
         ],
         "additionalProperties": false
+      },
+      "RegisterProfessionalRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120,
+            "description": "Nome completo do profissional",
+            "example": "Ana Souza"
+          },
+          "councilNumber": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32,
+            "description": "Número do registro no conselho",
+            "example": "CRN-3 12345"
+          },
+          "specialty": {
+            "description": "Especialidade declarada",
+            "example": "Nutrição esportiva",
+            "type": "string",
+            "maxLength": 120
+          },
+          "professionalType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProfessionalType"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fullName",
+          "councilNumber"
+        ],
+        "description": "Dados do primeiro acesso de um profissional"
       }
     }
   }

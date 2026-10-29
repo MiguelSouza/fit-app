@@ -1,55 +1,45 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { errorResponseSchema, meResponseSchema, type MeResponse } from '@fit-app/contracts';
-import { ApiInternalServerErrorResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOperation } from '@nestjs/swagger';
 
+import { CurrentUser } from '../../../shared/auth/current-user.decorator';
+import { type AuthenticatedUser } from '../../../shared/auth/authenticated-user';
 import { SchemaResponse } from '../../../shared/presentation/schema-response.decorator';
-
-/**
- * The answer while `identity` has no people in it.
- *
- * It is a **provisional** endpoint, as card F-09 asks for: what it exists for
- * is to put one real contract end to end — Zod schema, OpenAPI document,
- * generated client — so the next card plugs the authenticated caller into a
- * pipeline that already works.
- *
- * The id is the nil UUID, which is not and will never be a person: no
- * synthetic patient is invented here, and nothing in the response is personal
- * data.
- */
-const PROVISIONAL_ME: MeResponse = {
-  personId: '00000000-0000-0000-0000-000000000000',
-  role: 'professional',
-  timeZone: 'America/Sao_Paulo',
-};
+import { GetMyIdentityUseCase } from '../application/get-my-identity.use-case';
+import { toMeResponse } from './identity.presenter';
 
 /**
  * `GET /v1/me`: who the caller is. The version comes from `defaultVersion` in
  * `bootstrap.ts`, so the path here stays version free.
+ *
+ * Thin on purpose (CLAUDE.md, "Não faça": no business rule in a controller):
+ * it hands the caller's id to the use case and the answer to the presenter.
+ * The id is the `sub` of the token the global guard verified, so nobody can
+ * ask about another person.
  */
 @Controller({ path: 'me' })
 export class MeController {
-  /**
-   * Answers the contract above with a fixed payload, and says so in the
-   * documentation. Reading the real identity needs two things this branch does
-   * not have: the verified access token (card F-08) and the `identity` tables.
-   * Until both land, an endpoint that lies in a documented way beats an
-   * endpoint that is not there — the contract it answers is already the real
-   * one.
-   */
+  constructor(private readonly getMyIdentity: GetMyIdentityUseCase) {}
+
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Identidade de quem fez a chamada',
     description:
-      'Provisório: responde um payload fixo, com o UUID nulo como `personId`. ' +
-      'Passa a ler a pessoa autenticada quando o módulo identity tiver gente dentro.',
+      'Responde o perfil, o tipo de profissional e as organizações de quem está chamando. ' +
+      'Quem entrou no Supabase Auth e ainda não concluiu o primeiro acesso não tem perfil, ' +
+      'e a resposta é 404 — é o que leva o painel à tela de primeiro acesso.',
   })
   @SchemaResponse(meResponseSchema, 'Identidade de quem fez a chamada')
+  @ApiNotFoundResponse({
+    standardSchema: errorResponseSchema,
+    description: 'Quem chamou não tem perfil: `identity.profile.not_found`',
+  })
   @ApiInternalServerErrorResponse({
     standardSchema: errorResponseSchema,
     description: 'Erro inesperado. É o envelope de erro de toda a API',
   })
-  get(): MeResponse {
-    return PROVISIONAL_ME;
+  async get(@CurrentUser() user: AuthenticatedUser): Promise<MeResponse> {
+    return toMeResponse(await this.getMyIdentity.execute(user.id));
   }
 }

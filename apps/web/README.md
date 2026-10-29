@@ -55,14 +55,15 @@ src/
   app/
     layout.tsx           <html>, <body> e os tokens do Tailwind
     globals.css          @theme: a configuração do Tailwind 4 é CSS
-    (auth)/              telas sem sessão: login, recuperar-senha, nova-senha
-    (painel)/            tudo que exige sessão: layout com menu + as 4 seções
+    (auth)/              telas fora do painel: login, recuperar-senha, nova-senha, primeiro-acesso
+    (painel)/            tudo que exige sessão e perfil: layout com menu + as 4 seções
     auth/callback        troca o código do link de e-mail por uma sessão
     auth/sign-out        encerra a sessão (POST)
     global-error.tsx     a última tela: erro que escapou de tudo, e o relato ao Sentry
   components/
     ui/                  primitivos do shadcn/ui, neutros (card OP-06 veste)
     auth/                os três formulários de entrada
+    identity/            o formulário do primeiro acesso do profissional
     painel/              menu lateral, cabeçalho de seção, cartão de identidade
     debug/               só desenvolvimento: o botão que provoca o erro de teste
     query-provider.tsx   o cache do TanStack Query
@@ -71,7 +72,7 @@ src/
     env.ts               as NEXT_PUBLIC_*, validadas com Zod
     routes.ts            os caminhos, e quais são públicos
     sentry.ts            as opções do Sentry, iguais nos três runtimes
-    api/                 o cliente da API e as queries
+    api/                 o cliente da API (navegador e servidor) e as queries
     supabase/            Auth no navegador, no servidor e no proxy
   instrumentation.ts        liga o Sentry no servidor (hook do Next.js)
   instrumentation-client.ts liga o Sentry no navegador
@@ -85,6 +86,34 @@ Duas pastas, dois grupos de rota. Uma tela nova que exige sessão nasce dentro d
 responde sem sessão vai em `(auth)` **e** entra na lista de `PUBLIC_PATHS` de
 `lib/routes.ts` — a lista é fechada de propósito, para esquecimento dar
 redirecionamento visível em vez de rota aberta.
+
+`(auth)` é um formato, não uma regra: o layout do grupo é só o cartão
+centralizado e não checa nada. O `/primeiro-acesso` mora lá por isso, e **não**
+está em `PUBLIC_PATHS` — ele precisa de sessão, confere a sessão na própria
+página, e quem chega sem uma é mandado ao login pelo proxy antes de renderizar.
+
+## Primeiro acesso do profissional
+
+Sessão não é cadastro. Quem entra no Supabase Auth e ainda não tem perfil recebe
+**404** em `GET /v1/me`, com o código `identity.profile.not_found`, e é o layout
+do painel que lê isso e manda a pessoa para `/primeiro-acesso` — a tela que
+pergunta nome, CRN e especialidade e manda `POST /v1/professionals/me` (card
+I-01). Concluído o cadastro, o `router.refresh()` faz o servidor renderizar o
+painel de novo, agora com perfil.
+
+Quem checa é o layout e não o `proxy.ts`: o proxy roda em toda requisição, e uma
+chamada à API por requisição — inclusive as de arquivo estático — seria caro
+para a mesma resposta.
+
+API que **não respondeu** não é lida como "não cadastrado" (`lib/api/server.ts`
+separa os dois casos). Redirecionar aí mandaria um profissional cadastrado para
+uma tela de cadastro por causa de uma falha de rede; o painel fica de pé e o erro
+aparece dentro da página.
+
+O cliente do servidor é outro, ao lado do do navegador, porque a sessão vem de
+outro lugar: no navegador, do cliente Auth da aba; no servidor, dos cookies da
+requisição. Ele é criado a cada chamada e nada é guardado — cliente que
+guardasse o token de uma requisição o mandaria na requisição da próxima pessoa.
 
 ## Sessão, rota protegida e token
 
@@ -175,9 +204,12 @@ mesmo.
 
 - **A fila, os pacientes, os convites e os ajustes.** As quatro rotas existem e
   dizem o que vai aparecer nelas; o dado vem dos cards de cada módulo.
-- **O nome de quem entrou.** `GET /v1/me` responde id, papel e fuso horário —
-  nome e e-mail são dado pessoal e vêm com o endpoint de perfil do `identity`,
-  que registra o acesso. Ver `packages/contracts/src/identity/me.ts`.
+- **O nome de quem entrou.** `GET /v1/me` responde id, papel, fuso horário e a
+  metade profissional (tipo, conselho, especialidade e organizações) — o nome da
+  pessoa não vem, e o único texto livre é o nome do consultório dela. Ver
+  `packages/contracts/src/identity/me.ts`.
+- **Editar o cadastro.** O primeiro acesso pergunta uma vez; mandar de novo não
+  sobrescreve nada. A tela de perfil entra com o card dela.
 - **O visual.** Os componentes são os neutros do shadcn/ui, e a paleta é a
   neutra, num bloco `@theme` só. O design system é o card OP-06.
 - **Teste automatizado.** O `CLAUDE.md` põe Playwright nos fluxos críticos

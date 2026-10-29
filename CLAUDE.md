@@ -133,6 +133,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0011 Sessão do painel em cookie, com o proxy do Next.js na frente das rotas
 - 0012 Esqueleto do app do paciente: Riverpod, go_router, tema por tokens e `--dart-define`
 - 0013 Sentry nos três apps, com o filtro de dado sensível num pacote só
+- 0014 Modelo de identidade: `profile` com id próprio, `professional` e organização solo
 
 ## Não faça
 

@@ -173,27 +173,104 @@ O versionamento é por URI, com `defaultVersion: '1'`: todo controller responde
 sob `/v1` sem escrever isso no `@Controller`. Uma rota que precise mudar de
 forma declara `@Version('2')` sozinha, e o resto continua em `/v1`.
 
-## `GET /v1/me`
+## Identidade: `GET /v1/me` e `POST /v1/professionals/me`
 
-Provisório, do card F-09: responde um payload fixo, com o UUID nulo como
-`personId` — que não é e nunca vai ser uma pessoa. Ele existe para ter um
-contrato de ponta a ponta (schema Zod, OpenAPI, cliente gerado) antes de haver
-gente no módulo `identity`.
+As duas rotas do card **I-01**, as duas sobre **quem está chamando** e nenhuma
+sobre outra pessoa: o id é o `sub` do token que o guard global verificou, então
+não existe parâmetro para trocar.
+
+### Primeiro acesso
+
+Todo profissional pertence a uma organização, e no MVP cada um ganha a sua, do
+tipo `solo`, onde é `owner`. Depois de entrar no Supabase Auth, o painel manda:
 
 ```bash
-curl http://127.0.0.1:3333/v1/me
+curl -X POST http://127.0.0.1:3333/v1/professionals/me \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"fullName":"Ana Souza","councilNumber":"CRN-3 12345","specialty":"Nutrição esportiva"}'
+```
+
+Quatro linhas, numa transação só: `profile` (papel `professional`),
+`professional` (tipo, conselho, especialidade), `organization` (`solo`, com o
+nome do profissional) e `organization_member` (`owner`). Sem
+`professionalType`, o cadastro é de `nutritionist`.
+
+**Idempotente**, e por dois motivos que se somam: o caso de uso lê antes de
+escrever, o que resolve o clique duplo e a requisição repetida; e o índice único
+em `profile.auth_user_id` resolve a corrida que a leitura não vê — duas
+requisições no mesmo instante, em que a segunda não escreve nada e responde o
+que a primeira criou. Chamar de novo com dados diferentes **não** sobrescreve:
+editar o cadastro é outro caso de uso.
+
+A resposta é **200**, não 201, nas duas chamadas: "criado" não é verdade na
+segunda, e os clientes gerados tipam a resposta por status — rota que às vezes
+responde 201 é cliente que não sabe ler um dos dois casos.
+
+Conta que já é de paciente recebe **409** (`identity.profile.not_professional`):
+este produto não dá dois papéis a uma pessoa.
+
+### Quem está chamando
+
+```bash
+curl http://127.0.0.1:3333/v1/me -H "Authorization: Bearer $TOKEN"
 ```
 
 ```json
 {
-  "personId": "00000000-0000-0000-0000-000000000000",
+  "personId": "7b4ba3f4-0f64-4e9b-9b20-1e4d6b9f0a21",
   "role": "professional",
-  "timeZone": "America/Sao_Paulo"
+  "timeZone": "America/Sao_Paulo",
+  "professional": {
+    "type": "nutritionist",
+    "councilNumber": "CRN-3 12345",
+    "specialty": "Nutrição esportiva",
+    "organizations": [
+      {
+        "organizationId": "0e0b0f2a-6a1e-4a66-9b4d-2f0c8f5a7b31",
+        "name": "Ana Souza",
+        "kind": "solo",
+        "role": "owner"
+      }
+    ]
+  }
 }
 ```
 
-Passa a ler quem chamou quando o token verificado e as tabelas de `identity`
-existirem. O contrato que ele responde já é o de verdade.
+`professional` é opcional porque paciente não tem número de conselho nem
+organização — campo ausente diz isso melhor do que estrutura vazia que todo
+paciente carregaria.
+
+Quem entrou no Auth e **não** concluiu o primeiro acesso não tem perfil, e a
+resposta é **404** com `identity.profile.not_found`. Não é erro: é o que leva o
+painel à tela de primeiro acesso.
+
+O **nome** de quem chamou não entra na resposta. Ela carrega id e código
+(`CLAUDE.md`, "Saúde e LGPD"), e o único texto livre é o nome do consultório da
+própria pessoa. Ler o perfil de **outra** pessoa é outro caso de uso, com
+vínculo, consentimento e registro de acesso.
+
+### As tabelas
+
+No schema `identity`, e só nele (ADR
+[0004](../../docs/adr/0004-um-schema-por-modulo.md)), definidas em
+[`identity.schema.ts`](./src/modules/identity/infrastructure/identity.schema.ts):
+
+| Tabela                | O que guarda                                                       |
+| --------------------- | ------------------------------------------------------------------ |
+| `profile`             | a pessoa: papel, nome, fuso, e o `auth_user_id` do Supabase, único |
+| `professional`        | a metade profissional: tipo, número do conselho, especialidade     |
+| `organization`        | o consultório ou a clínica                                         |
+| `organization_member` | quem pertence a qual organização, e como (`owner`, `member`)       |
+
+O `profile.id` é **nosso**, não o id do Supabase: o login é deles e o domínio é
+nosso (ADR [0002](../../docs/adr/0002-supabase-como-infraestrutura.md)), então o
+id que os outros schemas vão apontar não muda se o provedor de login mudar. Não
+há chave estrangeira para `auth.users` — aquela tabela é do Supabase, não está em
+schema deste módulo, e banco de teste não tem Auth dentro.
+
+A decisão está na ADR
+[0014](../../docs/adr/0014-modelo-de-identidade-e-organizacao-solo.md).
 
 ## Contratos, validação e OpenAPI
 
@@ -561,9 +638,9 @@ A pasta, a tabela de controle e o schema dela vêm de
 Drizzle Kit e o harness leem: banco de teste montado com controle diferente do
 banco de verdade não é o banco de verdade.
 
-> Hoje `drizzle/` ainda não tem migração — o card F-07 está bloqueado — e o
-> setup diz isso numa linha e segue, com o banco vazio. O harness aplica a
-> primeira migração no dia em que ela existir, sem mudança aqui.
+A primeira migração é a do card I-01, que cria o schema `identity` e as quatro
+tabelas dele. Migração nova entra com `pnpm db:generate`, é revisada no PR, e o
+harness passa a aplicá-la sem mudança nenhuma aqui.
 
 Um teste de integração pede a conexão ao harness, nunca à `DATABASE_URL` (essa é
 a da API e a do `db:migrate`):
@@ -588,10 +665,12 @@ caem no schema `pgboss` e em nenhum outro.
 ### Fábricas
 
 As fábricas que o card F-11 pede — criar profissional, paciente, vínculo e
-consentimento numa linha — **ainda não existem**, e por um motivo só: as tabelas
-de `identity` também não. O card F-07 parou antes de escrever os `pgTable`
-porque o SQL de referência que ele manda usar não está no repositório, e fábrica
-é código de `insert`: sem coluna, não há o que inserir.
+consentimento numa linha — **ainda não existem**. O card I-01 trouxe as tabelas
+de profissional e organização, e com elas o caminho do profissional já tem um
+jeito de ser montado: o próprio caso de uso de cadastro, que é o que
+[`register-professional.use-case.integration-spec.ts`](./src/modules/identity/application/register-professional.use-case.integration-spec.ts)
+usa. Paciente, vínculo e consentimento continuam sem tabela, e fábrica é código
+de `insert`: sem coluna, não há o que inserir.
 
 Quando elas entrarem, é aqui que moram (`src/shared/testing`), com o sufixo
 `.spec-support.ts` e três regras que já valem:

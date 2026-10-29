@@ -17,9 +17,12 @@ const AppConfig _config = AppConfig(
 );
 
 /// The answer of `GET /v1/me`, built from the generated model: the test speaks
-/// the contract, like the screen does. The id is the nil UUID, the same one the
-/// provisional endpoint answers — no patient, synthetic or otherwise, is
-/// invented in a test (`CLAUDE.md`).
+/// the contract, like the screen does. The id is the nil UUID, which is not and
+/// will never be a person — no patient, synthetic or otherwise, is invented in
+/// a test (`CLAUDE.md`).
+///
+/// `professional` is left unset on purpose: it is optional in the contract, and
+/// a patient has none.
 final MeResponse _me = MeResponse(
   (b) => b
     ..personId = '00000000-0000-0000-0000-000000000000'

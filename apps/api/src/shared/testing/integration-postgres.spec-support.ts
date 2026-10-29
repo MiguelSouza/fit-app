@@ -58,10 +58,11 @@ export const NO_DATABASE_RUNNING =
   'No integration database. A test that needs Postgres runs under `pnpm test:integration` ' +
   '(jest.integration.config.mjs), which starts the container in globalSetup.';
 
-/** What the setup prints when there is no migration to apply yet. */
+/** What the setup prints when there is no migration to apply. */
 export const NO_MIGRATIONS_YET =
   `[integration] no migrations in ${MIGRATIONS_FOLDER}/: the database comes up empty. ` +
-  'The tables arrive with card F-07, and this harness applies them the day they do.';
+  'Every migration of the repository is committed, so an empty folder means a ' +
+  'checkout that lost them — a suite that needs a table is about to say so.';
 
 /**
  * The running container, kept so the teardown can stop the one the setup
@@ -76,10 +77,10 @@ let container: StartedPostgreSqlContainer | undefined;
  * `pnpm db:migrate` applies them to the local one: same folder, same
  * bookkeeping table, same schema (`shared/database/migrations.ts`).
  *
- * While `drizzle/` holds no migration the folder does not exist, and this says
- * so instead of failing: the harness is finished and the tables are not (card
- * F-07, blocked on its reference SQL). The day the first migration lands it
- * starts being applied, with no change here.
+ * The first migration is card I-01's, which creates the `identity` schema. A
+ * folder with no journal in it is still not a failure here, only a warning:
+ * the harness has nothing to apply, and a suite that needs a table is the one
+ * that has to say so, with the query that failed.
  *
  * @returns whether anything was applied
  */

@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
+import { professionalIdentitySchema } from './professional';
+
 /**
  * What a person is to the platform: the professional who prescribes and
  * follows up, and the patient who is followed (CLAUDE.md, "O produto em uma
  * frase"). It says nothing about what the professional may do — that is
- * `professional_type`, which the identity card brings in with the rest of the
- * person model.
+ * `professional_type`, which travels in `professional` below.
  */
 export const personRoleSchema = z.enum(['professional', 'patient']).meta({
   id: 'PersonRole',
@@ -18,9 +19,12 @@ export type PersonRole = z.infer<typeof personRoleSchema>;
  * `GET /v1/me`: who the caller is, as the panel and the app need it to decide
  * which screen to open and in which time zone to read the dates.
  *
- * Ids and codes only. Name, e-mail and phone are personal data and do not
- * travel in a response that exists to say "which product am I in" — they come
- * with the profile endpoint of the identity card, which logs the access.
+ * Ids and codes, and nothing about anybody else. The caller's e-mail and
+ * phone do not travel here — the client already has them from the session —
+ * and no patient of theirs shows up at all; reading somebody else's chart is
+ * another endpoint, the one that logs the access (CLAUDE.md, "Saúde e LGPD").
+ * The only free text is the name of the caller's own practice, inside
+ * `professional`, which is theirs to read.
  */
 export const meResponseSchema = z
   .object({
@@ -37,6 +41,18 @@ export const meResponseSchema = z
       description: 'Fuso horário da pessoa, no formato IANA',
       example: 'America/Sao_Paulo',
     }),
+
+    /**
+     * The type that decides what the caller may edit and the practices they
+     * belong to. Absent for a patient, who has no council number and belongs
+     * to no organization — which is why it is an optional field and not a pair
+     * of empty structures every patient would have to carry.
+     *
+     * A professional always has it: the registration creates the profile and
+     * the professional in the same transaction, and whoever signed in without
+     * registering has no profile at all, which `GET /v1/me` answers as 404.
+     */
+    professional: professionalIdentitySchema.optional(),
   })
   .meta({
     id: 'MeResponse',

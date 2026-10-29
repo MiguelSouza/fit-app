@@ -26,9 +26,10 @@ import { isLocalDate, todayUtc } from './synthetic/time.ts';
  * and this is what gets used instead: for trying alert rules, for judging what
  * the AI writes about a chart, and for a demo with nobody's body in it.
  *
- * **Where the rows go.** For now, to json files. The four module schemas do
- * not exist yet — card F-07 wired Drizzle Kit and stopped there, and `drizzle/`
- * holds no migration — so there is no table to insert into. The generator is
+ * **Where the rows go.** For now, to json files. `nutrition`, `health` and
+ * `insights` have no tables yet — the only schema in `drizzle/` is `identity`,
+ * which registers a professional — so there is no table to insert the series
+ * of a patient's day into. The generator is
  * the whole of the work either way: a writer that walks this dataset into
  * Postgres is the step that waits on those tables, and the README of this
  * package says what it will take.

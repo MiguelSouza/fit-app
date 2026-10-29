@@ -27,4 +27,22 @@ export {
   type PersonRole,
 } from './identity/me';
 
+export {
+  organizationKindSchema,
+  organizationMembershipSchema,
+  organizationRoleSchema,
+  type OrganizationKind,
+  type OrganizationMembership,
+  type OrganizationRole,
+} from './identity/organization';
+
+export {
+  professionalIdentitySchema,
+  professionalTypeSchema,
+  registerProfessionalRequestSchema,
+  type ProfessionalIdentity,
+  type ProfessionalType,
+  type RegisterProfessionalRequest,
+} from './identity/professional';
+
 export { errorResponseSchema, type ErrorResponse } from './shared/error-response';
