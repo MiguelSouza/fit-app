@@ -12,9 +12,8 @@ import { type InvitationRepository } from './ports/invitation-repository.port';
  * first, and a revocation writes nothing unless the invitation is still
  * pending. What only the real one can prove — the unique index on the token
  * hash, the column that holds a hash and not a token, the conditional update
- * deciding a race — is
- * `create-invitation.use-case.integration-spec.ts`, against a real Postgres
- * (CLAUDE.md, "Testes").
+ * deciding a race — is `invitations.use-case.integration-spec.ts`, against a
+ * real Postgres (CLAUDE.md, "Testes").
  */
 export class InMemoryInvitationRepository implements InvitationRepository {
   private readonly rows = new Map<string, Invitation>();

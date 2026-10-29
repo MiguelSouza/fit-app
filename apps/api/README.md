@@ -1,7 +1,3 @@
-| `organization_member` | quem pertence a qual organização, e como (`owner`, `member`) |
-| `invitation` | o convite por link: hash do token, validade, aceite e revogação |
-| `invitation` | o convite por link: hash do token, validade, aceite e revogação |
-
 # @fit-app/api
 
 API NestJS: monólito modular com os módulos `identity`, `nutrition`, `health` e
