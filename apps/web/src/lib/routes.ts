@@ -28,6 +28,33 @@ export const NEW_PASSWORD_PATH = '/nova-senha';
  */
 export const FIRST_ACCESS_PATH = '/primeiro-acesso';
 
+/**
+ * Where the link of an invitation points: the screen the **patient** opens
+ * after getting it on WhatsApp (card I-02 creates the link; accepting it is
+ * the card of the professional–patient link).
+ *
+ * In Portuguese and short, because it is read out of a WhatsApp message, and
+ * on the panel's own origin: the professional's browser is already there, so
+ * the base of the link is the origin of the page that built it and nothing has
+ * to be configured per environment.
+ */
+export const INVITE_PATH = '/convite';
+
+/**
+ * The full link to send, from the token the API answered once.
+ *
+ * The token goes in the path and never in a query string: the query string is
+ * the part that leaks — into `Referer`, into analytics, into the access log of
+ * whatever sits in front — and this platform's own Sentry filter keeps a path
+ * and drops a query for exactly that reason (`@fit-app/observability`).
+ *
+ * @param origin where the panel is being served from (`location.origin`)
+ * @param token the token of the invitation, in plain text
+ */
+export function inviteLink(origin: string, token: string): string {
+  return `${origin}${INVITE_PATH}/${encodeURIComponent(token)}`;
+}
+
 /** Trades the code of an e-mail link for a session (`app/auth/callback`). */
 export const AUTH_CALLBACK_PATH = '/auth/callback';
 
