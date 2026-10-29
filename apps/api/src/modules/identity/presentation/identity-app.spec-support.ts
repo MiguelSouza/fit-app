@@ -11,13 +11,22 @@ import {
   IDENTITY_REGISTRY,
   type IdentityRegistry,
 } from '../application/ports/identity-registry.port';
+import {
+  INVITATION_REPOSITORY,
+  type InvitationRepository,
+} from '../application/ports/invitation-repository.port';
+import {
+  INVITATION_TOKEN_ISSUER,
+  type InvitationTokenIssuer,
+} from '../application/ports/invitation-token.port';
 
 /**
- * The real `AppModule` over HTTP, with three things overridden so the test
- * needs neither a `.env` nor Postgres: the environment, the database port of
- * the health check and the identity registry.
+ * The real `AppModule` over HTTP, with the few things overridden that a test
+ * would otherwise need a `.env` and a Postgres for: the environment, the
+ * database port of the health check, the identity registry and — for the
+ * routes that have them — the invitation repository and the token issuer.
  *
- * The registry is the seam, and only the registry: the route, the global
+ * Those are the seams, and only those: the route, the global
  * guard, the validation pipe, the serializer and the error filter are the ones
  * the API runs with. What the fake cannot answer for is the SQL, and that is
  * what the integration profile covers.
@@ -32,15 +41,40 @@ export const env: ApiEnv = {
   logLevel: 'silent',
 };
 
-export async function bootAppWith(registry: IdentityRegistry): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+/**
+ * The other seams of `identity`, for the routes that have them: the
+ * invitations of card I-02 are kept by a repository and their tokens are
+ * minted by an issuer, and a test that does not want Postgres hands over both.
+ *
+ * Optional, so the suites of card I-01 — which touch neither — stay as they
+ * were.
+ */
+export interface IdentityDoubles {
+  readonly invitations?: InvitationRepository;
+  readonly tokens?: InvitationTokenIssuer;
+}
+
+export async function bootAppWith(
+  registry: IdentityRegistry,
+  doubles: IdentityDoubles = {},
+): Promise<INestApplication> {
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ENV)
     .useValue(env)
     .overrideProvider(DATABASE_STATUS_PORT)
     .useValue({ check: () => Promise.resolve({ name: 'database', status: 'up' }) })
     .overrideProvider(IDENTITY_REGISTRY)
-    .useValue(registry)
-    .compile();
+    .useValue(registry);
+
+  if (doubles.invitations !== undefined) {
+    builder = builder.overrideProvider(INVITATION_REPOSITORY).useValue(doubles.invitations);
+  }
+
+  if (doubles.tokens !== undefined) {
+    builder = builder.overrideProvider(INVITATION_TOKEN_ISSUER).useValue(doubles.tokens);
+  }
+
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
   configureApp(app, env);

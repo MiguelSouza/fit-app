@@ -3,7 +3,7 @@ import {
   applyDecorators,
   type StandardSchemaSerializerContextOptions,
 } from '@nestjs/common';
-import { ApiOkResponse } from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
 
 /** A schema from `@fit-app/contracts`, as the serializer interceptor takes it. */
 type ResponseSchema = NonNullable<StandardSchemaSerializerContextOptions['schema']>;
@@ -28,5 +28,26 @@ export function SchemaResponse(schema: ResponseSchema, description: string): Met
   return applyDecorators(
     SerializeOptions({ schema }),
     ApiOkResponse({ standardSchema: schema, description }),
+  );
+}
+
+/**
+ * The same, for a route that answers **201**: it validates and documents the
+ * body of a resource that was just created.
+ *
+ * It exists because the status code is part of the contract a generated client
+ * reads — `openapi-fetch` types the answer per status — so a route that
+ * creates something has to declare 201 in the document, not 200 with a note.
+ *
+ * @param schema the response schema, from `@fit-app/contracts`
+ * @param description what the endpoint answers, in pt-BR, for the `/docs`
+ */
+export function SchemaCreatedResponse(
+  schema: ResponseSchema,
+  description: string,
+): MethodDecorator {
+  return applyDecorators(
+    SerializeOptions({ schema }),
+    ApiCreatedResponse({ standardSchema: schema, description }),
   );
 }

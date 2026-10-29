@@ -109,6 +109,19 @@ export const invitationSchema = z
 export type Invitation = z.infer<typeof invitationSchema>;
 
 /**
+ * The id of an invitation, as it travels in a path: `POST
+ * /v1/invitations/{id}/revoke`.
+ *
+ * It is in the contract and not written in the controller for the same reason
+ * as every body (CLAUDE.md rule 7): it is part of the surface the clients are
+ * generated from. Validated as a uuid, so an id of another shape is a 400
+ * before any use case runs and never reaches a query.
+ */
+export const invitationIdSchema = z
+  .uuid()
+  .meta({ id: 'InvitationId', description: 'Id do convite' });
+
+/**
  * The answer of `POST /v1/invitations`: the invitation, and the token, **once**.
  *
  * The token is the secret half of the link the professional sends on WhatsApp,

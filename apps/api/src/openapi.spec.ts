@@ -143,6 +143,67 @@ describe('the openapi document', () => {
     });
   });
 
+  it('describes the invitation routes, with 201 on the creation', async () => {
+    app = await bootApp('test');
+
+    const document = buildOpenApiDocument(app, API_VERSION);
+    const create = document.paths['/v1/invitations']?.post;
+
+    // 201 and not 200: the request creates a resource, and the generated
+    // clients type the answer by status code.
+    expect(create?.responses['201']).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/CreatedInvitation' } },
+      },
+    });
+
+    expect(create?.requestBody).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/CreateInvitationRequest' } },
+      },
+    });
+
+    expect(document.paths['/v1/invitations']?.get?.responses['200']).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/InvitationList' } },
+      },
+    });
+
+    // The id of the path is a schema of the contract too, so the client is
+    // generated with it instead of with a bare string.
+    expect(document.paths['/v1/invitations/{id}/revoke']?.post?.parameters).toMatchObject([
+      {
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: { $ref: '#/components/schemas/InvitationId' },
+      },
+    ]);
+
+    // The token is part of the creation's answer and of nothing else: an
+    // invitation read back from the list carries no token and no hash.
+    expect(document.components?.schemas?.['CreatedInvitation']).toMatchObject({
+      required: ['invitation', 'token'],
+    });
+
+    expect(document.components?.schemas?.['Invitation']).toMatchObject({
+      type: 'object',
+      required: ['id', 'status', 'createdAt', 'expiresAt'],
+      properties: { status: { $ref: '#/components/schemas/InvitationStatus' } },
+    });
+
+    expect(
+      Object.keys(
+        (document.components?.schemas?.['Invitation'] as { properties: object }).properties,
+      ),
+    ).not.toContain('tokenHash');
+
+    expect(document.components?.schemas?.['InvitationStatus']).toMatchObject({
+      type: 'string',
+      enum: ['pending', 'accepted', 'expired', 'revoked'],
+    });
+  });
+
   it('describes the error envelope every client has to read', async () => {
     app = await bootApp('test');
 

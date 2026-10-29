@@ -60,6 +60,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Convites da organização
+         * @description Lista os convites da organização de quem está chamando, do mais recente para o mais antigo, com a situação de cada um. O token não vem aqui: ele é respondido só na criação.
+         */
+        get: operations["InvitationsController_list_v1"];
+        put?: never;
+        /**
+         * Criar um convite de paciente
+         * @description Cria o convite na organização de quem está chamando e responde o token do link, em texto puro, **uma única vez**: o banco guarda só o hash. Quem perder o link revoga o convite e cria outro. Nome e contato são opcionais, e o convite expira em 14 dias.
+         */
+        post: operations["InvitationsController_create_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invitations/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revogar um convite
+         * @description Cancela um convite ainda pendente da organização de quem está chamando: o link para de funcionar na hora. Convite de outra organização responde 404. Convite já aceito, já revogado ou expirado responde 409 — não há o que revogar.
+         */
+        post: operations["InvitationsController_revoke_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -189,6 +233,73 @@ export interface components {
             specialty?: string;
             professionalType?: components["schemas"]["ProfessionalType"];
         };
+        /** @description Dados opcionais de um convite de paciente */
+        CreateInvitationRequest: {
+            /**
+             * @description Como o profissional chama o paciente convidado
+             * @example Ana
+             */
+            name?: string;
+            /**
+             * @description Contato do paciente convidado
+             * @example +55 11 90000-0000
+             */
+            contact?: string;
+        };
+        /** @description O convite criado e o token do link, respondido uma única vez */
+        CreatedInvitation: {
+            invitation: components["schemas"]["Invitation"];
+            /** @description Token do convite, em texto puro. Respondido só aqui, na criação: o banco guarda apenas o hash. É o que vai no link enviado ao paciente */
+            token: string;
+        };
+        /** @description Um convite de paciente */
+        Invitation: {
+            /**
+             * Format: uuid
+             * @description Id do convite
+             */
+            id: string;
+            status: components["schemas"]["InvitationStatus"];
+            /** @description Nome do paciente convidado */
+            name?: string;
+            /** @description Contato do paciente convidado */
+            contact?: string;
+            /**
+             * Format: date-time
+             * @description Quando o convite foi criado, em UTC
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Quando o convite expira, em UTC
+             */
+            expiresAt: string;
+            /**
+             * Format: date-time
+             * @description Quando o convite foi aceito
+             */
+            acceptedAt?: string;
+            /**
+             * Format: date-time
+             * @description Quando o convite foi revogado
+             */
+            revokedAt?: string;
+        };
+        /**
+         * @description Situação do convite: pendente, aceito, expirado ou revogado. Derivada das datas, não guardada numa coluna
+         * @enum {string}
+         */
+        InvitationStatus: "pending" | "accepted" | "expired" | "revoked";
+        /** @description Convites da organização do profissional */
+        InvitationList: {
+            /** @description Convites da organização, do mais recente para o mais antigo */
+            invitations: components["schemas"]["Invitation"][];
+        };
+        /**
+         * Format: uuid
+         * @description Id do convite
+         */
+        InvitationId: string;
     };
     responses: never;
     parameters: never;
@@ -288,6 +399,180 @@ export interface operations {
                 };
             };
             /** @description A conta já é de um paciente: `identity.profile.not_professional` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    InvitationsController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Convites da organização do profissional */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationList"];
+                };
+            };
+            /** @description Quem chamou não é profissional: `identity.professional.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    InvitationsController_create_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description O convite criado e o token do link */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedInvitation"];
+                };
+            };
+            /** @description Corpo inválido: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é profissional: `identity.professional.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    InvitationsController_revoke_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["InvitationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description O convite, revogado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invitation"];
+                };
+            };
+            /** @description Id que não é um uuid: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é profissional: `identity.professional.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Convite que não é desta organização: `identity.invitation.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O convite já não está pendente: `identity.invitation.not_pending` */
             409: {
                 headers: {
                     [name: string]: unknown;

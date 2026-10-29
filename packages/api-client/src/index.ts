@@ -26,6 +26,13 @@ export type OrganizationRole = components['schemas']['OrganizationRole'];
 /** `POST /v1/professionals/me` */
 export type RegisterProfessionalRequest = components['schemas']['RegisterProfessionalRequest'];
 
+/** `POST /v1/invitations`, `GET /v1/invitations`, `POST /v1/invitations/{id}/revoke` */
+export type Invitation = components['schemas']['Invitation'];
+export type InvitationStatus = components['schemas']['InvitationStatus'];
+export type InvitationList = components['schemas']['InvitationList'];
+export type CreateInvitationRequest = components['schemas']['CreateInvitationRequest'];
+export type CreatedInvitation = components['schemas']['CreatedInvitation'];
+
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type ComponentCheck = components['schemas']['ComponentCheck'];

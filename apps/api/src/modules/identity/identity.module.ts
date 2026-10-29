@@ -13,6 +13,7 @@ import { RevokeInvitationUseCase } from './application/revoke-invitation.use-cas
 import { CryptoInvitationTokenIssuer } from './infrastructure/crypto-invitation-token.issuer';
 import { DrizzleIdentityRegistry } from './infrastructure/drizzle-identity-registry.repository';
 import { DrizzleInvitationRepository } from './infrastructure/drizzle-invitation.repository';
+import { InvitationsController } from './presentation/invitations.controller';
 import { MeController } from './presentation/me.controller';
 import { ProfessionalsController } from './presentation/professionals.controller';
 
@@ -33,7 +34,7 @@ import { ProfessionalsController } from './presentation/professionals.controller
  */
 @Module({
   imports: [DatabaseModule],
-  controllers: [MeController, ProfessionalsController],
+  controllers: [MeController, ProfessionalsController, InvitationsController],
   providers: [
     GetMyIdentityUseCase,
     RegisterProfessionalUseCase,
