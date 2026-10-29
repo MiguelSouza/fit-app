@@ -8,6 +8,13 @@
       "when": 1793069548402,
       "tag": "0000_identity_profile_and_organization",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793306575081,
+      "tag": "0001_identity_invitation",
+      "breakpoints": true
     }
   ]
 }
