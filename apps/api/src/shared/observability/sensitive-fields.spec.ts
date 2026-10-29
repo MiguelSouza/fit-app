@@ -20,6 +20,8 @@ describe('isSensitiveKey', () => {
       'contact_email',
       'phone',
       'professionalPhone',
+      'contact',
+      'patient_contact',
       'token',
       'accessToken',
       'notes',
