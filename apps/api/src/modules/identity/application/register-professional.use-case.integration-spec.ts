@@ -4,6 +4,8 @@ import { Pool } from 'pg';
 
 import { integrationDatabaseUrl } from '../../../shared/testing/integration-postgres.spec-support';
 import { ProfileIsNotProfessionalError } from '../domain/identity-errors';
+import { type OrganizationRole } from '../domain/organization';
+import { professionalRegistrationFor } from '../domain/professional-registration';
 import { DrizzleIdentityRegistry } from '../infrastructure/drizzle-identity-registry.repository';
 import { GetMyIdentityUseCase } from './get-my-identity.use-case';
 import { RegisterProfessionalUseCase } from './register-professional.use-case';
@@ -140,9 +142,12 @@ describe('RegisterProfessionalUseCase against a real Postgres', () => {
 
     await register.execute(authUserId, { ...INPUT, fullName: 'Outro Nome' });
 
-    // The rollback, from the only angle that can see it: a practice with
-    // nobody in it would still be a row in the table. And the name of the
-    // first registration is untouched — a second call does not overwrite.
+    // A practice with nobody in it would still be a row in the table, so the
+    // count of the whole schema is what notices one. What this covers is the
+    // second call writing nothing — it does not even reach the transaction,
+    // since the read answers first; the rollback is the test below. And the
+    // name of the first registration is untouched: a second call does not
+    // overwrite.
     expect(await totalOrganizations(pool)).toBe(organizationsBefore);
 
     const { rows } = await pool.query<{ full_name: string }>(
@@ -151,6 +156,39 @@ describe('RegisterProfessionalUseCase against a real Postgres', () => {
     );
 
     expect(rows).toEqual([{ full_name: 'Ana Souza' }]);
+  });
+
+  it('rolls the rows already inserted back when the last one fails', async () => {
+    const authUserId = randomUUID();
+    const organizationsBefore = await totalOrganizations(pool);
+
+    // A membership role the column does not have. It breaks the **last** of
+    // the four inserts, with the profile, the professional and the practice
+    // already written inside the transaction — which is the only angle from
+    // which "de forma atômica" can be seen from outside.
+    //
+    // The registry is driven directly, and the value goes in through a cast:
+    // neither the domain nor the use case can produce this, and that is the
+    // point. What is under test is the transaction of the repository, not a
+    // rule above it.
+    const invalidRole: string = 'treasurer';
+
+    const registration = {
+      ...professionalRegistrationFor({ authUserId, ...INPUT }),
+      membershipRole: invalidRole as OrganizationRole,
+    };
+
+    await expect(registry.createProfessional(registration)).rejects.toThrow();
+
+    // None of the three survived: no profile of that person, and no practice
+    // left loose in the schema.
+    const { rows } = await pool.query<{ count: string }>(
+      'select count(*) from identity.profile where auth_user_id = $1',
+      [authUserId],
+    );
+
+    expect(Number(rows[0]?.count ?? 0)).toBe(0);
+    expect(await totalOrganizations(pool)).toBe(organizationsBefore);
   });
 
   it('reads the registration back, through the joins GET /v1/me uses', async () => {
