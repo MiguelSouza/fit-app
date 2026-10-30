@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
 import { type INestApplication } from '@nestjs/common';
-import { createdInvitationSchema, invitationListSchema } from '@fit-app/contracts';
+import {
+  acceptedInvitationSchema,
+  createdInvitationSchema,
+  invitationListSchema,
+} from '@fit-app/contracts';
 import request from 'supertest';
 
 import {
@@ -14,16 +18,21 @@ import {
   patientIdentity,
   professionalIdentity,
 } from '../application/in-memory-identity-registry.spec-support';
+import { InMemoryInvitationAcceptanceRepository } from '../application/in-memory-invitation-acceptance.spec-support';
 import {
   InMemoryInvitationRepository,
   invitationRow,
 } from '../application/in-memory-invitation-repository.spec-support';
-import { PredictableInvitationTokenIssuer } from '../application/predictable-invitation-token.spec-support';
+import {
+  hashOfPredictableToken,
+  PredictableInvitationTokenIssuer,
+} from '../application/predictable-invitation-token.spec-support';
 import { bootAppWith } from './identity-app.spec-support';
 
 /**
  * `/v1/invitations` over the real `AppModule`: the three requests the
- * "Convites" screen of the panel makes.
+ * "Convites" screen of the panel makes, and the one the patient makes when
+ * they open the link.
  *
  * What it covers is the HTTP half — the body validated against the contract,
  * the answer serialized as the contract, the status code of each refusal —
@@ -52,6 +61,13 @@ function revoke(app: INestApplication, token: string, invitationId: string) {
   return request(app.getHttpServer())
     .post(`/v1/invitations/${invitationId}/revoke`)
     .set('Authorization', `Bearer ${token}`);
+}
+
+function accept(app: INestApplication, token: string, body: object) {
+  return request(app.getHttpServer())
+    .post('/v1/invitations/accept')
+    .set('Authorization', `Bearer ${token}`)
+    .send(body);
 }
 
 describe('the invitation routes', () => {
@@ -253,6 +269,136 @@ describe('the invitation routes', () => {
 
     it('answers 401 without a token', async () => {
       await request(app.getHttpServer()).post(`/v1/invitations/${randomUUID()}/revoke`).expect(401);
+    });
+  });
+
+  describe('POST /v1/invitations/accept', () => {
+    /**
+     * The link a patient opens, behind a token this suite knows. As long as a
+     * real one, which is 43 characters of `base64url`: the contract refuses a
+     * token of another length before any use case runs.
+     */
+    const LINK_TOKEN = 'the-token-of-the-link-the-patient-opened-00';
+
+    const ACCEPTANCE = {
+      token: LINK_TOKEN,
+      fullName: 'Paciente de teste',
+      consents: ['health_data', 'share_with_professional'],
+    };
+
+    let acceptances: InMemoryInvitationAcceptanceRepository;
+
+    beforeEach(async () => {
+      // Another app: whoever accepts an invitation has no profile yet, so the
+      // registry of this half is empty, and the acceptance repository is the
+      // seam instead of the invitation one.
+      await app.close();
+
+      acceptances = new InMemoryInvitationAcceptanceRepository();
+      acceptances.seed(invitationRow(ORGANIZATION_ID), hashOfPredictableToken(LINK_TOKEN));
+
+      app = await bootAppWith(new InMemoryIdentityRegistry(), { acceptances, tokens });
+    });
+
+    it('makes the caller a patient of the practice and answers 201', async () => {
+      const response = await accept(app, accessToken, ACCEPTANCE).expect(201);
+
+      expect(response.body).toEqual({
+        profileId: expect.any(String),
+        organizationId: ORGANIZATION_ID,
+        careRelationshipId: expect.any(String),
+        acceptedAt: expect.any(String),
+        consents: ['health_data', 'share_with_professional'],
+      });
+
+      expect(acceptedInvitationSchema.safeParse(response.body).success).toBe(true);
+      expect(response.body.acceptedAt as string).toMatch(/Z$/u);
+    });
+
+    it('answers no personal data: not the name, not the token', async () => {
+      const response = await accept(app, accessToken, ACCEPTANCE).expect(201);
+
+      expect(JSON.stringify(response.body)).not.toContain('Paciente de teste');
+      expect(JSON.stringify(response.body)).not.toContain(LINK_TOKEN);
+    });
+
+    it('records the optional consents the patient ticked', async () => {
+      const response = await accept(app, accessToken, {
+        ...ACCEPTANCE,
+        consents: [...ACCEPTANCE.consents, 'ai_processing'],
+      }).expect(201);
+
+      expect(response.body.consents).toEqual([
+        'health_data',
+        'share_with_professional',
+        'ai_processing',
+      ]);
+    });
+
+    it('answers 422 without a required consent, and leaves the link usable', async () => {
+      const response = await accept(app, accessToken, {
+        ...ACCEPTANCE,
+        consents: ['wearable_data'],
+      }).expect(422);
+
+      expect(response.body.error.code).toBe('identity.consent.required_missing');
+
+      await accept(app, accessToken, ACCEPTANCE).expect(201);
+    });
+
+    it('answers 404 for a token that opens no invitation', async () => {
+      const response = await accept(app, accessToken, {
+        ...ACCEPTANCE,
+        token: 'a-token-that-opens-no-invitation-at-all',
+      }).expect(404);
+
+      expect(response.body.error.code).toBe('identity.invitation.not_found');
+    });
+
+    it('answers 409 the second time the same link is used', async () => {
+      await accept(app, accessToken, ACCEPTANCE).expect(201);
+
+      const response = await accept(app, accessToken, ACCEPTANCE).expect(409);
+
+      expect(response.body.error.code).toBe('identity.invitation.already_accepted');
+    });
+
+    it('answers 409 when the account is a professional', async () => {
+      await app.close();
+      app = await bootAppWith(
+        new InMemoryIdentityRegistry({ [TEST_USER_ID]: professionalIdentity(ORGANIZATION_ID) }),
+        { acceptances, tokens },
+      );
+
+      const response = await accept(app, accessToken, ACCEPTANCE).expect(409);
+
+      expect(response.body.error.code).toBe('identity.profile.not_patient');
+    });
+
+    it('refuses a consent the contract does not know, before any use case runs', async () => {
+      const response = await accept(app, accessToken, {
+        ...ACCEPTANCE,
+        consents: ['whatever'],
+      }).expect(400);
+
+      expect(response.body.error.code).toBe(INVALID_REQUEST_CODE);
+    });
+
+    it('refuses a body with no name', async () => {
+      const response = await accept(app, accessToken, {
+        token: LINK_TOKEN,
+        consents: ACCEPTANCE.consents,
+      }).expect(400);
+
+      expect(response.body.error.code).toBe(INVALID_REQUEST_CODE);
+      expect(response.body.error.message).toContain('fullName');
+    });
+
+    it('answers 401 without a token of its own: the link is not an authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/v1/invitations/accept')
+        .send(ACCEPTANCE)
+        .expect(401);
     });
   });
 });

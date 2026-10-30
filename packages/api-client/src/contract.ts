@@ -1,4 +1,6 @@
 import {
+  type AcceptedInvitation,
+  type AcceptInvitationRequest,
   type CreatedInvitation,
   type CreateInvitationRequest,
   type HealthResponse,
@@ -55,5 +57,15 @@ export type InvitationListFields = FieldsOf<InvitationList, 'invitations'>;
 export type CreatedInvitationFields = FieldsOf<CreatedInvitation, 'invitation' | 'token'>;
 
 export type CreateInvitationRequestFields = FieldsOf<CreateInvitationRequest, 'name' | 'contact'>;
+
+export type AcceptInvitationRequestFields = FieldsOf<
+  AcceptInvitationRequest,
+  'token' | 'fullName' | 'timeZone' | 'consents'
+>;
+
+export type AcceptedInvitationFields = FieldsOf<
+  AcceptedInvitation,
+  'profileId' | 'organizationId' | 'careRelationshipId' | 'acceptedAt' | 'consents'
+>;
 
 export type HealthResponseFields = FieldsOf<HealthResponse, 'status' | 'checks'>;

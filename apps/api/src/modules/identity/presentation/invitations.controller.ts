@@ -1,11 +1,15 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
+  acceptedInvitationSchema,
+  acceptInvitationRequestSchema,
   createdInvitationSchema,
   createInvitationRequestSchema,
   errorResponseSchema,
   invitationIdSchema,
   invitationListSchema,
   invitationSchema,
+  type AcceptedInvitation,
+  type AcceptInvitationRequest,
   type CreatedInvitation,
   type CreateInvitationRequest,
   type Invitation,
@@ -18,6 +22,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOperation,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
 import { type AuthenticatedUser } from '../../../shared/auth/authenticated-user';
@@ -26,17 +31,25 @@ import {
   SchemaCreatedResponse,
   SchemaResponse,
 } from '../../../shared/presentation/schema-response.decorator';
+import { AcceptInvitationUseCase } from '../application/accept-invitation.use-case';
 import { CreateInvitationUseCase } from '../application/create-invitation.use-case';
 import { ListInvitationsUseCase } from '../application/list-invitations.use-case';
 import { RevokeInvitationUseCase } from '../application/revoke-invitation.use-case';
 import {
+  toAcceptedInvitationResponse,
   toCreatedInvitationResponse,
   toInvitationListResponse,
   toInvitationResponse,
 } from './invitation.presenter';
 
 /**
- * The invitations of a practice: `/v1/invitations` (card I-02).
+ * The invitations: `/v1/invitations` — the professional's three requests (card
+ * I-02) and the patient's one (card I-03).
+ *
+ * Both sides live here because it is one resource. Who may do what is not a
+ * matter of which controller a route is in: the three below resolve a
+ * professional of a practice from the token, and the acceptance resolves the
+ * practice from the invitation the token in the link opens.
  *
  * No organization in any path and no professional id in any body: the practice
  * is read from the verified token, inside the use case (ADR 0007). A path with
@@ -53,6 +66,7 @@ export class InvitationsController {
     private readonly createInvitation: CreateInvitationUseCase,
     private readonly listInvitations: ListInvitationsUseCase,
     private readonly revokeInvitation: RevokeInvitationUseCase,
+    private readonly acceptInvitation: AcceptInvitationUseCase,
   ) {}
 
   /**
@@ -170,6 +184,72 @@ export class InvitationsController {
     return toInvitationResponse(
       await this.revokeInvitation.execute(user.id, invitationId),
       new Date(),
+    );
+  }
+
+  /**
+   * The patient's side of the link (card I-03). **201**: it creates the
+   * patient and the care link, and the clients type the answer by status code.
+   *
+   * `POST .../accept` with the token in the **body** and not
+   * `POST .../{token}/accept`: the token is a bearer credential, and a path is
+   * what lands in an access log, in a referrer header and in a Sentry
+   * breadcrumb — the same reasoning that keeps it in the query string of the
+   * panel's link (ADR 0015). The invitation's id is nowhere in this request
+   * either: the patient does not know it, and the token is what names the
+   * invitation.
+   */
+  @Post('accept')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Aceitar um convite de paciente',
+    description:
+      'Quem abriu o link, já autenticado no Supabase Auth, vira paciente: cria o perfil se ' +
+      'ainda não existir, registra os consentimentos com a versão do termo, abre o vínculo ' +
+      'com a organização do convite e marca o convite como aceito — tudo numa transação. ' +
+      '`health_data` e `share_with_professional` são obrigatórios; `wearable_data` e ' +
+      '`ai_processing` podem vir depois. O convite é de uso único.',
+  })
+  @SchemaCreatedResponse(acceptedInvitationSchema, 'O vínculo criado pelo aceite')
+  @ApiBadRequestResponse({
+    standardSchema: errorResponseSchema,
+    description: 'Corpo inválido: `api.request.invalid`',
+  })
+  @ApiNotFoundResponse({
+    standardSchema: errorResponseSchema,
+    description: 'Nenhum convite com esse token: `identity.invitation.not_found`',
+  })
+  @ApiConflictResponse({
+    standardSchema: errorResponseSchema,
+    description:
+      'O convite já foi usado, foi cancelado ou expirou: ' +
+      '`identity.invitation.already_accepted`, `identity.invitation.revoked`, ' +
+      '`identity.invitation.expired`. Ou a conta é de um profissional: ' +
+      '`identity.profile.not_patient`',
+  })
+  @ApiUnprocessableEntityResponse({
+    standardSchema: errorResponseSchema,
+    description:
+      'Faltou um consentimento obrigatório: `identity.consent.required_missing`. O convite ' +
+      'segue válido',
+  })
+  @ApiInternalServerErrorResponse({
+    standardSchema: errorResponseSchema,
+    description: 'Erro inesperado. É o envelope de erro de toda a API',
+  })
+  async accept(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body({ schema: acceptInvitationRequestSchema }) body: AcceptInvitationRequest,
+  ): Promise<AcceptedInvitation> {
+    // The contract leaves out what was not filled in; the domain says "not
+    // said" with `null`, so the default zone is decided in one place.
+    return toAcceptedInvitationResponse(
+      await this.acceptInvitation.execute(user.id, {
+        token: body.token,
+        fullName: body.fullName,
+        timeZone: body.timeZone ?? null,
+        consents: body.consents,
+      }),
     );
   }
 }
