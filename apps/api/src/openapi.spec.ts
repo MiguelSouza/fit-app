@@ -204,6 +204,48 @@ describe('the openapi document', () => {
     });
   });
 
+  it('describes the acceptance of an invitation, with the consents by reference', async () => {
+    app = await bootApp('test');
+
+    const document = buildOpenApiDocument(app, API_VERSION);
+    const accept = document.paths['/v1/invitations/accept']?.post;
+
+    // 201: the request creates the patient and the care link.
+    expect(accept?.responses['201']).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/AcceptedInvitation' } },
+      },
+    });
+
+    expect(accept?.requestBody).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/AcceptInvitationRequest' } },
+      },
+    });
+
+    // 422 is the answer to a missing required consent, and the clients have to
+    // know it exists: it is the only route of the API that uses it.
+    expect(accept?.responses['422']).toMatchObject({
+      content: {
+        'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+      },
+    });
+
+    // The token travels in the body and in no path parameter, so it cannot
+    // land in an access log.
+    expect(accept?.parameters).toEqual([]);
+
+    expect(document.components?.schemas?.['AcceptInvitationRequest']).toMatchObject({
+      type: 'object',
+      required: ['token', 'fullName', 'consents'],
+    });
+
+    expect(document.components?.schemas?.['ConsentType']).toMatchObject({
+      type: 'string',
+      enum: ['health_data', 'share_with_professional', 'wearable_data', 'ai_processing'],
+    });
+  });
+
   it('describes the error envelope every client has to read', async () => {
     app = await bootApp('test');
 

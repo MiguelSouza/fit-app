@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aceitar um convite de paciente
+         * @description Quem abriu o link, já autenticado no Supabase Auth, vira paciente: cria o perfil se ainda não existir, registra os consentimentos com a versão do termo, abre o vínculo com a organização do convite e marca o convite como aceito — tudo numa transação. `health_data` e `share_with_professional` são obrigatórios; `wearable_data` e `ai_processing` podem vir depois. O convite é de uso único.
+         */
+        post: operations["InvitationsController_accept_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -300,6 +320,53 @@ export interface components {
          * @description Id do convite
          */
         InvitationId: string;
+        /** @description Aceite de um convite por um paciente: o link, o nome e os consentimentos */
+        AcceptInvitationRequest: {
+            /** @description Token do convite, o que vem no link */
+            token: string;
+            /**
+             * @description Nome completo do paciente
+             * @example Ana Souza
+             */
+            fullName: string;
+            /**
+             * @description Fuso horário do paciente, no formato IANA
+             * @example America/Bahia
+             */
+            timeZone?: string;
+            /** @description Finalidades que o paciente aceitou. `health_data` e `share_with_professional` são obrigatórias; `wearable_data` e `ai_processing` são opcionais e podem ser dadas depois */
+            consents: components["schemas"]["ConsentType"][];
+        };
+        /**
+         * @description Finalidade do consentimento: dados de saúde, compartilhamento com o profissional, dados de wearable e processamento por IA. Cada uma é dada e revogada por si
+         * @enum {string}
+         */
+        ConsentType: "health_data" | "share_with_professional" | "wearable_data" | "ai_processing";
+        /** @description O vínculo criado pelo aceite do convite */
+        AcceptedInvitation: {
+            /**
+             * Format: uuid
+             * @description Id do perfil do paciente
+             */
+            profileId: string;
+            /**
+             * Format: uuid
+             * @description Id da organização que passa a acompanhar
+             */
+            organizationId: string;
+            /**
+             * Format: uuid
+             * @description Id do vínculo de acompanhamento criado
+             */
+            careRelationshipId: string;
+            /**
+             * Format: date-time
+             * @description Quando o convite foi aceito, em UTC
+             */
+            acceptedAt: string;
+            /** @description Finalidades consentidas que estão vigentes */
+            consents: components["schemas"]["ConsentType"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -574,6 +641,75 @@ export interface operations {
             };
             /** @description O convite já não está pendente: `identity.invitation.not_pending` */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    InvitationsController_accept_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description O vínculo criado pelo aceite */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedInvitation"];
+                };
+            };
+            /** @description Corpo inválido: `api.request.invalid`. Nome em branco: `identity.patient.blank_name`. Fuso que não existe: `identity.profile.unknown_time_zone` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Nenhum convite com esse token: `identity.invitation.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O convite já foi usado, foi cancelado ou expirou: `identity.invitation.already_accepted`, `identity.invitation.revoked`, `identity.invitation.expired`. Ou a conta é de um profissional: `identity.profile.not_patient` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Faltou um consentimento obrigatório: `identity.consent.required_missing`. O convite segue válido */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

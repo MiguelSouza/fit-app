@@ -33,6 +33,11 @@ export type InvitationList = components['schemas']['InvitationList'];
 export type CreateInvitationRequest = components['schemas']['CreateInvitationRequest'];
 export type CreatedInvitation = components['schemas']['CreatedInvitation'];
 
+/** `POST /v1/invitations/accept` */
+export type AcceptInvitationRequest = components['schemas']['AcceptInvitationRequest'];
+export type AcceptedInvitation = components['schemas']['AcceptedInvitation'];
+export type ConsentType = components['schemas']['ConsentType'];
+
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type ComponentCheck = components['schemas']['ComponentCheck'];

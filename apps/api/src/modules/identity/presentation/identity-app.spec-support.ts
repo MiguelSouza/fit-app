@@ -12,6 +12,10 @@ import {
   type IdentityRegistry,
 } from '../application/ports/identity-registry.port';
 import {
+  INVITATION_ACCEPTANCE_REPOSITORY,
+  type InvitationAcceptanceRepository,
+} from '../application/ports/invitation-acceptance.port';
+import {
   INVITATION_REPOSITORY,
   type InvitationRepository,
 } from '../application/ports/invitation-repository.port';
@@ -24,7 +28,8 @@ import {
  * The real `AppModule` over HTTP, with the few things overridden that a test
  * would otherwise need a `.env` and a Postgres for: the environment, the
  * database port of the health check, the identity registry and — for the
- * routes that have them — the invitation repository and the token issuer.
+ * routes that have them — the invitation repository, the token issuer and the
+ * acceptance repository.
  *
  * Those are the seams, and only those: the route, the global
  * guard, the validation pipe, the serializer and the error filter are the ones
@@ -52,6 +57,8 @@ export const env: ApiEnv = {
 export interface IdentityDoubles {
   readonly invitations?: InvitationRepository;
   readonly tokens?: InvitationTokenIssuer;
+  /** The patient's side of an invitation, which writes five tables (card I-03). */
+  readonly acceptances?: InvitationAcceptanceRepository;
 }
 
 export async function bootAppWith(
@@ -72,6 +79,12 @@ export async function bootAppWith(
 
   if (doubles.tokens !== undefined) {
     builder = builder.overrideProvider(INVITATION_TOKEN_ISSUER).useValue(doubles.tokens);
+  }
+
+  if (doubles.acceptances !== undefined) {
+    builder = builder
+      .overrideProvider(INVITATION_ACCEPTANCE_REPOSITORY)
+      .useValue(doubles.acceptances);
   }
 
   const moduleRef = await builder.compile();
