@@ -3,7 +3,9 @@ import {
   InvalidInputError,
   NotFoundError,
   PermissionDeniedError,
+  RuleViolationError,
 } from '../../../shared/domain/domain-error';
+import { type ConsentType } from './consent';
 
 /**
  * What `identity` refuses, as domain errors. The translation to a status code
@@ -121,4 +123,63 @@ export class InvitationAlreadyAcceptedError extends ConflictError {
   constructor() {
     super('identity.invitation.already_accepted', 'Este convite já foi aceito.');
   }
+}
+
+/** The name the patient filled in on the acceptance is empty, or only whitespace. */
+export class BlankPatientNameError extends InvalidInputError {
+  constructor() {
+    super('identity.patient.blank_name', 'Informe seu nome completo.');
+  }
+}
+
+/**
+ * The account accepting the invitation is a professional's.
+ *
+ * 409: the account exists and this product does not give one person two roles
+ * — a nutritionist who wants to be followed as a patient signs up with another
+ * account. It is the mirror of `ProfileIsNotProfessionalError` above.
+ */
+export class ProfileIsNotPatientError extends ConflictError {
+  constructor() {
+    super(
+      'identity.profile.not_patient',
+      'Esta conta já está cadastrada como profissional e não pode aceitar um convite de paciente.',
+    );
+  }
+}
+
+/**
+ * The patient did not consent to what the follow-up cannot happen without:
+ * `health_data`, `share_with_professional`, or both.
+ *
+ * 422 and not 400 — the request is well formed, and what refuses it is a rule
+ * (`shared/domain/domain-error.ts`). The message names which purposes are
+ * missing, in the words the screen used, so the patient knows what to tick;
+ * the machine readable half is the code, which is the same whichever is
+ * missing.
+ */
+export class MissingRequiredConsentError extends RuleViolationError {
+  constructor(missing: readonly ConsentType[]) {
+    super(
+      'identity.consent.required_missing',
+      `Para aceitar o convite é preciso concordar com ${listOf(missing)}.`,
+    );
+  }
+}
+
+/**
+ * How each purpose is named to the patient. Only the two required ones ever
+ * reach this message, and the record covers all four anyway: a purpose added
+ * to the type cannot leave a hole here without the build saying so.
+ */
+const CONSENT_LABELS: Readonly<Record<ConsentType, string>> = {
+  health_data: 'o uso dos seus dados de saúde',
+  share_with_professional: 'o compartilhamento com o seu profissional',
+  wearable_data: 'o uso dos dados do seu wearable',
+  ai_processing: 'o processamento dos seus dados por IA',
+};
+
+/** One purpose, or two joined by "e" — which is as long as this list gets. */
+function listOf(types: readonly ConsentType[]): string {
+  return types.map((type) => CONSENT_LABELS[type]).join(' e ');
 }
