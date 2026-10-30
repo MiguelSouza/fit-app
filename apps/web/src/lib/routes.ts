@@ -28,6 +28,47 @@ export const NEW_PASSWORD_PATH = '/nova-senha';
  */
 export const FIRST_ACCESS_PATH = '/primeiro-acesso';
 
+/**
+ * Where the link of an invitation points: the screen the **patient** opens
+ * after getting it on WhatsApp (card I-02 creates the link; accepting it is
+ * the card of the professional–patient link).
+ *
+ * In Portuguese and short, because it is read out of a WhatsApp message, and
+ * on the panel's own origin: the professional's browser is already there, so
+ * the base of the link is the origin of the page that built it and nothing has
+ * to be configured per environment.
+ */
+export const INVITE_PATH = '/convite';
+
+/**
+ * The parameter the token travels in: `/convite?token=...`.
+ *
+ * In the **query string** and not in the path, which is the opposite of what
+ * one would guess, and the reason is this platform's own scrubbing: the Sentry
+ * filter of `@fit-app/observability` keeps the path of a URL — ids and all,
+ * because that is what makes an issue readable — and throws the query string
+ * away (`urlWithoutQuery`). A token in the path would therefore survive into
+ * an error report of the patient's screen; in the query it is gone before the
+ * event leaves the browser.
+ */
+export const INVITE_TOKEN_PARAM = 'token';
+
+/**
+ * The full link to send, from the token the API answered once.
+ *
+ * @param origin where the panel is being served from (`location.origin`)
+ * @param token the token of the invitation, in plain text
+ */
+export function inviteLink(origin: string, token: string): string {
+  const link = new URL(INVITE_PATH, origin);
+
+  // `URL` does the escaping, so a token with a `-` or a `_` in it — base64url
+  // has both — travels as itself and arrives as itself.
+  link.searchParams.set(INVITE_TOKEN_PARAM, token);
+
+  return link.toString();
+}
+
 /** Trades the code of an e-mail link for a session (`app/auth/callback`). */
 export const AUTH_CALLBACK_PATH = '/auth/callback';
 

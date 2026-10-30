@@ -1,5 +1,9 @@
 import {
+  type CreatedInvitation,
+  type CreateInvitationRequest,
   type HealthResponse,
+  type Invitation,
+  type InvitationList,
   type MeResponse,
   type OrganizationMembership,
   type ProfessionalIdentity,
@@ -40,5 +44,16 @@ export type RegisterProfessionalRequestFields = FieldsOf<
   RegisterProfessionalRequest,
   'fullName' | 'councilNumber' | 'specialty' | 'professionalType'
 >;
+
+export type InvitationFields = FieldsOf<
+  Invitation,
+  'id' | 'status' | 'name' | 'contact' | 'createdAt' | 'expiresAt' | 'acceptedAt' | 'revokedAt'
+>;
+
+export type InvitationListFields = FieldsOf<InvitationList, 'invitations'>;
+
+export type CreatedInvitationFields = FieldsOf<CreatedInvitation, 'invitation' | 'token'>;
+
+export type CreateInvitationRequestFields = FieldsOf<CreateInvitationRequest, 'name' | 'contact'>;
 
 export type HealthResponseFields = FieldsOf<HealthResponse, 'status' | 'checks'>;

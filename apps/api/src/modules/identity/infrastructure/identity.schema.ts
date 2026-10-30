@@ -180,5 +180,79 @@ export const organizationMember = identitySchema.table(
   ],
 );
 
-/** Everything the module's repository talks to, as Drizzle takes it. */
-export const identityTables = { profile, professional, organization, organizationMember };
+/**
+ * An invitation: the link a professional sends a patient so they join the
+ * practice (card I-02).
+ *
+ * **The token is not here.** `token_hash` is the SHA-256 of it, and the token
+ * itself is answered once, on the creation, and never written anywhere: a
+ * backup, a replica or a leaked dump of this table cannot be turned back into
+ * a working link. The unique index is on the hash, which is also how the
+ * acceptance will look an invitation up — one index, one lookup, no scan.
+ *
+ * **There is no status column.** The four statuses the panel shows are read
+ * off these three timestamps (`expires_at`, `accepted_at`, `revoked_at`) by
+ * `domain/invitation.ts`. A stored status would need a job to turn `pending`
+ * into `expired` at midnight, and would be wrong until it ran.
+ *
+ * It belongs to the organization, not to the professional who sent it: the
+ * practice is what the patient joins, and in a clinic another member has to be
+ * able to see the invitation. Who sent it is kept all the same, in
+ * `invited_by_profile_id`.
+ */
+export const invitation = identitySchema.table(
+  'invitation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+
+    invitedByProfileId: uuid('invited_by_profile_id')
+      .notNull()
+      .references(() => profile.id, { onDelete: 'cascade' }),
+
+    /** SHA-256 of the token, in hex. Unique: one row per link, ever. */
+    tokenHash: text('token_hash').notNull().unique(),
+
+    /**
+     * What the professional wrote down about whoever they invited, so their own
+     * list says who each link was for. Personal data of a person who is not
+     * even on the platform yet: it stays in this table and in the answer to the
+     * professional who typed it, and never reaches a log (CLAUDE.md, "Saúde e
+     * LGPD" — the masking list of `@fit-app/observability` covers both names).
+     */
+    name: text('name'),
+
+    contact: text('contact'),
+
+    /**
+     * Fourteen days after the creation. No default here: the lifetime is a
+     * product rule and it lives in the domain, in one place, so a seed and a
+     * test land on the same one.
+     */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+
+    /** Set once, by the acceptance. A link is of single use. */
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // The question the "Convites" screen asks: every invitation of this
+    // practice, the most recent first.
+    index('invitation_organization_id_created_at_idx').on(table.organizationId, table.createdAt),
+  ],
+);
+
+/** Everything the module's repositories talk to, as Drizzle takes it. */
+export const identityTables = {
+  profile,
+  professional,
+  organization,
+  organizationMember,
+  invitation,
+};

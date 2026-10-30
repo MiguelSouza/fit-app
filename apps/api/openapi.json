@@ -127,6 +127,212 @@
           "Professionals"
         ]
       }
+    },
+    "/v1/invitations": {
+      "post": {
+        "description": "Cria o convite na organização de quem está chamando e responde o token do link, em texto puro, **uma única vez**: o banco guarda só o hash. Quem perder o link revoga o convite e cria outro. Nome e contato são opcionais, e o convite expira em 14 dias.",
+        "operationId": "InvitationsController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "O convite criado e o token do link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é profissional: `identity.professional.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Criar um convite de paciente",
+        "tags": [
+          "Invitations"
+        ]
+      },
+      "get": {
+        "description": "Lista os convites da organização de quem está chamando, do mais recente para o mais antigo, com a situação de cada um. O token não vem aqui: ele é respondido só na criação.",
+        "operationId": "InvitationsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Convites da organização do profissional",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é profissional: `identity.professional.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Convites da organização",
+        "tags": [
+          "Invitations"
+        ]
+      }
+    },
+    "/v1/invitations/{id}/revoke": {
+      "post": {
+        "description": "Cancela um convite ainda pendente da organização de quem está chamando: o link para de funcionar na hora. Convite de outra organização responde 404. Convite já aceito, já revogado ou expirado responde 409 — não há o que revogar.",
+        "operationId": "InvitationsController_revoke_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/InvitationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "O convite, revogado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Id que não é um uuid: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é profissional: `identity.professional.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Convite que não é desta organização: `identity.invitation.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O convite já não está pendente: `identity.invitation.not_pending`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Revogar um convite",
+        "tags": [
+          "Invitations"
+        ]
+      }
     }
   },
   "info": {
@@ -403,6 +609,134 @@
           "councilNumber"
         ],
         "description": "Dados do primeiro acesso de um profissional"
+      },
+      "CreateInvitationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Como o profissional chama o paciente convidado",
+            "example": "Ana",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "contact": {
+            "description": "Contato do paciente convidado",
+            "example": "+55 11 90000-0000",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 160
+          }
+        },
+        "description": "Dados opcionais de um convite de paciente"
+      },
+      "CreatedInvitation": {
+        "type": "object",
+        "properties": {
+          "invitation": {
+            "$ref": "#/components/schemas/Invitation"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Token do convite, em texto puro. Respondido só aqui, na criação: o banco guarda apenas o hash. É o que vai no link enviado ao paciente"
+          }
+        },
+        "required": [
+          "invitation",
+          "token"
+        ],
+        "additionalProperties": false,
+        "description": "O convite criado e o token do link, respondido uma única vez"
+      },
+      "Invitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id do convite"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvitationStatus"
+          },
+          "name": {
+            "description": "Nome do paciente convidado",
+            "type": "string",
+            "minLength": 1
+          },
+          "contact": {
+            "description": "Contato do paciente convidado",
+            "type": "string",
+            "minLength": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o convite foi criado, em UTC"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o convite expira, em UTC"
+          },
+          "acceptedAt": {
+            "description": "Quando o convite foi aceito",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "revokedAt": {
+            "description": "Quando o convite foi revogado",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "description": "Um convite de paciente"
+      },
+      "InvitationStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "expired",
+          "revoked"
+        ],
+        "description": "Situação do convite: pendente, aceito, expirado ou revogado. Derivada das datas, não guardada numa coluna"
+      },
+      "InvitationList": {
+        "type": "object",
+        "properties": {
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Invitation"
+            },
+            "description": "Convites da organização, do mais recente para o mais antigo"
+          }
+        },
+        "required": [
+          "invitations"
+        ],
+        "additionalProperties": false,
+        "description": "Convites da organização do profissional"
+      },
+      "InvitationId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+        "description": "Id do convite"
       }
     }
   }

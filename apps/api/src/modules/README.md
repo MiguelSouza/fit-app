@@ -15,11 +15,12 @@ schema do Postgres e só é visto de fora pelo próprio `index.ts`.
 camadas já existem, com um `.gitkeep` cada, porque o git não versiona pasta
 vazia.
 
-`identity` é o primeiro módulo com as quatro camadas preenchidas (card I-01):
-as tabelas `profile`, `professional`, `organization` e `organization_member`, o
-cadastro do profissional e o `GET /v1/me`. Vínculos, convites, consentimentos e
-o serviço de acesso que o resto da API vai usar entram pelos cards deles — e
-saem pelo `index.ts` quando entrarem.
+`identity` é o primeiro módulo com as quatro camadas preenchidas: as tabelas
+`profile`, `professional`, `organization` e `organization_member`, o cadastro do
+profissional e o `GET /v1/me` (card I-01), mais a tabela `invitation` e as três
+rotas de `/v1/invitations` (card I-02). Vínculos, consentimentos e o serviço de
+acesso que o resto da API vai usar entram pelos cards deles — e saem pelo
+`index.ts` quando entrarem.
 
 ## As camadas
 

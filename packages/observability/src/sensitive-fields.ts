@@ -35,6 +35,9 @@ const SENSITIVE_NAMES = new Set([
   'phone',
   'mobile',
   'whatsapp',
+  // Where the professional wrote down how to reach somebody (card I-02)
+  'contact',
+  'contacts',
   'cpf',
   'birthdate',
   'dateofbirth',
@@ -67,13 +70,14 @@ const SENSITIVE_NAMES = new Set([
 /**
  * Suffixes, for the same fields spelled with a qualifier in front:
  * `patientName`, `contactEmail`, `accessToken`, `professional_phone`,
- * `lastCheckIn`.
+ * `patientContact`, `lastCheckIn`.
  */
 const SENSITIVE_SUFFIXES = [
   'name',
   'checkin',
   'email',
   'phone',
+  'contact',
   'token',
   'secret',
   'password',

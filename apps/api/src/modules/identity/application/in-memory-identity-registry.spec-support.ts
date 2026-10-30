@@ -79,3 +79,31 @@ export function patientIdentity(): RegisteredIdentity {
     organizations: [],
   };
 }
+
+/**
+ * A professional's identity, already registered, for the tests of the use
+ * cases whose subject is a professional of a practice — the invitations of
+ * card I-02.
+ *
+ * The practice is a parameter because that is what those tests are about: two
+ * professionals of two organizations, and neither seeing the other's
+ * invitations. No data of a real person: random ids, and a name that is a
+ * label.
+ */
+export function professionalIdentity(organizationId: string = randomUUID()): RegisteredIdentity {
+  return {
+    personId: randomUUID(),
+    role: 'professional',
+    fullName: 'Profissional de teste',
+    timeZone: 'America/Sao_Paulo',
+    professional: { type: 'nutritionist', councilNumber: 'CRN-3 12345', specialty: null },
+    organizations: [
+      {
+        organizationId,
+        name: 'Consultório de teste',
+        kind: 'solo',
+        role: 'owner',
+      },
+    ],
+  };
+}

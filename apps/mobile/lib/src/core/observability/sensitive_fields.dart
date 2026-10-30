@@ -32,6 +32,9 @@ const Set<String> _sensitiveNames = <String>{
   'phone',
   'mobile',
   'whatsapp',
+  // Where the professional wrote down how to reach somebody (card I-02)
+  'contact',
+  'contacts',
   'cpf',
   'birthdate',
   'dateofbirth',
@@ -62,12 +65,14 @@ const Set<String> _sensitiveNames = <String>{
 };
 
 /// Suffixes, for the same fields with a qualifier in front: `patientName`,
-/// `contactEmail`, `accessToken`, `professional_phone`, `lastCheckIn`.
+/// `contactEmail`, `accessToken`, `professional_phone`, `patientContact`,
+/// `lastCheckIn`.
 const List<String> _sensitiveSuffixes = <String>[
   'name',
   'checkin',
   'email',
   'phone',
+  'contact',
   'token',
   'secret',
   'password',

@@ -21,6 +21,20 @@ export {
 } from './health-check/health-response';
 
 export {
+  createdInvitationSchema,
+  createInvitationRequestSchema,
+  invitationIdSchema,
+  invitationListSchema,
+  invitationSchema,
+  invitationStatusSchema,
+  type CreatedInvitation,
+  type CreateInvitationRequest,
+  type Invitation,
+  type InvitationList,
+  type InvitationStatus,
+} from './identity/invitation';
+
+export {
   meResponseSchema,
   personRoleSchema,
   type MeResponse,

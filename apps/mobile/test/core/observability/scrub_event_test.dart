@@ -32,6 +32,7 @@ void main() {
         'patientName',
         'email',
         'contact_email',
+        'contact',
         'phone',
         'token',
         'accessToken',

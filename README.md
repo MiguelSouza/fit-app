@@ -345,6 +345,16 @@ chamando, e no painel a tela de primeiro acesso que pergunta nome, CRN e especia
 Todo nutricionista ganha a própria organização, do tipo `solo`, onde é `owner`. O porquê
 de cada escolha está no
 [ADR 0014](./docs/adr/0014-modelo-de-identidade-e-organizacao-solo.md).
+E o convite de paciente por link (card **I-02**): a tabela `identity.invitation`,
+`POST /v1/invitations` que gera o link, `GET /v1/invitations` que lista com a situação de
+cada um, `POST /v1/invitations/{id}/revoke` que cancela o que está pendente, e no painel
+a tela que gera o link, copia e lista. O convite é da organização de quem chama, expira
+em 14 dias e serve uma vez só; o banco guarda o **SHA-256** do token e o texto puro é
+respondido uma única vez, na criação — quem perder o link revoga e gera outro. A situação
+(pendente, aceito, expirado, revogado) é lida das datas, sem coluna de status e sem job.
+O porquê de cada escolha está no
+[ADR 0015](./docs/adr/0015-convite-por-link-com-token-hasheado.md).
+
 Os demais pacotes seguem como placeholders, com scripts no-op para o `turbo` ter o que
 percorrer; o conteúdo real de cada um entra pelos cards indicados no `README.md` de cada
 pasta.

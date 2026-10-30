@@ -63,7 +63,7 @@ src/
   components/
     ui/                  primitivos do shadcn/ui, neutros (card OP-06 veste)
     auth/                os três formulários de entrada
-    identity/            o formulário do primeiro acesso do profissional
+    identity/            o primeiro acesso do profissional e os convites de paciente
     painel/              menu lateral, cabeçalho de seção, cartão de identidade
     debug/               só desenvolvimento: o botão que provoca o erro de teste
     query-provider.tsx   o cache do TanStack Query
@@ -200,10 +200,45 @@ metade que importa. O que o filtro faz é testado na API, contra o SDK real
 (`apps/api/src/shared/observability/sentry.spec.ts`), porque o filtro é o
 mesmo.
 
+## Convites de paciente
+
+`/convites` (card I-02) tem duas metades. "Convidar paciente" gera o link —
+nome e contato são opcionais — e mostra um campo com o link e um botão que
+copia. "Convites enviados" lista os da organização, do mais recente para o mais
+antigo, com a situação de cada um (pendente, aceito, expirado, revogado) e
+"revogar" nos que estão pendentes.
+
+**O link aparece uma única vez.** A API responde o token só na criação e guarda
+apenas o hash dele, então não há "ver o link de novo" nem na tela nem no banco
+(ADR [0015](../../docs/adr/0015-convite-por-link-com-token-hasheado.md)). Quem
+perder o link revoga o convite e gera outro. O token fica no estado do
+componente e em lugar nenhum mais: nada de `localStorage`, nada no cache do
+TanStack Query, e ele some na próxima navegação.
+
+O link é `<origem do painel>/convite?token=<token>`, montado com
+`location.origin`: a origem onde o profissional já está, então não há variável
+de ambiente para configurar e não há como apontar para o host errado. O token
+vai na **query string**, e não no caminho, por causa do filtro desta
+plataforma: o `beforeSend` de `@fit-app/observability` mantém o caminho de uma
+URL e joga a query fora, então token no caminho sobreviveria num relato de erro
+da tela do paciente e na query não.
+
+A situação do convite vem pronta da API e **não** é calculada aqui: `expirado`
+depende do instante da pergunta, e um relógio de navegador adiantado mostraria
+como morto um link que ainda funciona.
+
+> A rota `/convite`, que é o que o paciente abre, **ainda não existe
+> neste painel**: validar o token e criar a conta do paciente é o card do
+> vínculo profissional–paciente. O formato do link já está decidido, então
+> aquele card preenche a tela sem mexer no que é gerado aqui.
+
 ## O que ainda não tem
 
-- **A fila, os pacientes, os convites e os ajustes.** As quatro rotas existem e
-  dizem o que vai aparecer nelas; o dado vem dos cards de cada módulo.
+- **A fila, os pacientes e os ajustes.** As três rotas existem e dizem o que vai
+  aparecer nelas; o dado vem dos cards de cada módulo. Convites já tem conteúdo
+  (card I-02).
+- **A tela que o paciente abre.** O link do convite aponta para
+  `/convite?token=<token>`, que é do card do vínculo profissional–paciente.
 - **O nome de quem entrou.** `GET /v1/me` responde id, papel, fuso horário e a
   metade profissional (tipo, conselho, especialidade e organizações) — o nome da
   pessoa não vem, e o único texto livre é o nome do consultório dela. Ver
