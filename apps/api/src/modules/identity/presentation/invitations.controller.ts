@@ -213,7 +213,10 @@ export class InvitationsController {
   @SchemaCreatedResponse(acceptedInvitationSchema, 'O vínculo criado pelo aceite')
   @ApiBadRequestResponse({
     standardSchema: errorResponseSchema,
-    description: 'Corpo inválido: `api.request.invalid`',
+    description:
+      'Corpo inválido: `api.request.invalid`. Nome em branco: ' +
+      '`identity.patient.blank_name`. Fuso que não existe: ' +
+      '`identity.profile.unknown_time_zone`',
   })
   @ApiNotFoundResponse({
     standardSchema: errorResponseSchema,

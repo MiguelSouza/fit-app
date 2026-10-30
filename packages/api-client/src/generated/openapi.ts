@@ -681,7 +681,7 @@ export interface operations {
                     "application/json": components["schemas"]["AcceptedInvitation"];
                 };
             };
-            /** @description Corpo inválido: `api.request.invalid` */
+            /** @description Corpo inválido: `api.request.invalid`. Nome em branco: `identity.patient.blank_name`. Fuso que não existe: `identity.profile.unknown_time_zone` */
             400: {
                 headers: {
                     [name: string]: unknown;

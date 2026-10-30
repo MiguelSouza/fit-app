@@ -394,6 +394,17 @@ describe('the invitation routes', () => {
       expect(response.body.error.message).toContain('fullName');
     });
 
+    it('refuses a zone that is not an IANA name, and leaves the link usable', async () => {
+      const response = await accept(app, accessToken, {
+        ...ACCEPTANCE,
+        timeZone: 'Mars/Phobos',
+      }).expect(400);
+
+      expect(response.body.error.code).toBe('identity.profile.unknown_time_zone');
+
+      await accept(app, accessToken, { ...ACCEPTANCE, timeZone: 'America/Bahia' }).expect(201);
+    });
+
     it('answers 401 without a token of its own: the link is not an authentication', async () => {
       await request(app.getHttpServer())
         .post('/v1/invitations/accept')

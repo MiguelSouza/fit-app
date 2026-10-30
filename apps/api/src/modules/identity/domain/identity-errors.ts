@@ -183,3 +183,21 @@ const CONSENT_LABELS: Readonly<Record<ConsentType, string>> = {
 function listOf(types: readonly ConsentType[]): string {
   return types.map((type) => CONSENT_LABELS[type]).join(' e ');
 }
+
+/**
+ * The zone the patient sent is not a name the IANA database has.
+ *
+ * 400 and not a silent fallback to the platform's default: the zone decides
+ * which day a night of sleep belongs to (CLAUDE.md, "Dados de saúde"), and a
+ * profile quietly saved in São Paulo for somebody in Lisbon is a wrong answer
+ * nobody gets told about. A client that cannot read the device's zone sends
+ * nothing and gets the default on purpose.
+ */
+export class UnknownTimeZoneError extends InvalidInputError {
+  constructor() {
+    super(
+      'identity.profile.unknown_time_zone',
+      'Fuso horário desconhecido. Use um nome do formato IANA, como America/Sao_Paulo.',
+    );
+  }
+}

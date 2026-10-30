@@ -384,6 +384,12 @@ Numa transação: o `profile` e o `patient` se ainda não existirem, o
 versão do termo, e o convite marcado como aceito. Ou o paciente entra, ou nada
 aconteceu.
 
+O `timeZone` é opcional e, quando vem, tem de ser um nome que a base IANA
+conhece: fuso desconhecido responde **400**
+(`identity.profile.unknown_time_zone`) em vez de virar coluna, porque é ele que
+diz a que dia pertence uma noite de sono. Quem não sabe o fuso do aparelho não
+manda nada e fica com o padrão da plataforma.
+
 `health_data` e `share_with_professional` são **obrigatórios** — sem um deles a
 resposta é **422** (`identity.consent.required_missing`) e o convite segue
 válido. `wearable_data` e `ai_processing` são opcionais neste momento e podem

@@ -1,7 +1,7 @@
 import { type ConsentToGrant, type ConsentType, consentsToGrant } from './consent';
-import { BlankPatientNameError } from './identity-errors';
+import { BlankPatientNameError, UnknownTimeZoneError } from './identity-errors';
 import { type Invitation, invitationReadyToAccept } from './invitation';
-import { DEFAULT_TIME_ZONE, type PersonRole } from './person';
+import { DEFAULT_TIME_ZONE, isKnownTimeZone, type PersonRole } from './person';
 
 /**
  * The rule of the patient's side of an invitation: what accepting a link turns
@@ -88,6 +88,7 @@ function squeeze(value: string): string {
  * @throws InvitationRevokedError when the professional took it back
  * @throws InvitationExpiredError when the fourteen days are gone
  * @throws BlankPatientNameError when the name is whitespace only
+ * @throws UnknownTimeZoneError when the zone is not an IANA name
  * @throws MissingRequiredConsentError when a required consent is missing
  */
 export function invitationAcceptanceOf(request: InvitationAcceptanceRequest): InvitationAcceptance {
@@ -97,7 +98,14 @@ export function invitationAcceptanceOf(request: InvitationAcceptanceRequest): In
 
   if (fullName === '') throw new BlankPatientNameError();
 
-  const timeZone = request.timeZone === null ? '' : squeeze(request.timeZone);
+  // A zone nobody said and one typed as spaces are the same absence, and the
+  // default is the platform's, in one place (`domain/person.ts`). One that was
+  // said has to be a name the IANA database has: it is the column that dates a
+  // night of sleep, and it is refused here and not stored to be discovered
+  // broken later.
+  const said = request.timeZone === null ? '' : squeeze(request.timeZone);
+
+  if (said !== '' && !isKnownTimeZone(said)) throw new UnknownTimeZoneError();
 
   return {
     invitationId: invitation.id,
@@ -106,9 +114,7 @@ export function invitationAcceptanceOf(request: InvitationAcceptanceRequest): In
       authUserId: request.authUserId,
       role: 'patient',
       fullName,
-      // A zone nobody said and one typed as spaces are the same absence, and
-      // the default is the platform's, in one place (`domain/person.ts`).
-      timeZone: timeZone === '' ? DEFAULT_TIME_ZONE : timeZone,
+      timeZone: said === '' ? DEFAULT_TIME_ZONE : said,
     },
     consents: consentsToGrant(request.consents, request.now),
     acceptedAt: request.now,

@@ -63,6 +63,8 @@ export class AcceptInvitationUseCase {
    * @throws InvitationNotFoundError when no invitation has that token
    * @throws InvitationExpiredError, InvitationRevokedError,
    *   InvitationAlreadyAcceptedError when the link may no longer be used
+   * @throws BlankPatientNameError when the name is whitespace only
+   * @throws UnknownTimeZoneError when the zone said is not an IANA name
    * @throws MissingRequiredConsentError when a required consent is missing
    * @throws ProfileIsNotPatientError when the account is a professional's
    */

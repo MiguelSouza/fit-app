@@ -7,6 +7,7 @@ import {
   InvitationExpiredError,
   InvitationRevokedError,
   MissingRequiredConsentError,
+  UnknownTimeZoneError,
 } from './identity-errors';
 import { type Invitation } from './invitation';
 import { invitationAcceptanceOf } from './invitation-acceptance';
@@ -82,6 +83,28 @@ describe('invitationAcceptanceOf', () => {
     expect(acceptance(pendingInvitation(), 'Ana Souza', 'America/Bahia').patient.timeZone).toBe(
       'America/Bahia',
     );
+  });
+
+  it('treats a zone of spaces as a zone nobody said', () => {
+    expect(acceptance(pendingInvitation(), 'Ana Souza', '   ').patient.timeZone).toBe(
+      DEFAULT_TIME_ZONE,
+    );
+  });
+
+  it('refuses a zone the IANA database does not have, instead of storing it', () => {
+    expect(() => acceptance(pendingInvitation(), 'Ana Souza', 'Mars/Phobos')).toThrow(
+      UnknownTimeZoneError,
+    );
+  });
+
+  it('refuses something that is not a zone at all', () => {
+    expect(() => acceptance(pendingInvitation(), 'Ana Souza', 'de madrugada')).toThrow(
+      UnknownTimeZoneError,
+    );
+  });
+
+  it('keeps UTC, which is a zone a client may well send', () => {
+    expect(acceptance(pendingInvitation(), 'Ana Souza', 'UTC').patient.timeZone).toBe('UTC');
   });
 
   it('squeezes the name, so one person is not two rows', () => {
