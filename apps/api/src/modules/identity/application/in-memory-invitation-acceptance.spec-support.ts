@@ -88,9 +88,13 @@ export class InMemoryInvitationAcceptanceRepository implements InvitationAccepta
       return Promise.resolve(undefined);
     }
 
-    this.invitations.set(found.id, { ...found, acceptedAt: acceptance.acceptedAt });
-
+    // The profile first, and the invitation spent only afterwards: the real
+    // one marks the invitation inside the transaction and `ensureProfile` is
+    // what can still refuse it, so a fake that consumed the link before the
+    // refusal would say the link was used when Postgres rolls it back.
     const person = this.ensureProfile(acceptance);
+
+    this.invitations.set(found.id, { ...found, acceptedAt: acceptance.acceptedAt });
 
     return Promise.resolve({
       profileId: person.id,

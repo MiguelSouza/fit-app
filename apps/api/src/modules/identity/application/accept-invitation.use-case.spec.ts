@@ -234,7 +234,7 @@ describe('AcceptInvitationUseCase', () => {
   });
 
   it('refuses an account that is already a professional', async () => {
-    const { accept, token, registry, acceptances } = scenario();
+    const { accept, token, registry, acceptances, invitation } = scenario();
 
     await registry.createProfessional({
       authUserId: AUTH_USER_ID,
@@ -252,8 +252,10 @@ describe('AcceptInvitationUseCase', () => {
       ProfileIsNotPatientError,
     );
 
-    // And the link was not spent on the refusal.
+    // And the link was not spent on the refusal: it is still there for the
+    // patient it was meant for.
     expect(acceptances.careRelationships).toEqual([]);
+    expect(acceptances.invitationById(invitation.id)?.acceptedAt).toBeNull();
   });
 
   it('refuses a professional of another practice holding a patient link', async () => {
