@@ -22,6 +22,20 @@
       "when": 1793390226380,
       "tag": "0002_identity_patient_and_care_relationship",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794266929927,
+      "tag": "0003_identity_access_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794266936459,
+      "tag": "0004_identity_access_log_append_only",
+      "breakpoints": true
     }
   ]
 }

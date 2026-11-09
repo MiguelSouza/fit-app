@@ -137,8 +137,16 @@ describe('the cursor', () => {
     expect(() => decodeAccessLogCursor('')).toThrow(InvalidAccessLogCursorError);
   });
 
-  it('refuses a cursor with half of it missing', () => {
-    const halves = [`${NOW.toISOString()}|`, `|${randomUUID()}`, `nao-e-uma-data|${randomUUID()}`];
+  it('refuses a cursor with half of it missing, or with an id of another shape', () => {
+    // The id goes straight into a comparison against a uuid column, so a
+    // cursor that does not carry one is a 400 here and never a 500 from
+    // Postgres.
+    const halves = [
+      `${NOW.toISOString()}|`,
+      `|${randomUUID()}`,
+      `nao-e-uma-data|${randomUUID()}`,
+      `${NOW.toISOString()}|nao-e-um-uuid`,
+    ];
 
     for (const half of halves) {
       expect(() => decodeAccessLogCursor(Buffer.from(half, 'utf8').toString('base64url'))).toThrow(

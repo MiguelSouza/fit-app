@@ -209,11 +209,19 @@ export function encodeAccessLogCursor(cursor: AccessLogCursor): string {
 }
 
 /**
+ * What a record's id looks like. The column is a uuid, and the repository puts
+ * the id of a cursor straight into a comparison against it — so a cursor that
+ * does not carry one is refused **here**, as a 400, instead of reaching
+ * Postgres and coming back as a 500.
+ */
+const CURSOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+/**
  * The cursor a client sent back, as the repository needs it.
  *
  * Everything is checked, because this is a value from the outside: the
- * encoding, the two halves, the instant and a non-empty id. Anything else is a
- * cursor this API did not mint.
+ * encoding, the two halves, the instant and the id. Anything else is a cursor
+ * this API did not mint.
  *
  * @throws InvalidAccessLogCursorError on anything that is not a cursor of ours
  *   (400). Not an empty page, which would tell a patient their log ended where
@@ -228,7 +236,9 @@ export function decodeAccessLogCursor(raw: string): AccessLogCursor {
   const occurredAt = new Date(decoded.slice(0, separator));
   const id = decoded.slice(separator + 1);
 
-  if (Number.isNaN(occurredAt.getTime()) || id === '') throw new InvalidAccessLogCursorError();
+  if (Number.isNaN(occurredAt.getTime()) || !CURSOR_ID_PATTERN.test(id)) {
+    throw new InvalidAccessLogCursorError();
+  }
 
   return { occurredAt, id };
 }
