@@ -241,3 +241,59 @@ export class MealPlanRequiresNutritionistError extends PermissionDeniedError {
     );
   }
 }
+
+/**
+ * The caller is signed in and has a profile, and it is a professional's: the
+ * consents are the patient's own (card I-05).
+ *
+ * 403 and not 404, the mirror of `CallerIsNotProfessionalError` above: nothing
+ * is being looked up, and the person is simply not the subject of this
+ * request. A professional who wants to know what a patient consented to asks
+ * through the patient's chart, where the access rule answers (ADR 0017) — and
+ * nobody consents on somebody else's behalf, which is the whole premise of
+ * consent under LGPD.
+ */
+export class CallerIsNotPatientError extends PermissionDeniedError {
+  constructor() {
+    super('identity.patient.required', 'Só o próprio paciente pode dar e revogar consentimentos.');
+  }
+}
+
+/**
+ * There is no consent of that purpose in force, so there is nothing to revoke.
+ *
+ * 409, as `InvitationNotPendingError` is: the request is well formed and the
+ * state of the record is what refuses it. Answering 200 instead would tell the
+ * patient the platform has just stopped doing something it had already
+ * stopped, which is the one thing a consent screen must never be vague about.
+ */
+export class ConsentNotInForceError extends ConflictError {
+  constructor() {
+    super(
+      'identity.consent.not_in_force',
+      'Este consentimento já não está vigente, então não há o que revogar.',
+    );
+  }
+}
+
+/**
+ * The patient is trying to give a purpose that rests on `health_data`, and
+ * that one is not in force.
+ *
+ * 422 and not 400 — the request is well formed and a rule refuses it. It is
+ * the other half of "revogar `health_data` encerra o uso do app" (card I-05):
+ * every other purpose is something done **to** the health data, so turning one
+ * back on without it would have the platform sharing, importing or sending to
+ * the AI data it has no permission to keep.
+ *
+ * The way out is in the message, and it is a single tap: give `health_data`
+ * again, and the purposes can be given again one by one.
+ */
+export class HealthDataConsentRequiredError extends RuleViolationError {
+  constructor() {
+    super(
+      'identity.consent.health_data_required',
+      'Para dar este consentimento é preciso concordar primeiro com o uso dos seus dados de saúde.',
+    );
+  }
+}

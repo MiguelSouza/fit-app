@@ -1,24 +1,32 @@
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../../shared/database/database.module';
+import { EventsModule } from '../../shared/events/events.module';
 import { AcceptInvitationUseCase } from './application/accept-invitation.use-case';
 import { CreateInvitationUseCase } from './application/create-invitation.use-case';
 import { GetMyIdentityUseCase } from './application/get-my-identity.use-case';
+import { GrantConsentUseCase } from './application/grant-consent.use-case';
+import { ListMyConsentsUseCase } from './application/list-my-consents.use-case';
 import { ListInvitationsUseCase } from './application/list-invitations.use-case';
+import { LoadPatientCaller } from './application/load-patient-caller';
 import { LoadProfessionalCaller } from './application/load-professional-caller';
 import { PatientAccessService } from './application/patient-access.service';
+import { CONSENT_REPOSITORY } from './application/ports/consent-repository.port';
 import { IDENTITY_REGISTRY } from './application/ports/identity-registry.port';
 import { INVITATION_ACCEPTANCE_REPOSITORY } from './application/ports/invitation-acceptance.port';
 import { INVITATION_REPOSITORY } from './application/ports/invitation-repository.port';
 import { INVITATION_TOKEN_ISSUER } from './application/ports/invitation-token.port';
 import { PATIENT_ACCESS_REPOSITORY } from './application/ports/patient-access.port';
 import { RegisterProfessionalUseCase } from './application/register-professional.use-case';
+import { RevokeConsentUseCase } from './application/revoke-consent.use-case';
 import { RevokeInvitationUseCase } from './application/revoke-invitation.use-case';
 import { CryptoInvitationTokenIssuer } from './infrastructure/crypto-invitation-token.issuer';
+import { DrizzleConsentRepository } from './infrastructure/drizzle-consent.repository';
 import { DrizzleIdentityRegistry } from './infrastructure/drizzle-identity-registry.repository';
 import { DrizzleInvitationAcceptanceRepository } from './infrastructure/drizzle-invitation-acceptance.repository';
 import { DrizzleInvitationRepository } from './infrastructure/drizzle-invitation.repository';
 import { DrizzlePatientAccessRepository } from './infrastructure/drizzle-patient-access.repository';
+import { ConsentsController } from './presentation/consents.controller';
 import { InvitationsController } from './presentation/invitations.controller';
 import { MeController } from './presentation/me.controller';
 import { PatientAccessGuard } from './presentation/patient-access.guard';
@@ -37,14 +45,18 @@ import { ProfessionalsController } from './presentation/professionals.controller
  * What is wired today is card I-01 — the first access of a professional and
  * the identity of whoever is calling —, card I-02, the invitation by link,
  * card I-03, the acceptance of it (the patient, the care link and the
- * consents), and card I-04, the access rule the rest of the API depends on,
- * which is the only thing this module exports to the others. The access log
- * (`identity.logAccess`) is the rest of the module and comes with its own
- * card.
+ * consents), card I-04, the access rule the rest of the API depends on, which
+ * is the only thing this module exports to the others, and card I-05, the
+ * patient giving and taking back one purpose — the first thing this module
+ * announces as an event. The access log (`identity.logAccess`) is the rest of
+ * the module and comes with its own card.
  */
 @Module({
-  imports: [DatabaseModule],
-  controllers: [MeController, ProfessionalsController, InvitationsController],
+  // `EventsModule` is here for the revocation of a consent, which is the first
+  // fact this module announces to the others (card I-05): it exports
+  // `EVENT_BUS`, and the publisher never names the implementation (ADR 0009).
+  imports: [DatabaseModule, EventsModule],
+  controllers: [MeController, ProfessionalsController, InvitationsController, ConsentsController],
   providers: [
     GetMyIdentityUseCase,
     RegisterProfessionalUseCase,
@@ -55,7 +67,12 @@ import { ProfessionalsController } from './presentation/professionals.controller
     AcceptInvitationUseCase,
     PatientAccessService,
     PatientAccessGuard,
+    LoadPatientCaller,
+    ListMyConsentsUseCase,
+    GrantConsentUseCase,
+    RevokeConsentUseCase,
     { provide: IDENTITY_REGISTRY, useClass: DrizzleIdentityRegistry },
+    { provide: CONSENT_REPOSITORY, useClass: DrizzleConsentRepository },
     { provide: INVITATION_REPOSITORY, useClass: DrizzleInvitationRepository },
     { provide: INVITATION_ACCEPTANCE_REPOSITORY, useClass: DrizzleInvitationAcceptanceRepository },
     { provide: INVITATION_TOKEN_ISSUER, useClass: CryptoInvitationTokenIssuer },

@@ -1,8 +1,11 @@
 import {
   type AcceptedInvitation,
   type AcceptInvitationRequest,
+  type Consent,
+  type ConsentList,
   type CreatedInvitation,
   type CreateInvitationRequest,
+  type GrantConsentRequest,
   type HealthResponse,
   type Invitation,
   type InvitationList,
@@ -10,6 +13,8 @@ import {
   type OrganizationMembership,
   type ProfessionalIdentity,
   type RegisterProfessionalRequest,
+  type RevokedConsent,
+  type RevokedConsentList,
 } from './index';
 
 /**
@@ -69,3 +74,16 @@ export type AcceptedInvitationFields = FieldsOf<
 >;
 
 export type HealthResponseFields = FieldsOf<HealthResponse, 'status' | 'checks'>;
+
+export type ConsentFields = FieldsOf<Consent, 'type' | 'termsVersion' | 'grantedAt'>;
+
+export type ConsentListFields = FieldsOf<ConsentList, 'consents'>;
+
+export type GrantConsentRequestFields = FieldsOf<GrantConsentRequest, 'type'>;
+
+export type RevokedConsentFields = FieldsOf<
+  RevokedConsent,
+  'type' | 'termsVersion' | 'grantedAt' | 'revokedAt'
+>;
+
+export type RevokedConsentListFields = FieldsOf<RevokedConsentList, 'revoked'>;

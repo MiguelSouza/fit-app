@@ -1,3 +1,5 @@
+import { type ConsentType } from '@fit-app/contracts';
+
 /**
  * The catalogue of the internal events, in one file (CLAUDE.md rule 3).
  *
@@ -14,8 +16,16 @@
  * a name or a check-in value in there would leak through all three
  * (CLAUDE.md, "Saúde e LGPD"). A handler that needs the data behind an id asks
  * the module that owns it — with the consent check that comes with it.
+ *
+ * The one thing imported here is `ConsentType`, from `@fit-app/contracts`: the
+ * purpose of a consent is a closed vocabulary the whole platform already
+ * shares, and a subscriber comparing it against a typo should not compile.
+ * Importing it from the publishing module's `domain/` would be the boundary
+ * violation (rule 1); the contracts package is Zod and types, with no I/O and
+ * no module in it.
  */
 export const DOMAIN_EVENT_NAMES = [
+  'identity.consent.revoked',
   'nutrition.plan.activated',
   'health.sleep.received',
   'insights.alert.created',
@@ -40,6 +50,31 @@ export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
  * across a time zone.
  */
 export interface DomainEventPayloads extends Record<DomainEventName, object> {
+  /**
+   * A patient took one purpose back (card I-05). It is the one event of this
+   * catalogue that every other module has to care about, because it is
+   * permission being withdrawn: `health` stops the wearable sync when
+   * `wearable_data` goes, `insights` stops producing AI summaries when
+   * `ai_processing` goes, and nothing anywhere keeps a copy that outlives it
+   * (CLAUDE.md, "Saúde e LGPD": "revogar consentimento corta o acesso na
+   * hora").
+   *
+   * Revoking `health_data` publishes this once **per purpose** that was in
+   * force, so a handler only ever reads the one purpose it cares about and
+   * never has to know about the cascade.
+   *
+   * It is **not** how the access of a professional is cut off: that is read
+   * from the row at the instant of the request (ADR 0017), which is why no
+   * subscriber has to be trusted for it. A handler that fails is a log line
+   * (`InMemoryEventBus`), and a handler that must not be lost is a job.
+   */
+  'identity.consent.revoked': {
+    /** The patient's `identity.profile.id`. An id, as every payload here. */
+    readonly profileId: string;
+    readonly consentType: ConsentType;
+    readonly revokedAt: string;
+  };
+
   /** A nutritionist put a plan in force. The previous one, if any, stopped. */
   'nutrition.plan.activated': {
     readonly planId: string;
