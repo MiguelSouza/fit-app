@@ -416,6 +416,222 @@
           "Invitations"
         ]
       }
+    },
+    "/v1/me/consents": {
+      "get": {
+        "description": "Lista as finalidades que o paciente consentiu e que seguem vigentes, com a data e a versão do termo de cada uma. O que foi revogado não vem aqui: a linha continua no banco, como histórico, mas já não vale. Só o próprio paciente pode pedir.",
+        "operationId": "ConsentsController_list_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Consentimentos vigentes do paciente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consentimentos vigentes de quem fez a chamada",
+        "tags": [
+          "Consents"
+        ]
+      },
+      "post": {
+        "description": "Registra uma finalidade com a versão do termo que a API serviu — a versão nunca vem do cliente. É idempotente: finalidade já vigente não cria linha nova e a resposta é o consentimento que já existe, com a data original. Dar de novo depois de revogar cria uma linha nova; a linha revogada fica. Toda finalidade exige `health_data` vigente, então quem revogou `health_data` dá esse primeiro.",
+        "operationId": "ConsentsController_grant_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "O consentimento vigente para essa finalidade",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A finalidade depende de `health_data`, que não está vigente: `identity.consent.health_data_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Dar um consentimento",
+        "tags": [
+          "Consents"
+        ]
+      }
+    },
+    "/v1/me/consents/{type}/revoke": {
+      "post": {
+        "description": "Marca a finalidade como revogada agora: a linha continua no banco, com `granted_at` e a versão do termo originais. O corte é imediato — revogar `share_with_professional` tira o acesso do profissional já na requisição seguinte. **Revogar `health_data` encerra o uso do app**: todas as finalidades vigentes caem na mesma transação, porque não há o que compartilhar, importar ou mandar para a IA sobre dados que a plataforma não pode mais guardar. O vínculo com a prática não é encerrado aqui, e nada é apagado. Finalidade que já não está vigente responde 409.",
+        "operationId": "ConsentsController_revoke_v1",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/ConsentType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "O que a revogação encerrou",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedConsentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Finalidade que não existe: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A finalidade já não está vigente: `identity.consent.not_in_force`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Revogar um consentimento",
+        "tags": [
+          "Consents"
+        ]
+      }
     }
   },
   "info": {
@@ -912,6 +1128,114 @@
         ],
         "additionalProperties": false,
         "description": "O vínculo criado pelo aceite do convite"
+      },
+      "ConsentList": {
+        "type": "object",
+        "properties": {
+          "consents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Consent"
+            },
+            "description": "Consentimentos vigentes, na ordem das finalidades"
+          }
+        },
+        "required": [
+          "consents"
+        ],
+        "additionalProperties": false,
+        "description": "Consentimentos vigentes do paciente"
+      },
+      "Consent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ConsentType"
+          },
+          "termsVersion": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Versão do termo que foi mostrada quando o consentimento foi dado"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o consentimento foi dado, em UTC",
+            "example": "2026-11-09T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "type",
+          "termsVersion",
+          "grantedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Um consentimento vigente do paciente"
+      },
+      "GrantConsentRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ConsentType"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "description": "A finalidade que o paciente está consentindo"
+      },
+      "RevokedConsentList": {
+        "type": "object",
+        "properties": {
+          "revoked": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevokedConsent"
+            },
+            "description": "Os consentimentos que esta revogação encerrou. Revogar `health_data` encerra todas as finalidades vigentes; qualquer outra finalidade encerra só a dela"
+          }
+        },
+        "required": [
+          "revoked"
+        ],
+        "additionalProperties": false,
+        "description": "O que a revogação encerrou"
+      },
+      "RevokedConsent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ConsentType"
+          },
+          "termsVersion": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Versão do termo que foi mostrada quando o consentimento foi dado"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o consentimento foi dado, em UTC",
+            "example": "2026-11-09T12:00:00.000Z"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o consentimento foi revogado, em UTC"
+          }
+        },
+        "required": [
+          "type",
+          "termsVersion",
+          "grantedAt",
+          "revokedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Um consentimento revogado, com as duas datas"
       }
     }
   }

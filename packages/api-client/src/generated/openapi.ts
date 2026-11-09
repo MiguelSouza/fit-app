@@ -124,6 +124,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consentimentos vigentes de quem fez a chamada
+         * @description Lista as finalidades que o paciente consentiu e que seguem vigentes, com a data e a versão do termo de cada uma. O que foi revogado não vem aqui: a linha continua no banco, como histórico, mas já não vale. Só o próprio paciente pode pedir.
+         */
+        get: operations["ConsentsController_list_v1"];
+        put?: never;
+        /**
+         * Dar um consentimento
+         * @description Registra uma finalidade com a versão do termo que a API serviu — a versão nunca vem do cliente. É idempotente: finalidade já vigente não cria linha nova e a resposta é o consentimento que já existe, com a data original. Dar de novo depois de revogar cria uma linha nova; a linha revogada fica. Toda finalidade exige `health_data` vigente, então quem revogou `health_data` dá esse primeiro.
+         */
+        post: operations["ConsentsController_grant_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/consents/{type}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revogar um consentimento
+         * @description Marca a finalidade como revogada agora: a linha continua no banco, com `granted_at` e a versão do termo originais. O corte é imediato — revogar `share_with_professional` tira o acesso do profissional já na requisição seguinte. **Revogar `health_data` encerra o uso do app**: todas as finalidades vigentes caem na mesma transação, porque não há o que compartilhar, importar ou mandar para a IA sobre dados que a plataforma não pode mais guardar. O vínculo com a prática não é encerrado aqui, e nada é apagado. Finalidade que já não está vigente responde 409.
+         */
+        post: operations["ConsentsController_revoke_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -366,6 +410,49 @@ export interface components {
             acceptedAt: string;
             /** @description Finalidades consentidas que estão vigentes */
             consents: components["schemas"]["ConsentType"][];
+        };
+        /** @description Consentimentos vigentes do paciente */
+        ConsentList: {
+            /** @description Consentimentos vigentes, na ordem das finalidades */
+            consents: components["schemas"]["Consent"][];
+        };
+        /** @description Um consentimento vigente do paciente */
+        Consent: {
+            type: components["schemas"]["ConsentType"];
+            /** @description Versão do termo que foi mostrada quando o consentimento foi dado */
+            termsVersion: string;
+            /**
+             * Format: date-time
+             * @description Quando o consentimento foi dado, em UTC
+             * @example 2026-11-09T12:00:00.000Z
+             */
+            grantedAt: string;
+        };
+        /** @description A finalidade que o paciente está consentindo */
+        GrantConsentRequest: {
+            type: components["schemas"]["ConsentType"];
+        };
+        /** @description O que a revogação encerrou */
+        RevokedConsentList: {
+            /** @description Os consentimentos que esta revogação encerrou. Revogar `health_data` encerra todas as finalidades vigentes; qualquer outra finalidade encerra só a dela */
+            revoked: components["schemas"]["RevokedConsent"][];
+        };
+        /** @description Um consentimento revogado, com as duas datas */
+        RevokedConsent: {
+            type: components["schemas"]["ConsentType"];
+            /** @description Versão do termo que foi mostrada quando o consentimento foi dado */
+            termsVersion: string;
+            /**
+             * Format: date-time
+             * @description Quando o consentimento foi dado, em UTC
+             * @example 2026-11-09T12:00:00.000Z
+             */
+            grantedAt: string;
+            /**
+             * Format: date-time
+             * @description Quando o consentimento foi revogado, em UTC
+             */
+            revokedAt: string;
         };
     };
     responses: never;
@@ -710,6 +797,189 @@ export interface operations {
             };
             /** @description Faltou um consentimento obrigatório: `identity.consent.required_missing`. O convite segue válido */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ConsentsController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consentimentos vigentes do paciente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentList"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ConsentsController_grant_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantConsentRequest"];
+            };
+        };
+        responses: {
+            /** @description O consentimento vigente para essa finalidade */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Consent"];
+                };
+            };
+            /** @description Corpo inválido: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A finalidade depende de `health_data`, que não está vigente: `identity.consent.health_data_required` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ConsentsController_revoke_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type: components["schemas"]["ConsentType"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description O que a revogação encerrou */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokedConsentList"];
+                };
+            };
+            /** @description Finalidade que não existe: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A finalidade já não está vigente: `identity.consent.not_in_force` */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

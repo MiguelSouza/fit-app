@@ -38,6 +38,16 @@ export type AcceptInvitationRequest = components['schemas']['AcceptInvitationReq
 export type AcceptedInvitation = components['schemas']['AcceptedInvitation'];
 export type ConsentType = components['schemas']['ConsentType'];
 
+/**
+ * `GET /v1/me/consents`, `POST /v1/me/consents`,
+ * `POST /v1/me/consents/{type}/revoke`
+ */
+export type Consent = components['schemas']['Consent'];
+export type ConsentList = components['schemas']['ConsentList'];
+export type GrantConsentRequest = components['schemas']['GrantConsentRequest'];
+export type RevokedConsent = components['schemas']['RevokedConsent'];
+export type RevokedConsentList = components['schemas']['RevokedConsentList'];
+
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type ComponentCheck = components['schemas']['ComponentCheck'];
