@@ -26,3 +26,4 @@ antigo como substituído por ele.
 | [0015](./0015-convite-por-link-com-token-hasheado.md)       | Convite por link: token aleatório, guardado como hash, mostrado uma vez                            | aceito |
 | [0016](./0016-aceite-do-convite-vinculo-e-consentimento.md) | Aceite do convite: vínculo da organização, consentimento por finalidade e uma transação            | aceito |
 | [0017](./0017-servico-de-acesso-ao-paciente.md)             | Serviço de acesso ao paciente: uma regra, negativa em 404 e um decorator                           | aceito |
+| [0018](./0018-consentimento-concedido-e-revogado.md)        | Consentimento: registro imutável, cascata do `health_data` e um evento                             | aceito |
