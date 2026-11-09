@@ -138,8 +138,9 @@ o `professional_type` são do `identity` e entram com o card dele.
 
 Isto é autenticação, não autorização: saber que quem chama é `sub` não é
 permissão para ler um paciente. Vínculo ativo, consentimento vigente e tipo de
-profissional são checados no caso de uso, pelo serviço de acesso do `identity`,
-e dão **403** (`CLAUDE.md`, "Saúde e LGPD").
+profissional são checados pelo serviço de acesso do `identity`
+([abaixo](#acesso-ao-paciente-vínculo-ativo-e-consentimento)), e negativa de
+acesso dá **404** (`CLAUDE.md`, "Saúde e LGPD").
 
 ### `@Public()`
 
@@ -408,6 +409,64 @@ A tela que o paciente abre fica para o card de interface; o formato do link não
 mudou. A decisão está na ADR
 [0016](../../docs/adr/0016-aceite-do-convite-vinculo-e-consentimento.md).
 
+## Acesso ao paciente: vínculo ativo e consentimento
+
+A regra mais importante do produto, do card **I-04**: profissional só acessa
+dados de um paciente com **vínculo ativo** e consentimento
+`share_with_professional` **vigente** (`CLAUDE.md`, "Saúde e LGPD"). Quem
+responde é o `identity`, e **ninguém reimplementa**.
+
+Num caso de uso, com o serviço:
+
+```ts
+import { PatientAccessService } from '../../identity';
+
+// 404 se não puder: vínculo, consentimento, as duas coisas
+await this.access.assertCanAccessPatient(professionalId, patientId);
+
+// e, para quem prescreve, 404 sem acesso e 403 sem ser nutricionista
+await this.access.assertCanEditMealPlan(professionalId, patientId);
+```
+
+Numa rota que carrega o paciente no caminho, com o decorator:
+
+```ts
+@Get(':patientId/chart')
+@RequiresPatientAccess()
+chart(@Param('patientId') patientId: string) { ... }
+```
+
+O módulo que usa qualquer um dos dois importa o `IdentityModule`. Há também
+`canAccessPatient` e `canEditMealPlan`, que respondem booleano, para código que
+decide algo em vez de recusar.
+
+| Situação                                   | Resposta                                           |
+| ------------------------------------------ | -------------------------------------------------- |
+| vínculo ativo e consentimento vigente      | passa                                              |
+| sem vínculo, ou vínculo de outra prática   | **404** `identity.patient.not_found`               |
+| vínculo encerrado                          | **404** `identity.patient.not_found`               |
+| consentimento revogado                     | **404** `identity.patient.not_found`               |
+| id que nem é uuid                          | **404** `identity.patient.not_found`               |
+| quem chama não é profissional              | **403** `identity.professional.required`           |
+| tem acesso e não é nutricionista, no plano | **403** `identity.meal_plan.nutritionist_required` |
+
+**404 e não 403** em toda negativa de acesso: 403 seria um oráculo — o
+profissional tentando ids receberia "não pode" para os que existem e "não
+existe" para o resto, e essa diferença é a lista de pacientes da plataforma. O
+403 do plano alimentar é outra coisa: quem recebe já vê o paciente, então não há
+o que esconder.
+
+Nada é cacheado — os fatos são lidos a cada pergunta, em duas consultas
+disparadas juntas —, então revogar o consentimento corta o acesso na requisição
+seguinte, sem invalidação nenhuma. Recusa vira uma linha de log com os dois ids
+e o código do motivo, e nada mais.
+
+O guard não substitui a checagem no caso de uso: job, handler de evento e caso
+de uso chamado por outro não têm requisição HTTP, e esses chamam o `assert` na
+mão. O **registro de acesso** (`identity.logAccess`) ainda não existe e vem com
+o card dele. A decisão está na ADR
+[0017](../../docs/adr/0017-servico-de-acesso-ao-paciente.md).
+
 ## Contratos, validação e OpenAPI
 
 Todo DTO é um schema Zod em [`packages/contracts`](../../packages/contracts/README.md)
@@ -569,7 +628,7 @@ que é status code.
 | `kind`              | HTTP | Quando                                               |
 | ------------------- | ---- | ---------------------------------------------------- |
 | `invalid_input`     | 400  | requisição malformada ou valor inaceitável           |
-| `permission_denied` | 403  | sem vínculo ativo, sem consentimento, tipo errado    |
+| `permission_denied` | 403  | a pessoa existe e não pode fazer isso (tipo errado)  |
 | `not_found`         | 404  | o registro não existe (ou não cabe dizer que existe) |
 | `conflict`          | 409  | o estado atual do registro não permite a operação    |
 | `rule_violation`    | 422  | entrada bem formada que uma regra de domínio recusa  |
@@ -577,6 +636,11 @@ que é status code.
 Fora dessa tabela há um 401, que não é erro de domínio: é o guard de
 autenticação recusando a requisição antes de qualquer caso de uso (ver
 "Autenticação").
+
+Paciente que o profissional não pode ver é `not_found`, e não
+`permission_denied`: é a única escolha de status desta base feita por segurança
+e não por descrição, e está em
+["Acesso ao paciente"](#acesso-ao-paciente-vínculo-ativo-e-consentimento).
 
 O corpo é sempre o mesmo, e o `code` é a chave de i18n do cliente:
 
@@ -806,8 +870,11 @@ consentimento numa linha — **ainda não existem**. O card I-01 trouxe as tabel
 de profissional e organização, e com elas o caminho do profissional já tem um
 jeito de ser montado: o próprio caso de uso de cadastro, que é o que
 [`register-professional.use-case.integration-spec.ts`](./src/modules/identity/application/register-professional.use-case.integration-spec.ts)
-usa. Paciente, vínculo e consentimento continuam sem tabela, e fábrica é código
-de `insert`: sem coluna, não há o que inserir.
+usa. Paciente, vínculo e consentimento ganharam tabela no card I-03, e o
+caminho deles também é o dos casos de uso: convidar e aceitar, que é o que
+[`patient-access.service.integration-spec.ts`](./src/modules/identity/application/patient-access.service.integration-spec.ts)
+faz para ter um paciente acompanhado. Fábrica de `insert` direto continua sem
+existir.
 
 Quando elas entrarem, é aqui que moram (`src/shared/testing`), com o sufixo
 `.spec-support.ts` e três regras que já valem:

@@ -136,6 +136,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0014 Modelo de identidade: `profile` com id próprio, `professional` e organização solo
 - 0015 Convite por link: token aleatório, guardado como hash, mostrado uma vez
 - 0016 Aceite do convite: vínculo da organização, consentimento por finalidade e uma transação
+- 0017 Serviço de acesso ao paciente: uma regra, negativa em 404 e um decorator
 
 ## Não faça
 

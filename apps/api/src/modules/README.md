@@ -18,11 +18,26 @@ vazia.
 `identity` é o primeiro módulo com as quatro camadas preenchidas: as tabelas
 `profile`, `professional`, `organization` e `organization_member`, o cadastro do
 profissional e o `GET /v1/me` (card I-01); a tabela `invitation` e as três
-rotas de `/v1/invitations` (card I-02); e as tabelas `patient`,
+rotas de `/v1/invitations` (card I-02); as tabelas `patient`,
 `care_relationship` e `consent` com o aceite do convite pelo paciente (card
-I-03). O serviço de acesso que o resto da API vai usar — vínculo ativo e
-consentimento vigente — entra pelo card dele, e sai pelo `index.ts` quando
-entrar.
+I-03); e o serviço de acesso ao paciente (card I-04).
+
+O serviço de acesso é o que os outros três módulos usam, e a única coisa que
+este módulo exporta além do `IdentityModule`:
+
+```ts
+import { IdentityModule, PatientAccessService, RequiresPatientAccess } from '../identity';
+```
+
+`PatientAccessService` responde se o profissional pode ver o paciente — vínculo
+ativo **e** consentimento `share_with_professional` vigente — e se pode editar
+plano alimentar (`professional_type = nutritionist`).
+`@RequiresPatientAccess()` põe a mesma regra na frente de uma rota que carrega o
+paciente no caminho. Negativa é **404**, nunca 403: 403 diria ao profissional
+quais ids existem. Ninguém reimplementa isso (`CLAUDE.md`, "Saúde e LGPD"); a
+decisão está na ADR
+[0017](../../../../docs/adr/0017-servico-de-acesso-ao-paciente.md). O registro
+de acesso (`identity.logAccess`) ainda não existe e vem com o card dele.
 
 ## As camadas
 
