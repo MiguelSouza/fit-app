@@ -35,6 +35,10 @@ export class CryptoInvitationTokenIssuer implements InvitationTokenIssuer {
 
     return { token, tokenHash: hashInvitationToken(token) };
   }
+
+  hashOf(token: string): string {
+    return hashInvitationToken(token);
+  }
 }
 
 /** 256 bits. See the note on the class. */

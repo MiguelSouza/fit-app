@@ -20,6 +20,15 @@ export {
   type HealthResponse,
 } from './health-check/health-response';
 
+export { consentTypeSchema, type ConsentType } from './identity/consent';
+
+export {
+  acceptedInvitationSchema,
+  acceptInvitationRequestSchema,
+  type AcceptedInvitation,
+  type AcceptInvitationRequest,
+} from './identity/invitation-acceptance';
+
 export {
   createdInvitationSchema,
   createInvitationRequestSchema,

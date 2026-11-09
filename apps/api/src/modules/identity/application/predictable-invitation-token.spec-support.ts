@@ -31,6 +31,10 @@ export class PredictableInvitationTokenIssuer implements InvitationTokenIssuer {
 
     return { token, tokenHash: hashOfPredictableToken(token) };
   }
+
+  hashOf(token: string): string {
+    return hashOfPredictableToken(token);
+  }
 }
 
 /** How this fake "hashes": readable, and clearly not the token itself. */

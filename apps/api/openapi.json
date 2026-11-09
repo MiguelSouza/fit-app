@@ -333,6 +333,89 @@
           "Invitations"
         ]
       }
+    },
+    "/v1/invitations/accept": {
+      "post": {
+        "description": "Quem abriu o link, já autenticado no Supabase Auth, vira paciente: cria o perfil se ainda não existir, registra os consentimentos com a versão do termo, abre o vínculo com a organização do convite e marca o convite como aceito — tudo numa transação. `health_data` e `share_with_professional` são obrigatórios; `wearable_data` e `ai_processing` podem vir depois. O convite é de uso único.",
+        "operationId": "InvitationsController_accept_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "O vínculo criado pelo aceite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido: `api.request.invalid`. Nome em branco: `identity.patient.blank_name`. Fuso que não existe: `identity.profile.unknown_time_zone`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nenhum convite com esse token: `identity.invitation.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O convite já foi usado, foi cancelado ou expirou: `identity.invitation.already_accepted`, `identity.invitation.revoked`, `identity.invitation.expired`. Ou a conta é de um profissional: `identity.profile.not_patient`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Faltou um consentimento obrigatório: `identity.consent.required_missing`. O convite segue válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Aceitar um convite de paciente",
+        "tags": [
+          "Invitations"
+        ]
+      }
     }
   },
   "info": {
@@ -737,6 +820,98 @@
         "format": "uuid",
         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
         "description": "Id do convite"
+      },
+      "AcceptInvitationRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200,
+            "description": "Token do convite, o que vem no link"
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120,
+            "description": "Nome completo do paciente",
+            "example": "Ana Souza"
+          },
+          "timeZone": {
+            "description": "Fuso horário do paciente, no formato IANA",
+            "example": "America/Bahia",
+            "type": "string",
+            "maxLength": 64
+          },
+          "consents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentType"
+            },
+            "description": "Finalidades que o paciente aceitou. `health_data` e `share_with_professional` são obrigatórias; `wearable_data` e `ai_processing` são opcionais e podem ser dadas depois"
+          }
+        },
+        "required": [
+          "token",
+          "fullName",
+          "consents"
+        ],
+        "description": "Aceite de um convite por um paciente: o link, o nome e os consentimentos"
+      },
+      "ConsentType": {
+        "type": "string",
+        "enum": [
+          "health_data",
+          "share_with_professional",
+          "wearable_data",
+          "ai_processing"
+        ],
+        "description": "Finalidade do consentimento: dados de saúde, compartilhamento com o profissional, dados de wearable e processamento por IA. Cada uma é dada e revogada por si"
+      },
+      "AcceptedInvitation": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id do perfil do paciente"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id da organização que passa a acompanhar"
+          },
+          "careRelationshipId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id do vínculo de acompanhamento criado"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o convite foi aceito, em UTC"
+          },
+          "consents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentType"
+            },
+            "description": "Finalidades consentidas que estão vigentes"
+          }
+        },
+        "required": [
+          "profileId",
+          "organizationId",
+          "careRelationshipId",
+          "acceptedAt",
+          "consents"
+        ],
+        "additionalProperties": false,
+        "description": "O vínculo criado pelo aceite do convite"
       }
     }
   }

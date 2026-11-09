@@ -29,4 +29,15 @@ export interface IssuedInvitationToken {
 
 export interface InvitationTokenIssuer {
   issue(): IssuedInvitationToken;
+
+  /**
+   * The hash of a token somebody handed in, so the acceptance can look the row
+   * up by the unique index on `token_hash`.
+   *
+   * It is here and not a second port: hashing is the other half of issuing,
+   * and the two have to agree on the algorithm — a test that swaps the issuer
+   * swaps both at once and cannot end up hashing with one and comparing
+   * against the other.
+   */
+  hashOf(token: string): string;
 }

@@ -135,6 +135,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0013 Sentry nos três apps, com o filtro de dado sensível num pacote só
 - 0014 Modelo de identidade: `profile` com id próprio, `professional` e organização solo
 - 0015 Convite por link: token aleatório, guardado como hash, mostrado uma vez
+- 0016 Aceite do convite: vínculo da organização, consentimento por finalidade e uma transação
 
 ## Não faça
 

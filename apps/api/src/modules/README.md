@@ -17,10 +17,12 @@ vazia.
 
 `identity` é o primeiro módulo com as quatro camadas preenchidas: as tabelas
 `profile`, `professional`, `organization` e `organization_member`, o cadastro do
-profissional e o `GET /v1/me` (card I-01), mais a tabela `invitation` e as três
-rotas de `/v1/invitations` (card I-02). Vínculos, consentimentos e o serviço de
-acesso que o resto da API vai usar entram pelos cards deles — e saem pelo
-`index.ts` quando entrarem.
+profissional e o `GET /v1/me` (card I-01); a tabela `invitation` e as três
+rotas de `/v1/invitations` (card I-02); e as tabelas `patient`,
+`care_relationship` e `consent` com o aceite do convite pelo paciente (card
+I-03). O serviço de acesso que o resto da API vai usar — vínculo ativo e
+consentimento vigente — entra pelo card dele, e sai pelo `index.ts` quando
+entrar.
 
 ## As camadas
 

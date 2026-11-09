@@ -155,7 +155,9 @@ export class HealthController { ... }
 A assimetria é de propósito: esquecer o `@Public()` numa rota aberta dá 401 e
 alguém percebe; o contrário, uma rota de paciente aberta por esquecimento, não
 acontece. Hoje a única rota pública é a `GET /v1/health`, que uma sonda do ALB
-chama sem sessão. O aceite de convite entra com o `identity`.
+chama sem sessão — o aceite de convite **não** é uma delas: quem abre o link
+entra no Supabase Auth primeiro, e o perfil do paciente nasce do `sub` do token
+verificado.
 
 O decorator só sabe dizer "abra": no controller ele abre **todas** as rotas
 dele, inclusive uma acrescentada depois, e handler nenhum fecha de volta (não
@@ -256,13 +258,16 @@ No schema `identity`, e só nele (ADR
 [0004](../../docs/adr/0004-um-schema-por-modulo.md)), definidas em
 [`identity.schema.ts`](./src/modules/identity/infrastructure/identity.schema.ts):
 
-| Tabela                | O que guarda                                                       |
-| --------------------- | ------------------------------------------------------------------ |
-| `profile`             | a pessoa: papel, nome, fuso, e o `auth_user_id` do Supabase, único |
-| `professional`        | a metade profissional: tipo, número do conselho, especialidade     |
-| `organization`        | o consultório ou a clínica                                         |
-| `organization_member` | quem pertence a qual organização, e como (`owner`, `member`)       |
-| `invitation`          | o convite por link: hash do token, validade, aceite e revogação    |
+| Tabela                | O que guarda                                                        |
+| --------------------- | ------------------------------------------------------------------- |
+| `profile`             | a pessoa: papel, nome, fuso, e o `auth_user_id` do Supabase, único  |
+| `professional`        | a metade profissional: tipo, número do conselho, especialidade      |
+| `organization`        | o consultório ou a clínica                                          |
+| `organization_member` | quem pertence a qual organização, e como (`owner`, `member`)        |
+| `invitation`          | o convite por link: hash do token, validade, aceite e revogação     |
+| `patient`             | a metade paciente de uma pessoa, a que os outros módulos apontam    |
+| `care_relationship`   | o vínculo entre a organização e o paciente, e quando começou        |
+| `consent`             | o consentimento por finalidade, com a versão do termo e a revogação |
 
 O `profile.id` é **nosso**, não o id do Supabase: o login é deles e o domínio é
 nosso (ADR [0002](../../docs/adr/0002-supabase-como-infraestrutura.md)), então o
@@ -343,12 +348,65 @@ revogado ou expirado responde **409** (`identity.invitation.not_pending`). A
 condição está também no `where` do `update`, para que uma revogação e um aceite
 no mesmo instante sejam decididos pelo banco.
 
-Aceitar o convite é de outro card — o do vínculo profissional–paciente —, mas a
-regra dele já está escrita e testada em `domain/invitation.ts`: convite
-expirado, revogado ou já aceito não pode ser aceito.
-
 A decisão está na ADR
 [0015](../../docs/adr/0015-convite-por-link-com-token-hasheado.md).
+
+### Aceitar: `POST /v1/invitations/accept`
+
+O outro lado do link, do card **I-03**. Quem chama é o paciente, já autenticado
+no Supabase Auth — o perfil nasce do `sub` do token verificado, e o token do
+convite vai no **corpo**, não no caminho: ele é credencial portadora, e caminho
+é o que sobra em log de acesso e em breadcrumb.
+
+```bash
+curl -X POST http://127.0.0.1:3333/v1/invitations/accept \
+  -H "Authorization: Bearer $TOKEN_DO_PACIENTE" \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "token": "k3Jm9S2qQ1b7Xr4Lp8Zt0Nv6Hy5Cd3Aw2Ej1Uf7Gi0",
+        "fullName": "Ana Souza",
+        "consents": ["health_data", "share_with_professional"]
+      }'
+```
+
+```json
+{
+  "profileId": "0b9d6f1a-5c3e-4a7b-8d20-1e4f7a9c2b55",
+  "organizationId": "2c7a1e94-6b3d-4f58-90ab-5d1c8e7f3042",
+  "careRelationshipId": "8e4b1c07-3a62-4d9f-b5e1-7c0a9d2f6481",
+  "acceptedAt": "2026-10-30T13:00:00.000Z",
+  "consents": ["health_data", "share_with_professional"]
+}
+```
+
+Numa transação: o `profile` e o `patient` se ainda não existirem, o
+`care_relationship` **ativo** na organização do convite, os consentimentos com a
+versão do termo, e o convite marcado como aceito. Ou o paciente entra, ou nada
+aconteceu.
+
+O `timeZone` é opcional e, quando vem, tem de ser um nome que a base IANA
+conhece: fuso desconhecido responde **400**
+(`identity.profile.unknown_time_zone`) em vez de virar coluna, porque é ele que
+diz a que dia pertence uma noite de sono. Quem não sabe o fuso do aparelho não
+manda nada e fica com o padrão da plataforma.
+
+`health_data` e `share_with_professional` são **obrigatórios** — sem um deles a
+resposta é **422** (`identity.consent.required_missing`) e o convite segue
+válido. `wearable_data` e `ai_processing` são opcionais neste momento e podem
+ser dados depois. A versão do termo é decidida pela API e não vem no corpo: o
+que a pessoa aceitou é o texto que esta API serviu.
+
+Quem já é paciente — convidado por outra prática — **só ganha o novo vínculo**:
+nada do perfil é reescrito, e o consentimento que já estava vigente não é
+registrado de novo. Convite já usado, revogado ou expirado responde **409**; o
+`update` que consome o convite carrega essa condição no `where`, então dois
+aceites no mesmo instante são decididos pelo banco. Conta de profissional
+abrindo link de paciente responde **409**
+(`identity.profile.not_patient`), e a checagem está também dentro da transação.
+
+A tela que o paciente abre fica para o card de interface; o formato do link não
+mudou. A decisão está na ADR
+[0016](../../docs/adr/0016-aceite-do-convite-vinculo-e-consentimento.md).
 
 ## Contratos, validação e OpenAPI
 
@@ -717,8 +775,9 @@ Drizzle Kit e o harness leem: banco de teste montado com controle diferente do
 banco de verdade não é o banco de verdade.
 
 A primeira migração é a do card I-01, que cria o schema `identity` e as quatro
-tabelas dele. Migração nova entra com `pnpm db:generate`, é revisada no PR, e o
-harness passa a aplicá-la sem mudança nenhuma aqui.
+primeiras tabelas dele; depois vêm a do convite (I-02) e a do paciente, do
+vínculo e do consentimento (I-03). Migração nova entra com `pnpm db:generate`, é
+revisada no PR, e o harness passa a aplicá-la sem mudança nenhuma aqui.
 
 Um teste de integração pede a conexão ao harness, nunca à `DATABASE_URL` (essa é
 a da API e a do `db:migrate`):
