@@ -143,6 +143,17 @@ não há uma linha de log nesses arquivos.
   grava os consentimentos dentro da transação que cria o paciente. O que as
   mantém coerentes é o índice único parcial, que está no banco e não em um
   acordo entre as duas.
+- **A cascata é atômica, mas a leitura que a decide acontece antes dela.** Cada
+  caso de uso lê o que está vigente e decide fora da transação que escreve, o
+  que deixa uma janela estreita: se o mesmo paciente revogar `health_data` e
+  conceder `wearable_data` ao mesmo tempo, a concessão pode ser gravada depois
+  da cascata e ficar vigente sem a base. É o único caminho conhecido para o
+  estado que esta decisão proíbe, ele exige duas requisições concorrentes e em
+  sentidos opostos da mesma pessoa, e fechá-lo é serializar a escrita por perfil
+  (lock por `profile_id`, ou decidir a cascata dentro da transação) — mudança
+  de porta que fica para quando houver motivo. Enquanto isso, o corte de acesso
+  do profissional não depende disso: ele lê a linha no instante da requisição
+  (ADR 0017).
 - Fica de fora o histórico para o paciente. As linhas revogadas são guardadas
   para sempre e `GET /v1/me/consents` responde só o vigente: a pergunta da tela
   é "o que a plataforma pode fazer com os meus dados hoje". Uma tela de
