@@ -201,3 +201,43 @@ export class UnknownTimeZoneError extends InvalidInputError {
     );
   }
 }
+
+/**
+ * The professional may not reach this patient: no active link, no
+ * `share_with_professional` consent in force, or both (card I-04).
+ *
+ * **404 and deliberately not 403**, which is the one place in this file where
+ * the status is a security decision and not a description. A 403 would be an
+ * oracle: a professional trying patient ids would get "não pode" for the ones
+ * that exist and "não existe" for the rest, and that difference alone is a
+ * list of the platform's patients. So a patient the caller may not see answers
+ * exactly like a patient that is not there, and the reason lives in the log
+ * and never in the response (CLAUDE.md, "Saúde e LGPD").
+ *
+ * The message says nothing either: no name, no practice, no hint of which of
+ * the conditions failed.
+ */
+export class PatientNotFoundError extends NotFoundError {
+  constructor() {
+    super('identity.patient.not_found', 'Paciente não encontrado.');
+  }
+}
+
+/**
+ * The caller may see this patient and may not prescribe their food: they are
+ * not a nutritionist (CLAUDE.md, "Saúde e LGPD" — "só nutricionista edita
+ * plano alimentar", checking `professional_type`).
+ *
+ * 403 and not 404, unlike the error above, and for the same reasoning: whoever
+ * gets this already has access to the patient, so there is nothing left to
+ * hide from them — they are only being told what their licence does not cover.
+ * Without access they get `PatientNotFoundError` and never reach this one.
+ */
+export class MealPlanRequiresNutritionistError extends PermissionDeniedError {
+  constructor() {
+    super(
+      'identity.meal_plan.nutritionist_required',
+      'Só um nutricionista pode editar o plano alimentar.',
+    );
+  }
+}

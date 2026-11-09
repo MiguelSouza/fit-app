@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { CallerIsNotProfessionalError } from './identity-errors';
-import { professionalCallerOf } from './professional-caller';
+import { professionalCallerOf, professionalProfileIdOf } from './professional-caller';
 import { type RegisteredIdentity } from './registered-identity';
 
 /**
@@ -79,6 +79,36 @@ describe('professionalCallerOf', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(CallerIsNotProfessionalError);
+  });
+});
+
+describe('professionalProfileIdOf', () => {
+  it('answers the profile id of a professional', () => {
+    expect(professionalProfileIdOf(professional())).toBe(PERSON_ID);
+  });
+
+  it('answers it for a professional of two practices, instead of failing', () => {
+    // The difference from `professionalCallerOf` above, and the reason this
+    // function exists: the access rule never picks one practice, it reads the
+    // links of all of them together (`domain/patient-access.ts`). A clinic
+    // member asking for a patient of one of their practices is a request the
+    // rule answers, so resolving who they are must not be a 500.
+    const member = professional({
+      organizations: [
+        ...professional().organizations,
+        { organizationId: randomUUID(), name: 'Outra clínica', kind: 'clinic', role: 'member' },
+      ],
+    });
+
+    expect(professionalProfileIdOf(member)).toBe(PERSON_ID);
+  });
+
+  it('refuses a patient, as the caller of a professional route', () => {
+    expect(() =>
+      professionalProfileIdOf(
+        professional({ role: 'patient', professional: null, organizations: [] }),
+      ),
+    ).toThrow(CallerIsNotProfessionalError);
   });
 });
 

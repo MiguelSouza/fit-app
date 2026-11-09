@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { ProfileNotFoundError } from '../domain/identity-errors';
-import { professionalCallerOf, type ProfessionalCaller } from '../domain/professional-caller';
+import {
+  professionalCallerOf,
+  professionalProfileIdOf,
+  type ProfessionalCaller,
+} from '../domain/professional-caller';
 import { IDENTITY_REGISTRY, type IdentityRegistry } from './ports/identity-registry.port';
 
 /**
@@ -35,5 +39,30 @@ export class LoadProfessionalCaller {
     if (identity === undefined) throw new ProfileNotFoundError();
 
     return professionalCallerOf(identity);
+  }
+
+  /**
+   * The caller's professional profile id, for what is about the person and not
+   * about their practice — which is what the access rule asks
+   * (`PatientAccessService`).
+   *
+   * `execute` above cannot answer it: it also resolves the one practice an
+   * invitation belongs to, and a professional of two is a loud error there on
+   * purpose. The access rule has no such question, since the links of every
+   * practice they belong to are read together, so asking through `execute`
+   * would turn a clinic member into a 500 on a route the rule itself lets
+   * through.
+   *
+   * @param authUserId the `sub` of the verified access token
+   * @throws ProfileNotFoundError when the caller never finished the first
+   *   access (404), CallerIsNotProfessionalError when the account is a
+   *   patient's (403)
+   */
+  async professionalProfileId(authUserId: string): Promise<string> {
+    const identity = await this.registry.findByAuthUserId(authUserId);
+
+    if (identity === undefined) throw new ProfileNotFoundError();
+
+    return professionalProfileIdOf(identity);
   }
 }
