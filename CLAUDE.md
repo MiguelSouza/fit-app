@@ -138,6 +138,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0016 Aceite do convite: vínculo da organização, consentimento por finalidade e uma transação
 - 0017 Serviço de acesso ao paciente: uma regra, negativa em 404 e um decorator
 - 0018 Consentimento: registro imutável, cascata do `health_data` e um evento
+- 0019 Registro de acessos: tabela append-only, um registro por visita e página por cursor
 
 ## Não faça
 

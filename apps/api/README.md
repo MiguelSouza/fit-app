@@ -463,9 +463,55 @@ e o código do motivo, e nada mais.
 
 O guard não substitui a checagem no caso de uso: job, handler de evento e caso
 de uso chamado por outro não têm requisição HTTP, e esses chamam o `assert` na
-mão. O **registro de acesso** (`identity.logAccess`) ainda não existe e vem com
-o card dele. A decisão está na ADR
+mão. A decisão está na ADR
 [0017](../../docs/adr/0017-servico-de-acesso-ao-paciente.md).
+
+## Registro de acessos: quem viu os dados do paciente
+
+Checar o acesso é metade da obrigação; a outra é **registrá-lo** (`CLAUDE.md`,
+"Saúde e LGPD"), e é o card **I-06**. Quem responde é o `identity`, e também
+aqui ninguém escreve a própria tabela.
+
+Na rota que **é** abrir a ficha — e só nela:
+
+```ts
+@Get(':patientId/chart')
+@RequiresPatientAccess()
+@RecordsPatientAccess('patient_chart', 'view')
+chart(@Param('patientId') patientId: string) { ... }
+```
+
+Fora de HTTP — job, worker, exportação —, o serviço:
+
+```ts
+import { AccessLogService } from '../../identity';
+
+await this.accessLog.logAccess(professionalId, patientId, 'patient_chart', 'export');
+```
+
+| Situação                                    | O que acontece                               |
+| ------------------------------------------- | -------------------------------------------- |
+| rota da visita respondeu 200                | **um** registro                              |
+| a mesma tela carregou mais três requisições | nenhum registro a mais                       |
+| duas visitas, mesmo seguidas                | **dois** registros: são dois fatos           |
+| acesso recusado (404) ou handler quebrou    | nenhum registro                              |
+| o registro não pôde ser gravado             | a requisição falha com **500** (fail closed) |
+
+O registro entra **depois** do handler, então a lista diz o que foi realmente
+visto. `resource` e `action` são vocabulário fechado (`patient_chart`; `view` e
+`export`).
+
+O paciente lê a própria lista em **`GET /v1/me/access-log`** — quem, o quê e
+quando, do mais recente para o mais antigo, paginado por `nextCursor`. A rota
+fica sob `me` e não tem id de paciente em lugar nenhum: o sujeito é o token, e
+profissional chamando recebe **403**. Cursor que não é desta API responde
+**400** (`identity.access_log.invalid_cursor`), nunca uma lista vazia.
+
+A tabela é **append-only** e quem garante é o Postgres: um gatilho recusa
+`update`, `delete` e `truncate` (migração `0004`). Não existe rota que edite ou
+apague um registro, e a porta do repositório só tem `append` e `findPage`. A
+decisão está na ADR
+[0019](../../docs/adr/0019-registro-de-acessos-e-quem-viu-meus-dados.md).
 
 ## Contratos, validação e OpenAPI
 
