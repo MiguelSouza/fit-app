@@ -250,6 +250,28 @@ describe('the patient access guard', () => {
     expect(response.body.error.code).toBe('identity.professional.required');
   });
 
+  it('lets a professional who belongs to two practices through', async () => {
+    // The clinic case, which is what the rule is written for: the facts carry
+    // the links of every practice the professional belongs to, and one active
+    // link among them is access. Resolving the single practice an invitation
+    // needs would answer 500 to the same request.
+    await app.close();
+    app = await boot({
+      ...professional,
+      organizations: [
+        ...professional.organizations,
+        { organizationId: randomUUID(), name: 'Outra clínica', kind: 'clinic', role: 'member' },
+      ],
+    });
+
+    const patientId = aFollowedPatient();
+
+    const response = await chart(patientId);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ patientId });
+  });
+
   it('honours the parameter the decorator names', async () => {
     const patientId = aFollowedPatient();
 

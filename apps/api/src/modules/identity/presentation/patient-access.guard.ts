@@ -97,9 +97,13 @@ export class PatientAccessGuard implements CanActivate {
 
     if (!patientId.success) throw new PatientNotFoundError();
 
-    const caller = await this.callers.execute(user.id);
+    // The profile id and not `execute`: the access rule reads the links of
+    // every practice the professional belongs to, so a clinic member in two of
+    // them is a fine caller here, and resolving the one practice an invitation
+    // needs would make them a 500 instead.
+    const professionalId = await this.callers.professionalProfileId(user.id);
 
-    await this.access.assertCanAccessPatient(caller.profileId, patientId.data);
+    await this.access.assertCanAccessPatient(professionalId, patientId.data);
 
     return true;
   }

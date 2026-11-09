@@ -89,6 +89,13 @@ usa, então as dependências dele têm de ser alcançáveis de lá. A porta
 (`PATIENT_ACCESS_REPOSITORY`) continua privada, o `index.ts` só nomeia o serviço
 e o decorator, e o lint impede outro módulo de importar os arquivos (regra 1).
 
+Do `LoadProfessionalCaller` o guard usa só o `professionalProfileId`, que
+responde quem está chamando **sem** resolver a prática dele. A diferença
+importa: convite tem de ir para uma prática só, então profissional com duas é
+erro alto lá; a regra de acesso nunca escolhe uma — ela lê os vínculos de todas
+as práticas de quem pergunta —, e pedir a prática aqui transformaria membro de
+clínica em 500 numa rota que a regra deixa passar.
+
 **Recusa vira uma linha de log com os dois ids e o código do motivo**, em
 `warn`, e nada mais: nome nenhum, prática nenhuma (`CLAUDE.md` — ids e códigos).
 É o que permite distinguir, no CloudWatch, "este paciente é de outra clínica" de
