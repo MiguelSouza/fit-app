@@ -56,8 +56,8 @@ export class DrizzleConsentRepository implements ConsentRepository {
    * The purposes in force: the rows with no `revoked_at`.
    *
    * No `order by`: the order is the product's and the domain sorts it
-   * (`consentsInForceOrder`). The partial unique index answers this with one
-   * range scan per profile.
+   * (`consentsInPurposeOrder`). The partial unique index answers this with
+   * one range scan per profile.
    */
   async findInForce(profileId: string): Promise<readonly ConsentInForce[]> {
     return this.db
@@ -119,6 +119,10 @@ export class DrizzleConsentRepository implements ConsentRepository {
    * statement is also a single pass over the rows this profile has in force.
    * The transaction is explicit all the same, so the day this grows a second
    * write the boundary is already where it belongs.
+   *
+   * The rows come back in whatever order the statement touched them, which is
+   * the use case's to put right (`consentsInPurposeOrder`): a single
+   * statement has a plan, not an `order by`.
    *
    * `isNull(revokedAt)` in the `where` is what makes the answer honest: a
    * purpose another request revoked a moment ago keeps the instant it was

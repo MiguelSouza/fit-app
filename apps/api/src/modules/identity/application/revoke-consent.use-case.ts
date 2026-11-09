@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { EVENT_BUS, type EventBusPort } from '../../../shared/events/event-bus.port';
-import { consentsToRevoke, type ConsentType, type RevokedConsent } from '../domain/consent';
+import {
+  consentsInPurposeOrder,
+  consentsToRevoke,
+  type ConsentType,
+  type RevokedConsent,
+} from '../domain/consent';
 import { ConsentNotInForceError } from '../domain/identity-errors';
 import { LoadPatientCaller } from './load-patient-caller';
 import { CONSENT_REPOSITORY, type ConsentRepository } from './ports/consent-repository.port';
@@ -71,7 +76,13 @@ export class RevokeConsentUseCase {
       inForce.map((consent) => consent.type),
     );
 
-    const revoked = await this.consents.revoke(profileId, types, new Date());
+    // Back into the order of the purposes: what `update ... returning`
+    // answers is the query plan of Postgres and nothing else, and the order of
+    // the cascade is the one the domain decided above — which is what the
+    // answer of the route and the sequence of the events are documented as.
+    const revoked = consentsInPurposeOrder(
+      await this.consents.revoke(profileId, types, new Date()),
+    );
 
     // The write found nothing left to date: between the read above and the
     // update, another request of the same patient revoked it. The answer is

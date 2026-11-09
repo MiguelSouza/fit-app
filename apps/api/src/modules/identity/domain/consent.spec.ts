@@ -4,7 +4,7 @@ import {
   MissingRequiredConsentError,
 } from './identity-errors';
 import {
-  consentsInForceOrder,
+  consentsInPurposeOrder,
   consentsToGrant,
   consentsToRevoke,
   consentToGrant,
@@ -174,7 +174,7 @@ describe('consentsToRevoke', () => {
   });
 });
 
-describe('consentsInForceOrder', () => {
+describe('consentsInPurposeOrder', () => {
   it('answers the purposes in the order the product talks about them', () => {
     const consents = ['ai_processing', 'health_data', 'wearable_data'].map((type) => ({
       type: type as ConsentType,
@@ -182,7 +182,7 @@ describe('consentsInForceOrder', () => {
       grantedAt: NOW,
     }));
 
-    expect(consentsInForceOrder(consents).map((consent) => consent.type)).toEqual([
+    expect(consentsInPurposeOrder(consents).map((consent) => consent.type)).toEqual([
       'health_data',
       'wearable_data',
       'ai_processing',
@@ -195,8 +195,19 @@ describe('consentsInForceOrder', () => {
       { type: 'health_data' as ConsentType, termsVersion: '1.0', grantedAt: NOW },
     ];
 
-    consentsInForceOrder(consents);
+    consentsInPurposeOrder(consents);
 
     expect(consents.map((consent) => consent.type)).toEqual(['wearable_data', 'health_data']);
+  });
+
+  it('keeps the instant a revoked consent carries, which is what the cascade answers', () => {
+    // The same line orders the purposes in force and the ones a revocation
+    // ended, and the second ones have one field more.
+    const revoked = [
+      { type: 'wearable_data' as ConsentType, termsVersion: '1.0', grantedAt: NOW, revokedAt: NOW },
+      { type: 'health_data' as ConsentType, termsVersion: '1.0', grantedAt: NOW, revokedAt: NOW },
+    ];
+
+    expect(consentsInPurposeOrder(revoked)).toEqual([revoked[1], revoked[0]]);
   });
 });

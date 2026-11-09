@@ -220,6 +220,30 @@ describe('RevokeConsentUseCase', () => {
     expect(await list.execute(PATIENT_AUTH_USER_ID)).toEqual([]);
   });
 
+  it('answers and announces in the order of the purposes, whatever order the rows come in', async () => {
+    // The order of the cascade is the one the domain decided, and neither
+    // `update ... returning` nor this double promises it: the rows come back
+    // in the order they were written, which here is backwards.
+    const { revoke, events } = aPatientHolding(
+      'ai_processing',
+      'wearable_data',
+      'share_with_professional',
+      'health_data',
+    );
+
+    const revoked = await revoke.execute(PATIENT_AUTH_USER_ID, 'health_data');
+
+    expect(revoked.map((consent) => consent.type)).toEqual([
+      'health_data',
+      'share_with_professional',
+      'wearable_data',
+      'ai_processing',
+    ]);
+    expect(
+      events.payloadsOf('identity.consent.revoked').map((payload) => payload.consentType),
+    ).toEqual(['health_data', 'share_with_professional', 'wearable_data', 'ai_processing']);
+  });
+
   it('leaves the other purposes alone when one of them is revoked', async () => {
     const { revoke, list } = aPatientHolding(
       'health_data',

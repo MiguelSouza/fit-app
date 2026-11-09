@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { consentsInForceOrder, type ConsentInForce } from '../domain/consent';
+import { consentsInPurposeOrder, type ConsentInForce } from '../domain/consent';
 import { LoadPatientCaller } from './load-patient-caller';
 import { CONSENT_REPOSITORY, type ConsentRepository } from './ports/consent-repository.port';
 
@@ -38,6 +38,6 @@ export class ListMyConsentsUseCase {
   async execute(authUserId: string): Promise<readonly ConsentInForce[]> {
     const profileId = await this.caller.patientProfileId(authUserId);
 
-    return consentsInForceOrder(await this.consents.findInForce(profileId));
+    return consentsInPurposeOrder(await this.consents.findInForce(profileId));
   }
 }

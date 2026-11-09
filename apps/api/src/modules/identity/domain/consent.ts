@@ -126,16 +126,21 @@ export interface RevokedConsent extends ConsentInForce {
 }
 
 /**
- * What a patient has in force, in the canonical order of `CONSENT_TYPES`.
+ * Any list of consents in the canonical order of `CONSENT_TYPES`.
  *
- * The database has no opinion about the order of rows, and the list the app
- * draws should not change between two identical requests. Sorting is here and
- * not in an `order by` because the order is the product's — the one declared
- * above — and not something an index happens to give.
+ * The database has no opinion about the order of rows — neither a `select`
+ * without an `order by` nor an `update ... returning` —, and two requests
+ * with the same effect should not read differently to an app, to a log or to a
+ * test. Sorting is here because the order is the one of the product, declared
+ * above, and not something an index or a query plan happens to give.
+ *
+ * Generic over what is being ordered, so that the purposes in force and the
+ * ones a revocation ended go through the same line: a `RevokedConsent` keeps
+ * its `revokedAt` on the way out.
  */
-export function consentsInForceOrder(
-  consents: readonly ConsentInForce[],
-): readonly ConsentInForce[] {
+export function consentsInPurposeOrder<Consent extends { readonly type: ConsentType }>(
+  consents: readonly Consent[],
+): readonly Consent[] {
   return [...consents].sort(
     (one, other) => CONSENT_TYPES.indexOf(one.type) - CONSENT_TYPES.indexOf(other.type),
   );

@@ -38,7 +38,7 @@ export interface ConsentRepository {
    * live is exactly the thing that ignores it.
    *
    * The order is not specified here — the domain sorts it
-   * (`consentsInForceOrder`), because the order is the product's and not an
+   * (`consentsInPurposeOrder`), because the order is the product's and not an
    * index's.
    *
    * @param profileId `identity.profile.id` of the patient — ours, never the
