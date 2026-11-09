@@ -15,8 +15,13 @@ import {
  * ```ts
  * @Get(':patientId/chart')
  * @RequiresPatientAccess()
- * chart(@Param('patientId', { schema: patientIdSchema }) patientId: string) { ... }
+ * chart(@Param('patientId') patientId: string) { ... }
  * ```
+ *
+ * The parameter needs no schema of its own: the guard runs before the
+ * validation pipe and already refuses anything that cannot be a patient id
+ * with the same 404, so a schema there would only decide what a request that
+ * never reaches the handler is refused for.
  *
  * It is one decorator and not two because the two halves are useless apart:
  * the metadata names the parameter, the guard reads it, and a route that
