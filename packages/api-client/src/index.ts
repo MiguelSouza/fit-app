@@ -48,6 +48,14 @@ export type GrantConsentRequest = components['schemas']['GrantConsentRequest'];
 export type RevokedConsent = components['schemas']['RevokedConsent'];
 export type RevokedConsentList = components['schemas']['RevokedConsentList'];
 
+/** `GET /v1/me/access-log` */
+export type AccessLogPage = components['schemas']['AccessLogPage'];
+export type AccessLogEntry = components['schemas']['AccessLogEntry'];
+export type AccessLogActor = components['schemas']['AccessLogActor'];
+export type AccessLogResource = components['schemas']['AccessLogResource'];
+export type AccessLogAction = components['schemas']['AccessLogAction'];
+export type AccessLogQuery = components['schemas']['AccessLogQuery'];
+
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type ComponentCheck = components['schemas']['ComponentCheck'];

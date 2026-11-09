@@ -1,4 +1,7 @@
 import {
+  type AccessLogActor,
+  type AccessLogEntry,
+  type AccessLogPage,
   type AcceptedInvitation,
   type AcceptInvitationRequest,
   type Consent,
@@ -87,3 +90,12 @@ export type RevokedConsentFields = FieldsOf<
 >;
 
 export type RevokedConsentListFields = FieldsOf<RevokedConsentList, 'revoked'>;
+
+export type AccessLogEntryFields = FieldsOf<
+  AccessLogEntry,
+  'actor' | 'resource' | 'action' | 'occurredAt'
+>;
+
+export type AccessLogActorFields = FieldsOf<AccessLogActor, 'name' | 'professionalType'>;
+
+export type AccessLogPageFields = FieldsOf<AccessLogPage, 'entries' | 'nextCursor'>;

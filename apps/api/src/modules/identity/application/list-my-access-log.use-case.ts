@@ -9,10 +9,17 @@ import {
 import { LoadPatientCaller } from './load-patient-caller';
 import { ACCESS_LOG_REPOSITORY, type AccessLogRepository } from './ports/access-log.port';
 
-/** What the request asked for: a page size and where to continue from. */
+/**
+ * What the request asked for: a page size and where to continue from.
+ *
+ * Both are `| undefined` and not merely optional, because the API compiles
+ * with `exactOptionalPropertyTypes`: what the controller hands over is the
+ * parsed query, where an absent `cursor` really is the key with `undefined` in
+ * it.
+ */
 export interface AccessLogQuery {
-  readonly limit?: number;
-  readonly cursor?: string;
+  readonly limit?: number | undefined;
+  readonly cursor?: string | undefined;
 }
 
 /**
