@@ -277,6 +277,25 @@ export class ConsentNotInForceError extends ConflictError {
 }
 
 /**
+ * The `cursor` of `GET /v1/me/access-log` is not one this API minted
+ * (card I-06).
+ *
+ * 400 and not an empty page, which is the tempting answer and the wrong one: a
+ * patient paging through who saw their data must never be told "acabou"
+ * because a cursor was truncated by a proxy or mistyped by a client. The
+ * cursor is opaque and the only correct use of it is to send back what was
+ * given, so anything else is a client bug and says so.
+ */
+export class InvalidAccessLogCursorError extends InvalidInputError {
+  constructor() {
+    super(
+      'identity.access_log.invalid_cursor',
+      'Não foi possível continuar a lista a partir daqui. Abra o registro de acessos de novo.',
+    );
+  }
+}
+
+/**
  * The patient is trying to give a purpose that rests on `health_data`, and
  * that one is not in force.
  *
