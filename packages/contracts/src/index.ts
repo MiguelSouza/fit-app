@@ -20,7 +20,20 @@ export {
   type HealthResponse,
 } from './health-check/health-response';
 
-export { consentTypeSchema, type ConsentType } from './identity/consent';
+export {
+  consentListSchema,
+  consentSchema,
+  consentTypeSchema,
+  grantConsentRequestSchema,
+  revokedConsentListSchema,
+  revokedConsentSchema,
+  type Consent,
+  type ConsentList,
+  type ConsentType,
+  type GrantConsentRequest,
+  type RevokedConsent,
+  type RevokedConsentList,
+} from './identity/consent';
 
 export {
   acceptedInvitationSchema,
