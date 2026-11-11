@@ -31,13 +31,17 @@ import {
   ACCESS_LOG_REPOSITORY,
   type AccessLogRepository,
 } from '../application/ports/access-log.port';
+import {
+  CARE_RELATIONSHIP_REPOSITORY,
+  type CareRelationshipRepository,
+} from '../application/ports/care-relationship.port';
 
 /**
  * The real `AppModule` over HTTP, with the few things overridden that a test
  * would otherwise need a `.env` and a Postgres for: the environment, the
  * database port of the health check, the identity registry and — for the
  * routes that have them — the invitation repository, the token issuer, the
- * acceptance repository and the consents.
+ * acceptance repository, the consents and the care links.
  *
  * Those are the seams, and only those: the route, the global
  * guard, the validation pipe, the serializer and the error filter are the ones
@@ -71,6 +75,8 @@ export interface IdentityDoubles {
   readonly consents?: ConsentRepository;
   /** The access log, written and read by the two halves of card I-06. */
   readonly accessLog?: AccessLogRepository;
+  /** The care links, for the two routes that end a follow-up (card I-07). */
+  readonly careRelationships?: CareRelationshipRepository;
 }
 
 export async function bootAppWith(
@@ -105,6 +111,12 @@ export async function bootAppWith(
 
   if (doubles.accessLog !== undefined) {
     builder = builder.overrideProvider(ACCESS_LOG_REPOSITORY).useValue(doubles.accessLog);
+  }
+
+  if (doubles.careRelationships !== undefined) {
+    builder = builder
+      .overrideProvider(CARE_RELATIONSHIP_REPOSITORY)
+      .useValue(doubles.careRelationships);
   }
 
   const moduleRef = await builder.compile();
