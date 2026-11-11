@@ -24,7 +24,7 @@ import { LoadPatientCaller } from './load-patient-caller';
  * registro por visita"** — the service writes one row per call and never
  * collapses two visits into one; the HTTP half of that criterion, which is
  * that one request to the chart calls this once, is
- * `access-log.interceptor.spec.ts`. **"Paciente vê só os próprios
+ * `patient-access-log.interceptor.spec.ts`. **"Paciente vê só os próprios
  * registros"** — the subject is the token, and another patient's rows are not
  * reachable from this use case at all. **"Registros não podem ser editados nem
  * apagados pela API"** — there is no method here that would, and the half of
