@@ -27,6 +27,10 @@ import {
   CONSENT_REPOSITORY,
   type ConsentRepository,
 } from '../application/ports/consent-repository.port';
+import {
+  ACCESS_LOG_REPOSITORY,
+  type AccessLogRepository,
+} from '../application/ports/access-log.port';
 
 /**
  * The real `AppModule` over HTTP, with the few things overridden that a test
@@ -65,6 +69,8 @@ export interface IdentityDoubles {
   readonly acceptances?: InvitationAcceptanceRepository;
   /** The patient's own consents, for the three routes of card I-05. */
   readonly consents?: ConsentRepository;
+  /** The access log, written and read by the two halves of card I-06. */
+  readonly accessLog?: AccessLogRepository;
 }
 
 export async function bootAppWith(
@@ -95,6 +101,10 @@ export async function bootAppWith(
 
   if (doubles.consents !== undefined) {
     builder = builder.overrideProvider(CONSENT_REPOSITORY).useValue(doubles.consents);
+  }
+
+  if (doubles.accessLog !== undefined) {
+    builder = builder.overrideProvider(ACCESS_LOG_REPOSITORY).useValue(doubles.accessLog);
   }
 
   const moduleRef = await builder.compile();

@@ -45,8 +45,13 @@ describe('SupabaseTokenVerifier', () => {
     });
   });
 
-  it('accepts a token that expires in a second', async () => {
-    const token = await signAccessToken({ expiresInSeconds: 1 });
+  it('accepts a token that has not expired yet', async () => {
+    // Thirty seconds, and not one: `exp` is in whole seconds, so a token
+    // minted one second before it expires can be a millisecond away from it,
+    // and whether this passed would depend on where in the current second the
+    // test started. What it is here to check is that a token inside its window
+    // is accepted; the token past its window is the test below.
+    const token = await signAccessToken({ expiresInSeconds: 30 });
 
     await expect(verifier.verify(token)).resolves.toMatchObject({ id: TEST_USER_ID });
   });

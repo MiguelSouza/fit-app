@@ -20,13 +20,21 @@ vazia.
 profissional e o `GET /v1/me` (card I-01); a tabela `invitation` e as três
 rotas de `/v1/invitations` (card I-02); as tabelas `patient`,
 `care_relationship` e `consent` com o aceite do convite pelo paciente (card
-I-03); e o serviço de acesso ao paciente (card I-04).
+I-03); o serviço de acesso ao paciente (card I-04); as três rotas de
+`/v1/me/consents` (card I-05); e a tabela `access_log` com o registro de
+acessos e o `GET /v1/me/access-log` (card I-06).
 
-O serviço de acesso é o que os outros três módulos usam, e a única coisa que
-este módulo exporta além do `IdentityModule`:
+O que os outros três módulos usam são duas coisas — a regra de acesso e o
+registro dele —, e é tudo o que este módulo exporta além do `IdentityModule`:
 
 ```ts
-import { IdentityModule, PatientAccessService, RequiresPatientAccess } from '../identity';
+import {
+  AccessLogService,
+  IdentityModule,
+  PatientAccessService,
+  RecordsPatientAccess,
+  RequiresPatientAccess,
+} from '../identity';
 ```
 
 `PatientAccessService` responde se o profissional pode ver o paciente — vínculo
@@ -36,8 +44,14 @@ plano alimentar (`professional_type = nutritionist`).
 paciente no caminho. Negativa é **404**, nunca 403: 403 diria ao profissional
 quais ids existem. Ninguém reimplementa isso (`CLAUDE.md`, "Saúde e LGPD"); a
 decisão está na ADR
-[0017](../../../../docs/adr/0017-servico-de-acesso-ao-paciente.md). O registro
-de acesso (`identity.logAccess`) ainda não existe e vem com o card dele.
+[0017](../../../../docs/adr/0017-servico-de-acesso-ao-paciente.md).
+
+`AccessLogService.logAccess(actorId, patientId, resource, action)` grava que
+alguém abriu ou exportou os dados de um paciente, e `@RecordsPatientAccess()`
+faz o mesmo na rota que **é** a visita — uma linha por visita, depois que o
+handler respondeu. A tabela é append-only, garantida por gatilho no Postgres, e
+o paciente lê a dele em `GET /v1/me/access-log`. A decisão está na ADR
+[0019](../../../../docs/adr/0019-registro-de-acessos-e-quem-viu-meus-dados.md).
 
 ## As camadas
 

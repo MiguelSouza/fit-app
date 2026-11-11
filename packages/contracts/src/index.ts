@@ -21,6 +21,23 @@ export {
 } from './health-check/health-response';
 
 export {
+  accessLogActionSchema,
+  accessLogActorSchema,
+  accessLogEntrySchema,
+  accessLogPageSchema,
+  accessLogQuerySchema,
+  accessLogResourceSchema,
+  ACCESS_LOG_DEFAULT_PAGE_SIZE,
+  ACCESS_LOG_MAX_PAGE_SIZE,
+  type AccessLogAction,
+  type AccessLogActor,
+  type AccessLogEntry,
+  type AccessLogPage,
+  type AccessLogQuery,
+  type AccessLogResource,
+} from './identity/access-log';
+
+export {
   consentListSchema,
   consentSchema,
   consentTypeSchema,

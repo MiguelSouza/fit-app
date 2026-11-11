@@ -168,6 +168,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/access-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quem acessou os dados de quem fez a chamada
+         * @description Lista os acessos aos dados do paciente — quem, o quê e quando —, do mais recente para o mais antigo. Cada abertura de ficha e cada exportação é uma linha, e as linhas nunca mudam nem somem. Só o próprio paciente pode pedir, e a lista é só a dele. A página continua pelo `nextCursor` da anterior; quando ele não vem, acabou.
+         */
+        get: operations["AccessLogController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -454,6 +474,55 @@ export interface components {
              */
             revokedAt: string;
         };
+        /** @description Paginação do registro de acessos */
+        AccessLogQuery: {
+            /**
+             * @description Quantos registros a página traz, de 1 a 100
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /** @description Cursor da próxima página, exatamente como veio em `nextCursor`. Opaco: é a API que o emite e o cliente só o devolve */
+            cursor?: string;
+        };
+        /** @description Uma página do registro de acessos aos dados do paciente */
+        AccessLogPage: {
+            /** @description Os acessos desta página, do mais recente para o mais antigo */
+            entries: components["schemas"]["AccessLogEntry"][];
+            /** @description Cursor da próxima página. Ausente quando esta é a última */
+            nextCursor?: string;
+        };
+        /** @description Um acesso aos dados do paciente */
+        AccessLogEntry: {
+            actor: components["schemas"]["AccessLogActor"];
+            resource: components["schemas"]["AccessLogResource"];
+            action: components["schemas"]["AccessLogAction"];
+            /**
+             * Format: date-time
+             * @description Quando o acesso aconteceu, em UTC
+             * @example 2026-11-09T12:00:00.000Z
+             */
+            occurredAt: string;
+        };
+        /** @description Quem acessou os dados do paciente */
+        AccessLogActor: {
+            /**
+             * @description Nome de quem acessou. É o profissional, nunca o paciente
+             * @example Ana Souza
+             */
+            name: string;
+            professionalType?: components["schemas"]["ProfessionalType"];
+        };
+        /**
+         * @description O que foi acessado: hoje, a ficha do paciente
+         * @enum {string}
+         */
+        AccessLogResource: "patient_chart";
+        /**
+         * @description O que foi feito: abrir na tela (`view`) ou exportar (`export`)
+         * @enum {string}
+         */
+        AccessLogAction: "view" | "export";
     };
     responses: never;
     parameters: never;
@@ -980,6 +1049,67 @@ export interface operations {
             };
             /** @description A finalidade já não está vigente: `identity.consent.not_in_force` */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    AccessLogController_list_v1: {
+        parameters: {
+            query?: {
+                /** @description Cursor da próxima página, exatamente como veio em `nextCursor`. Opaco: é a API que o emite e o cliente só o devolve */
+                cursor?: string;
+                /** @description Quantos registros a página traz, de 1 a 100 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Uma página do registro de acessos do paciente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessLogPage"];
+                };
+            };
+            /** @description Paginação inválida: `api.request.invalid`, ou um cursor que não é desta API, `identity.access_log.invalid_cursor` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

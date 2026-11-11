@@ -632,6 +632,91 @@
           "Consents"
         ]
       }
+    },
+    "/v1/me/access-log": {
+      "get": {
+        "description": "Lista os acessos aos dados do paciente — quem, o quê e quando —, do mais recente para o mais antigo. Cada abertura de ficha e cada exportação é uma linha, e as linhas nunca mudam nem somem. Só o próprio paciente pode pedir, e a lista é só a dele. A página continua pelo `nextCursor` da anterior; quando ele não vem, acabou.",
+        "operationId": "AccessLogController_list_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Cursor da próxima página, exatamente como veio em `nextCursor`. Opaco: é a API que o emite e o cliente só o devolve",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Quantos registros a página traz, de 1 a 100",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uma página do registro de acessos do paciente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessLogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paginação inválida: `api.request.invalid`, ou um cursor que não é desta API, `identity.access_log.invalid_cursor`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Quem acessou os dados de quem fez a chamada",
+        "tags": [
+          "AccessLog"
+        ]
+      }
     }
   },
   "info": {
@@ -1236,6 +1321,114 @@
         ],
         "additionalProperties": false,
         "description": "Um consentimento revogado, com as duas datas"
+      },
+      "AccessLogQuery": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "description": "Quantos registros a página traz, de 1 a 100",
+            "example": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "description": "Cursor da próxima página, exatamente como veio em `nextCursor`. Opaco: é a API que o emite e o cliente só o devolve",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": "Paginação do registro de acessos"
+      },
+      "AccessLogPage": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessLogEntry"
+            },
+            "description": "Os acessos desta página, do mais recente para o mais antigo"
+          },
+          "nextCursor": {
+            "description": "Cursor da próxima página. Ausente quando esta é a última",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "additionalProperties": false,
+        "description": "Uma página do registro de acessos aos dados do paciente"
+      },
+      "AccessLogEntry": {
+        "type": "object",
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/AccessLogActor"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/AccessLogResource"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AccessLogAction"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o acesso aconteceu, em UTC",
+            "example": "2026-11-09T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "actor",
+          "resource",
+          "action",
+          "occurredAt"
+        ],
+        "additionalProperties": false,
+        "description": "Um acesso aos dados do paciente"
+      },
+      "AccessLogActor": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Nome de quem acessou. É o profissional, nunca o paciente",
+            "example": "Ana Souza"
+          },
+          "professionalType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProfessionalType"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "Quem acessou os dados do paciente"
+      },
+      "AccessLogResource": {
+        "type": "string",
+        "enum": [
+          "patient_chart"
+        ],
+        "description": "O que foi acessado: hoje, a ficha do paciente"
+      },
+      "AccessLogAction": {
+        "type": "string",
+        "enum": [
+          "view",
+          "export"
+        ],
+        "description": "O que foi feito: abrir na tela (`view`) ou exportar (`export`)"
       }
     }
   }

@@ -1,4 +1,6 @@
 import type {
+  AccessLogAction,
+  AccessLogResource,
   ConsentType,
   OrganizationKind,
   OrganizationRole,
@@ -24,8 +26,10 @@ import {
  *
  * What is here is what cards I-01 to I-03 need: the person, the professional,
  * the practice and the membership; the invitation; and the patient, the care
- * link and the consents the acceptance of an invitation creates. The access
- * log is the rest of the module and comes with its own card.
+ * link and the consents the acceptance of an invitation creates. Card I-06
+ * adds the last one, `access_log` — the only table of this schema that is
+ * append-only, and the only one the database itself refuses to let anybody
+ * change.
  */
 export const IDENTITY_SCHEMA = 'identity';
 
@@ -50,6 +54,8 @@ const CONSENT_TYPES = [
   'wearable_data',
   'ai_processing',
 ] as const;
+const ACCESS_LOG_RESOURCES = ['patient_chart'] as const;
+const ACCESS_LOG_ACTIONS = ['view', 'export'] as const;
 
 /**
  * A type that has to be empty, as in `shared/events/domain-event.ts`: anything
@@ -78,6 +84,12 @@ export type OrganizationRoleDrift = Nothing<
   Drift<(typeof ORGANIZATION_ROLES)[number], OrganizationRole>
 >;
 export type ConsentTypeDrift = Nothing<Drift<(typeof CONSENT_TYPES)[number], ConsentType>>;
+export type AccessLogResourceDrift = Nothing<
+  Drift<(typeof ACCESS_LOG_RESOURCES)[number], AccessLogResource>
+>;
+export type AccessLogActionDrift = Nothing<
+  Drift<(typeof ACCESS_LOG_ACTIONS)[number], AccessLogAction>
+>;
 
 export const personRoleEnum = identitySchema.enum('person_role', PERSON_ROLES);
 
@@ -88,6 +100,13 @@ export const organizationKindEnum = identitySchema.enum('organization_kind', ORG
 export const organizationRoleEnum = identitySchema.enum('organization_role', ORGANIZATION_ROLES);
 
 export const consentTypeEnum = identitySchema.enum('consent_type', CONSENT_TYPES);
+
+export const accessLogResourceEnum = identitySchema.enum(
+  'access_log_resource',
+  ACCESS_LOG_RESOURCES,
+);
+
+export const accessLogActionEnum = identitySchema.enum('access_log_action', ACCESS_LOG_ACTIONS);
 
 /**
  * When the row appeared, in UTC — every instant in this database is
@@ -406,6 +425,85 @@ export const consent = identitySchema.table(
   ],
 );
 
+/**
+ * Every access to a patient's data, one row per visit (card I-06).
+ *
+ * It is the table LGPD asks for and the one the patient reads in "quem viu
+ * meus dados": `identity.logAccess` writes a row when a professional opens a
+ * ficha or exports anything, and `GET /v1/me/access-log` answers the patient
+ * their own, newest first.
+ *
+ * **Append-only, and the database is what says so.** There is no `update` and
+ * no `delete` of this table anywhere in the code — the port offers neither —
+ * and migration `0004` puts a trigger on it that refuses both outright, which
+ * is the card's criterion "registros não podem ser editados nem apagados pela
+ * API" decided by Postgres instead of by a convention somebody has to
+ * remember. The same trigger is why the two foreign keys below are **not**
+ * `cascade`, unlike every other key in this schema: deleting a profile would
+ * cascade into a `delete` the table refuses, so what it does instead is fail
+ * and say that the trail is in the way. Erasing a person is a different right
+ * with a card of its own, and it is that card's job to decide what happens to
+ * these rows — not a cascade nobody reviewed.
+ *
+ * `occurred_at` is the instant of the access, decided by the domain, and
+ * `created_at` is when the row landed; they are the same millisecond today and
+ * they are not the same fact, exactly as `granted_at` and `created_at` on a
+ * consent.
+ */
+export const accessLog = identitySchema.table(
+  'access_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    /**
+     * Who accessed. A professional today, and the column says `profile`
+     * because what is recorded is the person, not the licence they held at the
+     * time.
+     */
+    actorProfileId: uuid('actor_profile_id')
+      .notNull()
+      .references(() => profile.id),
+
+    patientProfileId: uuid('patient_profile_id')
+      .notNull()
+      .references(() => patient.profileId),
+
+    resource: accessLogResourceEnum('resource').notNull(),
+
+    action: accessLogActionEnum('action').notNull(),
+
+    /**
+     * When the access happened, in UTC, and **in whole milliseconds**.
+     *
+     * Not a detail of style: this column is half of the cursor the paging
+     * leans on, and the cursor travels as an ISO instant, which carries
+     * milliseconds and nothing finer. Every write goes through
+     * `AccessLogService` with a JavaScript `Date`, so that is what is stored —
+     * but a row written by hand with `now()` would land on microseconds, come
+     * back from the driver truncated to the millisecond, and the next page
+     * would then skip the rows of that same millisecond that nobody had seen
+     * yet. Whoever inserts into this table from SQL rounds to the
+     * millisecond, or the first access the patient never sees is the one that
+     * proves it.
+     */
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // The only question this table is asked: the accesses of one patient, from
+    // the newest down, a page at a time. Ascending, because Postgres reads a
+    // btree backwards just as well, and `id` is in it so that two accesses in
+    // the same millisecond still have an order — without it a page would
+    // repeat a row or skip one.
+    index('access_log_patient_profile_id_occurred_at_id_idx').on(
+      table.patientProfileId,
+      table.occurredAt,
+      table.id,
+    ),
+  ],
+);
+
 /** Everything the module's repositories talk to, as Drizzle takes it. */
 export const identityTables = {
   profile,
@@ -416,4 +514,5 @@ export const identityTables = {
   invitation,
   careRelationship,
   consent,
+  accessLog,
 };
