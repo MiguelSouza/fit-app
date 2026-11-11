@@ -38,6 +38,14 @@ export {
 } from './identity/access-log';
 
 export {
+  careRelationshipIdSchema,
+  careRelationshipStatusSchema,
+  endedCareRelationshipSchema,
+  type CareRelationshipStatus,
+  type EndedCareRelationship,
+} from './identity/care-relationship';
+
+export {
   consentListSchema,
   consentSchema,
   consentTypeSchema,
@@ -88,6 +96,8 @@ export {
   type OrganizationMembership,
   type OrganizationRole,
 } from './identity/organization';
+
+export { patientIdSchema } from './identity/patient';
 
 export {
   professionalIdentitySchema,
