@@ -717,6 +717,170 @@
           "AccessLog"
         ]
       }
+    },
+    "/v1/me/care-relationships/{careRelationshipId}/end": {
+      "post": {
+        "description": "Encerra o vínculo com a prática agora: a linha continua no banco, com a data em que o acompanhamento começou, e ganha a data do encerramento. O corte é imediato — o profissional recebe 404 nos dados do paciente já na requisição seguinte. **Nada é apagado**: o histórico do paciente continua sendo dele. Vínculo que já foi encerrado responde 409, e vínculo que não é de quem chamou responde 404. Voltar a ser acompanhado pela mesma prática é aceitar um convite novo.",
+        "operationId": "MyCareRelationshipsController_end_v1",
+        "parameters": [
+          {
+            "name": "careRelationshipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/CareRelationshipId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "O vínculo encerrado, com as duas datas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndedCareRelationship"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Id que não é um uuid: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil (`identity.profile.not_found`) ou o vínculo não é dele (`identity.care_relationship.not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O acompanhamento já estava encerrado: `identity.care_relationship.already_ended`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Encerrar o acompanhamento (lado do paciente)",
+        "tags": [
+          "MyCareRelationships"
+        ]
+      }
+    },
+    "/v1/patients/{patientId}/care-relationship/end": {
+      "post": {
+        "description": "Encerra o vínculo da prática com o paciente agora: a linha continua no banco, com a data em que o acompanhamento começou, e ganha a data do encerramento. O corte é imediato — a prática recebe 404 nos dados desse paciente já na requisição seguinte. **Nada é apagado**: o histórico continua sendo do paciente. Paciente que não é de nenhuma prática de quem chamou responde 404, igual a um paciente que não existe; acompanhamento já encerrado responde 409. Não exige o consentimento de compartilhamento: o vínculo se encerra mesmo depois de o paciente ter revogado.",
+        "operationId": "PatientCareRelationshipsController_end_v1",
+        "parameters": [
+          {
+            "name": "patientId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/PatientId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "O vínculo encerrado, com as duas datas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndedCareRelationship"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Id que não é um uuid: `api.request.invalid`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é profissional: `identity.professional.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil (`identity.profile.not_found`) ou o paciente não é de nenhuma prática dele (`identity.patient.not_found`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "O acompanhamento já estava encerrado: `identity.care_relationship.already_ended`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Encerrar o acompanhamento (lado do profissional)",
+        "tags": [
+          "PatientCareRelationships"
+        ]
+      }
     }
   },
   "info": {
@@ -1429,6 +1593,66 @@
           "export"
         ],
         "description": "O que foi feito: abrir na tela (`view`) ou exportar (`export`)"
+      },
+      "CareRelationshipId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+        "description": "Id do vínculo de acompanhamento"
+      },
+      "EndedCareRelationship": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/CareRelationshipId"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "Id da prática que acompanhava o paciente"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CareRelationshipStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o acompanhamento começou, em UTC",
+            "example": "2026-10-01T12:00:00.000Z"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o acompanhamento foi encerrado, em UTC",
+            "example": "2026-11-11T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "status",
+          "startedAt",
+          "endedAt"
+        ],
+        "additionalProperties": false,
+        "description": "O vínculo de acompanhamento encerrado, com as duas datas"
+      },
+      "CareRelationshipStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "ended"
+        ],
+        "description": "Situação do vínculo: ativo, ou encerrado por um dos dois lados"
+      },
+      "PatientId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+        "description": "Id do perfil do paciente no módulo identity"
       }
     }
   }
