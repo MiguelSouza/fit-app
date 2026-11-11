@@ -28,3 +28,4 @@ antigo como substituído por ele.
 | [0017](./0017-servico-de-acesso-ao-paciente.md)             | Serviço de acesso ao paciente: uma regra, negativa em 404 e um decorator                           | aceito |
 | [0018](./0018-consentimento-concedido-e-revogado.md)        | Consentimento: registro imutável, cascata do `health_data` e um evento                             | aceito |
 | [0019](./0019-registro-de-acessos-e-quem-viu-meus-dados.md) | Registro de acessos: tabela append-only, um registro por visita e página por cursor                | aceito |
+| [0020](./0020-encerramento-do-vinculo-de-acompanhamento.md) | Encerrar o vínculo: `ended_at` numa linha, 404 na requisição seguinte e um evento                  | aceito |
