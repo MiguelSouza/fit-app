@@ -472,6 +472,20 @@ export const accessLog = identitySchema.table(
 
     action: accessLogActionEnum('action').notNull(),
 
+    /**
+     * When the access happened, in UTC, and **in whole milliseconds**.
+     *
+     * Not a detail of style: this column is half of the cursor the paging
+     * leans on, and the cursor travels as an ISO instant, which carries
+     * milliseconds and nothing finer. Every write goes through
+     * `AccessLogService` with a JavaScript `Date`, so that is what is stored —
+     * but a row written by hand with `now()` would land on microseconds, come
+     * back from the driver truncated to the millisecond, and the next page
+     * would then skip the rows of that same millisecond that nobody had seen
+     * yet. Whoever inserts into this table from SQL rounds to the
+     * millisecond, or the first access the patient never sees is the one that
+     * proves it.
+     */
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
 
     createdAt: createdAt(),
