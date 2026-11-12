@@ -459,6 +459,11 @@ export interface components {
              */
             organizationId: string;
             /**
+             * @description Nome da organização que passa a acompanhar o paciente
+             * @example Ana Souza
+             */
+            organizationName: string;
+            /**
              * Format: uuid
              * @description Id do vínculo de acompanhamento criado
              */

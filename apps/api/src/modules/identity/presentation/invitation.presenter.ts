@@ -73,14 +73,17 @@ export function toCreatedInvitationResponse(
 /**
  * The acceptance's answer: where the patient ended up (card I-03).
  *
- * Ids, one instant and the purposes in force — and no personal data of
- * anybody, not the patient's name and not the practice's. The instant becomes
- * ISO 8601 in UTC here, as every date of this API does.
+ * Ids, one instant, the purposes in force and the name of the practice the
+ * patient has just joined, which is what the end of the app's onboarding shows
+ * (card P-01). The patient's own name does not cross over, and no third party
+ * does. The instant becomes ISO 8601 in UTC here, as every date of this API
+ * does.
  */
 export function toAcceptedInvitationResponse(accepted: AcceptedInvitation): AcceptedInvitationDto {
   return {
     profileId: accepted.profileId,
     organizationId: accepted.organizationId,
+    organizationName: accepted.organizationName,
     careRelationshipId: accepted.careRelationshipId,
     acceptedAt: accepted.acceptedAt.toISOString(),
     consents: accepted.consents.map(toConsentType),

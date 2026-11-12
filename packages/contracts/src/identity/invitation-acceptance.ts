@@ -89,11 +89,13 @@ export type AcceptInvitationRequest = z.infer<typeof acceptInvitationRequestSche
 /**
  * The answer of `POST /v1/invitations/accept`: the patient is in.
  *
- * It carries ids, instants and the purposes in force — and no personal data of
- * anybody. Not the name of the patient, who already knows it, and not the name
- * of the professional or of the practice: who is following them is what
- * `GET /v1/me` will answer when the patient's side of it lands, with the
- * authorization that belongs there.
+ * It carries ids, instants, the purposes in force — and one name, the
+ * practice's. The patient's own name is not here, they already know it, and no
+ * third party is either: the practice is the party they have just joined, and
+ * saying which one is the whole of the screen that closes the onboarding of
+ * the app ("Você está conectado a ...", card P-01). An id cannot say it, and
+ * the patient's side of `GET /v1/me`, which is where it would otherwise be
+ * read from, does not exist yet.
  */
 export const acceptedInvitationSchema = z
   .object({
@@ -101,6 +103,17 @@ export const acceptedInvitationSchema = z
     profileId: z.uuid().meta({ description: 'Id do perfil do paciente' }),
 
     organizationId: z.uuid().meta({ description: 'Id da organização que passa a acompanhar' }),
+
+    /**
+     * The name of that practice, which for a solo professional is their own
+     * (ADR 0014). It is the one thing the end of the onboarding has to show,
+     * and it goes to the screen and never to a log, as every name of this API
+     * (CLAUDE.md, "Saúde e LGPD").
+     */
+    organizationName: z.string().min(1).meta({
+      description: 'Nome da organização que passa a acompanhar o paciente',
+      example: 'Ana Souza',
+    }),
 
     careRelationshipId: z.uuid().meta({ description: 'Id do vínculo de acompanhamento criado' }),
 

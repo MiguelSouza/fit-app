@@ -81,6 +81,7 @@ describe('accepting an invitation, against a real Postgres', () => {
   async function aLink(): Promise<{
     authUserId: string;
     organizationId: string;
+    organizationName: string;
     invitationId: string;
     token: string;
   }> {
@@ -98,6 +99,7 @@ describe('accepting an invitation, against a real Postgres', () => {
     return {
       authUserId,
       organizationId: membership.organizationId,
+      organizationName: membership.name,
       invitationId: invitation.id,
       token,
     };
@@ -167,6 +169,9 @@ describe('accepting an invitation, against a real Postgres', () => {
 
     expect(accepted).toMatchObject({
       organizationId: link.organizationId,
+      // The practice of a solo professional is named after them (ADR 0014),
+      // and this is the name the app tells the patient they are now with.
+      organizationName: link.organizationName,
       consents: REQUIRED,
     });
 

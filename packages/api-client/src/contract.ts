@@ -74,7 +74,12 @@ export type AcceptInvitationRequestFields = FieldsOf<
 
 export type AcceptedInvitationFields = FieldsOf<
   AcceptedInvitation,
-  'profileId' | 'organizationId' | 'careRelationshipId' | 'acceptedAt' | 'consents'
+  | 'profileId'
+  | 'organizationId'
+  | 'organizationName'
+  | 'careRelationshipId'
+  | 'acceptedAt'
+  | 'consents'
 >;
 
 export type HealthResponseFields = FieldsOf<HealthResponse, 'status' | 'checks'>;

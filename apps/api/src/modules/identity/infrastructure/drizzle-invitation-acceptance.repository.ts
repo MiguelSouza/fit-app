@@ -18,6 +18,7 @@ import {
   consent,
   identityTables,
   invitation,
+  organization,
   patient,
   profile,
 } from './identity.schema';
@@ -103,6 +104,7 @@ export class DrizzleInvitationAcceptanceRepository implements InvitationAcceptan
       return {
         profileId,
         organizationId: acceptance.organizationId,
+        organizationName: await organizationNameOf(tx, acceptance.organizationId),
         careRelationshipId,
         acceptedAt: acceptance.acceptedAt,
         consents,
@@ -152,6 +154,29 @@ async function ensurePatientProfile(tx: Transaction, toEnsure: PatientToEnsure):
   await tx.insert(patient).values({ profileId: person.id }).onConflictDoNothing();
 
   return person.id;
+}
+
+/**
+ * The name of the practice the link belongs to, which is what the patient is
+ * told at the end of the onboarding (card P-01).
+ *
+ * Read inside the same transaction and by the id of the **invitation**, never
+ * by anything the request carried. The foreign key of `invitation` makes the
+ * row exist, so no answer here is a bug and not an empty practice.
+ */
+async function organizationNameOf(tx: Transaction, organizationId: string): Promise<string> {
+  const [found] = await tx
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (found === undefined) {
+    // Unreachable: the invitation points at this practice with a foreign key.
+    throw new Error('the practice the invitation belongs to was not found');
+  }
+
+  return found.name;
 }
 
 /** The profile that refused the insert, by the key that refused it. */

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../app/router.dart';
 import '../core/theme/app_colors.dart';
 import '../shared/environment_badge.dart';
 import '../shared/screen_message.dart';
@@ -126,6 +128,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       'Esqueceu a senha? Peça um novo acesso ao seu nutricionista.',
                       textAlign: TextAlign.center,
                       style: textTheme.labelSmall,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // The other way into the invitation, for a phone that did
+                    // not open the link: the code is typed on the screen this
+                    // leads to (card P-01).
+                    TextButton(
+                      onPressed: () => context.go(invitePath),
+                      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                      child: const Text('Recebi um convite e quero criar minha conta'),
                     ),
                   ],
                 ),

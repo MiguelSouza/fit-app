@@ -16,7 +16,10 @@ import {
   InMemoryIdentityRegistry,
   professionalIdentity,
 } from './in-memory-identity-registry.spec-support';
-import { InMemoryInvitationAcceptanceRepository } from './in-memory-invitation-acceptance.spec-support';
+import {
+  InMemoryInvitationAcceptanceRepository,
+  TEST_ORGANIZATION_NAME,
+} from './in-memory-invitation-acceptance.spec-support';
 import { invitationRow } from './in-memory-invitation-repository.spec-support';
 import {
   hashOfPredictableToken,
@@ -69,6 +72,8 @@ describe('AcceptInvitationUseCase', () => {
     const accepted = await accept.execute(AUTH_USER_ID, { ...INPUT, token });
 
     expect(accepted.organizationId).toBe(ORGANIZATION_ID);
+    // The name the app says the patient is now connected to (card P-01).
+    expect(accepted.organizationName).toBe(TEST_ORGANIZATION_NAME);
     expect(accepted.consents).toEqual(REQUIRED);
 
     expect(acceptances.profiles.get(AUTH_USER_ID)).toMatchObject({

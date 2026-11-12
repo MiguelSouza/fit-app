@@ -24,6 +24,30 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- The invitation link of the patient: fitapp://convite?token=<token>
+	     (card P-01). A custom scheme and not a Universal Link over the panel's
+	     domain, which would need an apple-app-site-association served from it —
+	     infrastructure this card does not have. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>br.com.fitapp.convite</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fitapp</string>
+			</array>
+		</dict>
+	</array>
+	<!-- Deep linking handled by Flutter itself: the engine hands the uri over
+	     to the router as a route and go_router answers it
+	     (`lib/src/app/router.dart`). What it hands over is the whole address,
+	     host and all, and `convite` is the host — `invitationLocationFor` is
+	     what turns it into the route of the screen. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- App Transport Security: the simulator reaches the API and Supabase of

@@ -35,6 +35,14 @@ interface StoredProfile {
   readonly timeZone: string;
 }
 
+/**
+ * The name a seeded practice answers with, when the test did not pick one.
+ *
+ * A label and not a person: no data of a real professional goes in a fake
+ * (CLAUDE.md, "Testes").
+ */
+export const TEST_ORGANIZATION_NAME = 'Consultório de teste';
+
 /** A consent row, with the version of the terms it was given against. */
 interface StoredConsent {
   readonly profileId: string;
@@ -53,10 +61,22 @@ export class InMemoryInvitationAcceptanceRepository implements InvitationAccepta
   readonly careRelationships: CareRelationship[] = [];
   readonly consents: StoredConsent[] = [];
 
-  /** Puts an invitation behind a token hash, as the creation would have. */
-  seed(invitation: Invitation, tokenHash: string): Invitation {
+  /** The name of each practice an invitation points at, by organization id. */
+  readonly organizationNames = new Map<string, string>();
+
+  /**
+   * Puts an invitation behind a token hash, as the creation would have, and
+   * names the practice it belongs to — which the acceptance answers, and the
+   * real one reads from `identity.organization`.
+   */
+  seed(
+    invitation: Invitation,
+    tokenHash: string,
+    organizationName: string = TEST_ORGANIZATION_NAME,
+  ): Invitation {
     this.invitations.set(invitation.id, invitation);
     this.invitationIdByTokenHash.set(tokenHash, invitation.id);
+    this.organizationNames.set(invitation.organizationId, organizationName);
 
     return invitation;
   }
@@ -99,6 +119,8 @@ export class InMemoryInvitationAcceptanceRepository implements InvitationAccepta
     return Promise.resolve({
       profileId: person.id,
       organizationId: acceptance.organizationId,
+      organizationName:
+        this.organizationNames.get(acceptance.organizationId) ?? TEST_ORGANIZATION_NAME,
       careRelationshipId: this.ensureCareRelationship(acceptance, person.id),
       acceptedAt: acceptance.acceptedAt,
       consents: this.grantConsents(acceptance.consents, person.id),
