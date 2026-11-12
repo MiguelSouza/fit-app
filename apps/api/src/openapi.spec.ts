@@ -246,6 +246,64 @@ describe('the openapi document', () => {
     });
   });
 
+  it('describes the two routes that end a follow-up, each with the id of the contract', async () => {
+    app = await bootApp('test');
+
+    const document = buildOpenApiDocument(app, API_VERSION);
+    const byPatient = document.paths['/v1/me/care-relationships/{careRelationshipId}/end']?.post;
+    const byProfessional = document.paths['/v1/patients/{patientId}/care-relationship/end']?.post;
+
+    // 200 and not 204: both answer the link as it ended, which is what the two
+    // screens render — and nothing was created or deleted.
+    for (const route of [byPatient, byProfessional]) {
+      expect(route?.responses['200']).toMatchObject({
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/EndedCareRelationship' } },
+        },
+      });
+
+      // The 409 of a follow-up that is already over. The clients have to know
+      // it exists: it is the one refusal a screen turns into "já encerrado"
+      // instead of into an error.
+      expect(route?.responses['409']).toMatchObject({
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } },
+        },
+      });
+    }
+
+    // The ids of the paths are schemas of the contract, so the clients are
+    // generated with them instead of with bare strings.
+    expect(byPatient?.parameters).toMatchObject([
+      {
+        name: 'careRelationshipId',
+        in: 'path',
+        required: true,
+        schema: { $ref: '#/components/schemas/CareRelationshipId' },
+      },
+    ]);
+
+    expect(byProfessional?.parameters).toMatchObject([
+      {
+        name: 'patientId',
+        in: 'path',
+        required: true,
+        schema: { $ref: '#/components/schemas/PatientId' },
+      },
+    ]);
+
+    expect(document.components?.schemas?.['EndedCareRelationship']).toMatchObject({
+      type: 'object',
+      required: ['id', 'organizationId', 'status', 'startedAt', 'endedAt'],
+      properties: { status: { $ref: '#/components/schemas/CareRelationshipStatus' } },
+    });
+
+    expect(document.components?.schemas?.['CareRelationshipStatus']).toMatchObject({
+      type: 'string',
+      enum: ['active', 'ended'],
+    });
+  });
+
   it('describes the error envelope every client has to read', async () => {
     app = await bootApp('test');
 

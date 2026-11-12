@@ -1,4 +1,4 @@
-import { type ConsentType } from '@fit-app/contracts';
+import { type ConsentType, type PersonRole } from '@fit-app/contracts';
 
 /**
  * The catalogue of the internal events, in one file (CLAUDE.md rule 3).
@@ -17,15 +17,16 @@ import { type ConsentType } from '@fit-app/contracts';
  * (CLAUDE.md, "Saúde e LGPD"). A handler that needs the data behind an id asks
  * the module that owns it — with the consent check that comes with it.
  *
- * The one thing imported here is `ConsentType`, from `@fit-app/contracts`: the
- * purpose of a consent is a closed vocabulary the whole platform already
- * shares, and a subscriber comparing it against a typo should not compile.
- * Importing it from the publishing module's `domain/` would be the boundary
- * violation (rule 1); the contracts package is Zod and types, with no I/O and
- * no module in it.
+ * The only things imported here are `ConsentType` and `PersonRole`, from
+ * `@fit-app/contracts`: the purpose of a consent and the side of a person are
+ * closed vocabularies the whole platform already shares, and a subscriber
+ * comparing one against a typo should not compile. Importing them from the
+ * publishing module's `domain/` would be the boundary violation (rule 1); the
+ * contracts package is Zod and types, with no I/O and no module in it.
  */
 export const DOMAIN_EVENT_NAMES = [
   'identity.consent.revoked',
+  'identity.relationship.ended',
   'nutrition.plan.activated',
   'health.sleep.received',
   'insights.alert.created',
@@ -73,6 +74,36 @@ export interface DomainEventPayloads extends Record<DomainEventName, object> {
     readonly profileId: string;
     readonly consentType: ConsentType;
     readonly revokedAt: string;
+  };
+
+  /**
+   * One of the two sides ended the follow-up (card I-07). The practice no
+   * longer reaches this patient, from the instant the row was dated.
+   *
+   * It is the other event of this catalogue that is permission going away, and
+   * the two are not the same fact: a revoked consent is the patient saying what
+   * may be done with their data, and an ended link is the follow-up itself
+   * being over. What each subscriber owes it is different too — `nutrition`
+   * archives the plans this practice had in force for this patient, and
+   * `insights` stops producing alerts for it.
+   *
+   * As with the revocation, it is **not** how the access is cut off: that is
+   * read from the row at the instant of the request (ADR 0017), so no
+   * subscriber has to be trusted for it. A handler that fails is a log line
+   * (`InMemoryEventBus`), and the professional is already getting 404.
+   *
+   * Ids, a code and an instant, as every payload here: who the patient is and
+   * what the practice is called are not in it.
+   */
+  'identity.relationship.ended': {
+    readonly careRelationshipId: string;
+    /** The practice that was following the patient. */
+    readonly organizationId: string;
+    /** The patient's `identity.profile.id`. */
+    readonly patientId: string;
+    /** Which of the two sides ended it. Both may (card I-07). */
+    readonly endedBy: PersonRole;
+    readonly endedAt: string;
   };
 
   /** A nutritionist put a plan in force. The previous one, if any, stopped. */

@@ -56,6 +56,13 @@ export type AccessLogResource = components['schemas']['AccessLogResource'];
 export type AccessLogAction = components['schemas']['AccessLogAction'];
 export type AccessLogQuery = components['schemas']['AccessLogQuery'];
 
+/**
+ * `POST /v1/me/care-relationships/{careRelationshipId}/end`,
+ * `POST /v1/patients/{patientId}/care-relationship/end`
+ */
+export type EndedCareRelationship = components['schemas']['EndedCareRelationship'];
+export type CareRelationshipStatus = components['schemas']['CareRelationshipStatus'];
+
 /** `GET /v1/health` */
 export type HealthResponse = components['schemas']['HealthResponse'];
 export type ComponentCheck = components['schemas']['ComponentCheck'];

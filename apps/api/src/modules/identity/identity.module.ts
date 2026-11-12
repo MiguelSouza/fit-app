@@ -5,6 +5,7 @@ import { EventsModule } from '../../shared/events/events.module';
 import { AcceptInvitationUseCase } from './application/accept-invitation.use-case';
 import { AccessLogService } from './application/access-log.service';
 import { CreateInvitationUseCase } from './application/create-invitation.use-case';
+import { EndCareRelationshipUseCase } from './application/end-care-relationship.use-case';
 import { GetMyIdentityUseCase } from './application/get-my-identity.use-case';
 import { GrantConsentUseCase } from './application/grant-consent.use-case';
 import { ListMyAccessLogUseCase } from './application/list-my-access-log.use-case';
@@ -14,6 +15,7 @@ import { LoadPatientCaller } from './application/load-patient-caller';
 import { LoadProfessionalCaller } from './application/load-professional-caller';
 import { PatientAccessService } from './application/patient-access.service';
 import { ACCESS_LOG_REPOSITORY } from './application/ports/access-log.port';
+import { CARE_RELATIONSHIP_REPOSITORY } from './application/ports/care-relationship.port';
 import { CONSENT_REPOSITORY } from './application/ports/consent-repository.port';
 import { IDENTITY_REGISTRY } from './application/ports/identity-registry.port';
 import { INVITATION_ACCEPTANCE_REPOSITORY } from './application/ports/invitation-acceptance.port';
@@ -25,6 +27,7 @@ import { RevokeConsentUseCase } from './application/revoke-consent.use-case';
 import { RevokeInvitationUseCase } from './application/revoke-invitation.use-case';
 import { CryptoInvitationTokenIssuer } from './infrastructure/crypto-invitation-token.issuer';
 import { DrizzleAccessLogRepository } from './infrastructure/drizzle-access-log.repository';
+import { DrizzleCareRelationshipRepository } from './infrastructure/drizzle-care-relationship.repository';
 import { DrizzleConsentRepository } from './infrastructure/drizzle-consent.repository';
 import { DrizzleIdentityRegistry } from './infrastructure/drizzle-identity-registry.repository';
 import { DrizzleInvitationAcceptanceRepository } from './infrastructure/drizzle-invitation-acceptance.repository';
@@ -34,6 +37,8 @@ import { AccessLogController } from './presentation/access-log.controller';
 import { ConsentsController } from './presentation/consents.controller';
 import { InvitationsController } from './presentation/invitations.controller';
 import { MeController } from './presentation/me.controller';
+import { MyCareRelationshipsController } from './presentation/my-care-relationships.controller';
+import { PatientCareRelationshipsController } from './presentation/patient-care-relationships.controller';
 import { PatientAccessLogInterceptor } from './presentation/patient-access-log.interceptor';
 import { PatientAccessGuard } from './presentation/patient-access.guard';
 import { ProfessionalsController } from './presentation/professionals.controller';
@@ -53,19 +58,23 @@ import { ProfessionalsController } from './presentation/professionals.controller
  * card I-03, the acceptance of it (the patient, the care link and the
  * consents), card I-04, the access rule the rest of the API depends on, card
  * I-05, the patient giving and taking back one purpose — the first thing this
- * module announces as an event —, and card I-06, the access log: the table
+ * module announces as an event —, card I-06, the access log: the table
  * `identity.logAccess` writes to and the patient reads in "quem viu meus
- * dados".
+ * dados", and card I-07, the end of the follow-up, which either side may ask
+ * for.
  *
  * With I-06 the module is complete as CLAUDE.md describes it ("pessoas,
  * organizações, vínculos, convites, consentimentos, registro de acessos"), and
  * what it offers the other three modules is two things and not one: the access
- * rule, and the way to record an access.
+ * rule, and the way to record an access. I-07 adds nothing to that surface —
+ * the end of a link travels as an event, which is how a side effect crosses a
+ * module boundary (CLAUDE.md rule 3).
  */
 @Module({
-  // `EventsModule` is here for the revocation of a consent, which is the first
-  // fact this module announces to the others (card I-05): it exports
-  // `EVENT_BUS`, and the publisher never names the implementation (ADR 0009).
+  // `EventsModule` is here for the two facts this module announces to the
+  // others: a consent revoked (card I-05) and a follow-up ended (card I-07).
+  // It exports `EVENT_BUS`, and the publisher never names the implementation
+  // (ADR 0009).
   imports: [DatabaseModule, EventsModule],
   controllers: [
     MeController,
@@ -73,6 +82,8 @@ import { ProfessionalsController } from './presentation/professionals.controller
     InvitationsController,
     ConsentsController,
     AccessLogController,
+    MyCareRelationshipsController,
+    PatientCareRelationshipsController,
   ],
   providers: [
     GetMyIdentityUseCase,
@@ -91,6 +102,7 @@ import { ProfessionalsController } from './presentation/professionals.controller
     PatientAccessLogInterceptor,
     GrantConsentUseCase,
     RevokeConsentUseCase,
+    EndCareRelationshipUseCase,
     { provide: IDENTITY_REGISTRY, useClass: DrizzleIdentityRegistry },
     { provide: CONSENT_REPOSITORY, useClass: DrizzleConsentRepository },
     { provide: ACCESS_LOG_REPOSITORY, useClass: DrizzleAccessLogRepository },
@@ -98,6 +110,7 @@ import { ProfessionalsController } from './presentation/professionals.controller
     { provide: INVITATION_ACCEPTANCE_REPOSITORY, useClass: DrizzleInvitationAcceptanceRepository },
     { provide: INVITATION_TOKEN_ISSUER, useClass: CryptoInvitationTokenIssuer },
     { provide: PATIENT_ACCESS_REPOSITORY, useClass: DrizzlePatientAccessRepository },
+    { provide: CARE_RELATIONSHIP_REPOSITORY, useClass: DrizzleCareRelationshipRepository },
   ],
 
   // The access rule, for the modules whose routes have a patient in them: the

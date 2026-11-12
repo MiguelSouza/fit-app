@@ -277,6 +277,43 @@ export class ConsentNotInForceError extends ConflictError {
 }
 
 /**
+ * There is no care link with that id among the patient's own (card I-07).
+ *
+ * It is also the answer when the link exists and belongs to **another**
+ * patient, exactly as `InvitationNotFoundError` is for an invitation of another
+ * practice: a patient has no business learning that an id is somebody else's
+ * follow-up.
+ *
+ * The professional's side of the same request never answers this one — it
+ * answers `PatientNotFoundError`, because there the thing that was not found is
+ * a patient and saying anything else would tell a caller which ids are real.
+ */
+export class CareRelationshipNotFoundError extends NotFoundError {
+  constructor() {
+    super('identity.care_relationship.not_found', 'Vínculo de acompanhamento não encontrado.');
+  }
+}
+
+/**
+ * The follow-up was already ended, by this side or by the other one
+ * (card I-07).
+ *
+ * 409, as `ConsentNotInForceError` and `InvitationNotPendingError` are: the
+ * request is well formed and the state of the record is what refuses it.
+ * Answering 200 instead would date the link a second time, announce a second
+ * ending to the other modules, and tell whoever asked that something happened
+ * now when it happened a month ago.
+ */
+export class CareRelationshipAlreadyEndedError extends ConflictError {
+  constructor() {
+    super(
+      'identity.care_relationship.already_ended',
+      'Este acompanhamento já foi encerrado, então não há o que encerrar.',
+    );
+  }
+}
+
+/**
  * The `cursor` of `GET /v1/me/access-log` is not one this API minted
  * (card I-06).
  *

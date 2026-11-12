@@ -188,6 +188,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/care-relationships/{careRelationshipId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Encerrar o acompanhamento (lado do paciente)
+         * @description Encerra o vínculo com a prática agora: a linha continua no banco, com a data em que o acompanhamento começou, e ganha a data do encerramento. O corte é imediato — o profissional recebe 404 nos dados do paciente já na requisição seguinte. **Nada é apagado**: o histórico do paciente continua sendo dele. Vínculo que já foi encerrado responde 409, e vínculo que não é de quem chamou responde 404. Voltar a ser acompanhado pela mesma prática é aceitar um convite novo.
+         */
+        post: operations["MyCareRelationshipsController_end_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/patients/{patientId}/care-relationship/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Encerrar o acompanhamento (lado do profissional)
+         * @description Encerra o vínculo da prática com o paciente agora: a linha continua no banco, com a data em que o acompanhamento começou, e ganha a data do encerramento. O corte é imediato — a prática recebe 404 nos dados desse paciente já na requisição seguinte. **Nada é apagado**: o histórico continua sendo do paciente. Paciente que não é de nenhuma prática de quem chamou responde 404, igual a um paciente que não existe; acompanhamento já encerrado responde 409. Não exige o consentimento de compartilhamento: o vínculo se encerra mesmo depois de o paciente ter revogado.
+         */
+        post: operations["PatientCareRelationshipsController_end_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -523,6 +563,43 @@ export interface components {
          * @enum {string}
          */
         AccessLogAction: "view" | "export";
+        /**
+         * Format: uuid
+         * @description Id do vínculo de acompanhamento
+         */
+        CareRelationshipId: string;
+        /** @description O vínculo de acompanhamento encerrado, com as duas datas */
+        EndedCareRelationship: {
+            id: components["schemas"]["CareRelationshipId"];
+            /**
+             * Format: uuid
+             * @description Id da prática que acompanhava o paciente
+             */
+            organizationId: string;
+            status: components["schemas"]["CareRelationshipStatus"];
+            /**
+             * Format: date-time
+             * @description Quando o acompanhamento começou, em UTC
+             * @example 2026-10-01T12:00:00.000Z
+             */
+            startedAt: string;
+            /**
+             * Format: date-time
+             * @description Quando o acompanhamento foi encerrado, em UTC
+             * @example 2026-11-11T12:00:00.000Z
+             */
+            endedAt: string;
+        };
+        /**
+         * @description Situação do vínculo: ativo, ou encerrado por um dos dois lados
+         * @enum {string}
+         */
+        CareRelationshipStatus: "active" | "ended";
+        /**
+         * Format: uuid
+         * @description Id do perfil do paciente no módulo identity
+         */
+        PatientId: string;
     };
     responses: never;
     parameters: never;
@@ -1110,6 +1187,140 @@ export interface operations {
             };
             /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    MyCareRelationshipsController_end_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                careRelationshipId: components["schemas"]["CareRelationshipId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description O vínculo encerrado, com as duas datas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndedCareRelationship"];
+                };
+            };
+            /** @description Id que não é um uuid: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil (`identity.profile.not_found`) ou o vínculo não é dele (`identity.care_relationship.not_found`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O acompanhamento já estava encerrado: `identity.care_relationship.already_ended` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    PatientCareRelationshipsController_end_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patientId: components["schemas"]["PatientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description O vínculo encerrado, com as duas datas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EndedCareRelationship"];
+                };
+            };
+            /** @description Id que não é um uuid: `api.request.invalid` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é profissional: `identity.professional.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil (`identity.profile.not_found`) ou o paciente não é de nenhuma prática dele (`identity.patient.not_found`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O acompanhamento já estava encerrado: `identity.care_relationship.already_ended` */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

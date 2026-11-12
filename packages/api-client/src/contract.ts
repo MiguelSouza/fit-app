@@ -8,6 +8,7 @@ import {
   type ConsentList,
   type CreatedInvitation,
   type CreateInvitationRequest,
+  type EndedCareRelationship,
   type GrantConsentRequest,
   type HealthResponse,
   type Invitation,
@@ -99,3 +100,8 @@ export type AccessLogEntryFields = FieldsOf<
 export type AccessLogActorFields = FieldsOf<AccessLogActor, 'name' | 'professionalType'>;
 
 export type AccessLogPageFields = FieldsOf<AccessLogPage, 'entries' | 'nextCursor'>;
+
+export type EndedCareRelationshipFields = FieldsOf<
+  EndedCareRelationship,
+  'id' | 'organizationId' | 'status' | 'startedAt' | 'endedAt'
+>;
