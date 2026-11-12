@@ -80,6 +80,50 @@ Future<bool> signIn(GoTrueClient auth, {required String email, required String p
   }
 }
 
+/// What came of creating an account.
+enum SignUpOutcome {
+  /// The account exists and the session is open: the onboarding goes on, and
+  /// the next request already carries a token (`api_client.dart`).
+  signedIn,
+
+  /// The account was created and Auth is waiting for the e-mail to be
+  /// confirmed. There is no session, so there is no invitation to accept yet:
+  /// the API reads who is accepting from the token (ADR 0007).
+  confirmationNeeded,
+
+  /// Auth refused, with no reason attached.
+  refused,
+}
+
+/// Creating the patient's account, which is the first half of the onboarding
+/// by invitation (card P-01).
+///
+/// The refusal carries no reason, for the same two reasons as [signIn]: a
+/// message that tells apart "this e-mail already has an account" from "this
+/// password is weak" hands the list of who is on the platform to whoever is
+/// only guessing, and the error object of Auth carries the e-mail of the
+/// attempt, so it is neither returned nor logged (CLAUDE.md, "Saúde e LGPD").
+///
+/// Whether a confirmation e-mail is sent is the Supabase project's setting and
+/// not a decision of this app, which is why the outcome has three values and
+/// not two: with confirmation on, there is a user and no session, and the
+/// patient finishes the invitation after confirming.
+Future<SignUpOutcome> signUp(
+  GoTrueClient auth, {
+  required String email,
+  required String password,
+}) async {
+  try {
+    final response = await auth.signUp(email: email, password: password);
+
+    if (response.session != null) return SignUpOutcome.signedIn;
+
+    return response.user == null ? SignUpOutcome.refused : SignUpOutcome.confirmationNeeded;
+  } on Exception {
+    return SignUpOutcome.refused;
+  }
+}
+
 /// Signing out: drops the session here and revokes it at the Auth server.
 ///
 /// A failure is swallowed deliberately. `signOut` already clears the local
