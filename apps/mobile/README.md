@@ -99,8 +99,14 @@ lib/
       fit_app.dart           MaterialApp.router: tema, locale pt-BR e router
       router.dart            as rotas e `redirectFor`, que diz o que exige sessão
     auth/
-      auth_providers.dart    Supabase Auth, entrar e sair
+      auth_providers.dart    Supabase Auth, entrar, criar conta e sair
       sign_in_screen.dart    a tela de entrada
+    invitation/
+      invitation_link.dart   o link e o código: o que é um convite, sem I/O
+      consent_terms.dart     as quatro finalidades, o texto e a versão do termo
+      consent_page.dart      uma finalidade, uma tela
+      accept_invitation.dart POST /v1/invitations/accept
+      invitation_screen.dart o fluxo: código, conta, consentimentos, pronto
     api/
       api_client.dart        o cliente gerado + o token em cada requisição
       api_failure.dart       DioException -> mensagem que pode ir para a tela
@@ -139,6 +145,40 @@ Autorização não é daqui. Vínculo ativo, consentimento vigente e tipo de
 profissional são checados pela API, dentro do caso de uso
 ([ADR 0007](../../docs/adr/0007-autenticacao-por-jwt-do-supabase.md)). O app só
 sabe se existe sessão.
+
+## Convite, deep link e consentimento
+
+O paciente entra na plataforma por um convite do nutricionista (ADR
+[0016](../../docs/adr/0016-aceite-do-convite-vinculo-e-consentimento.md),
+[0021](../../docs/adr/0021-onboarding-do-paciente-no-app.md)). O app abre o
+convite de duas formas, e as duas terminam na mesma tela:
+
+- **pelo deep link** `fitapp://convite?token=<token>`;
+- **pelo código**, colado na tela `/convite` — que a tela de entrada oferece
+  para quem recebeu o link num aparelho que não abre o app.
+
+O deep link é tratado pelo próprio Flutter (`flutter_deeplinking_enabled` no
+`AndroidManifest.xml`, `FlutterDeepLinkingEnabled` no `Info.plist`): não há
+plugin novo, e quem decide para onde o link vai é o `router.dart`, como em
+qualquer rota. As duas plataformas **não entregam o link na mesma forma** —
+Android passa só o caminho e a query, e perde o host; iOS passa o endereço
+inteiro — e `invitationLocationFor` é o único lugar que sabe disso.
+
+```bash
+# Android, com o app instalado no emulador
+adb shell am start -a android.intent.action.VIEW -d "fitapp://convite?token=<token>"
+
+# iOS, no simulador
+xcrun simctl openurl booted "fitapp://convite?token=<token>"
+```
+
+Depois do código vêm a conta (Supabase Auth) e **uma tela por finalidade**, com
+o texto do termo e a versão. `health_data` e `share_with_professional` são
+obrigatórias: a tela não avança sem elas, e a API responde 422 se alguém tentar
+mesmo assim. `wearable_data` e `ai_processing` são opcionais e podem ser dadas
+depois. O texto e a versão (`consent_terms.dart`) são o gêmeo em Dart de
+`CURRENT_TERMS_VERSION` da API — o que fica **registrado** é sempre a versão que
+a API serviu, nunca uma que o app mandou.
 
 ## Dado de saúde e LGPD
 
@@ -214,6 +254,16 @@ que lê o `toJson()` do evento — o que iria para o fio.
   da plataforma; a identidade visual é o card OP-06.
 - **Recuperação de senha no app.** Hoje a tela manda pedir acesso ao
   nutricionista; o fluxo com link de e-mail e deep link é card próprio.
+- **O fuso horário do paciente.** O aceite do convite não manda `timeZone`: o
+  aparelho sabe o deslocamento, não o nome IANA, e a API aplica o padrão da
+  plataforma. Escolher o fuso é a tela de perfil, que ainda não existe.
+- **Confirmação de e-mail dentro do fluxo.** Se o projeto do Supabase exigir
+  confirmação, o aceite não acontece na hora: a tela pede para confirmar o
+  e-mail e abrir o link de novo.
+- **O termo servido pela API.** O texto e a versão estão no app
+  (`consent_terms.dart`) porque não há endpoint que os responda — é o card do
+  versionamento dos termos ([ADR
+  0016](../../docs/adr/0016-aceite-do-convite-vinculo-e-consentimento.md)).
 - **Armazenamento protegido da sessão.** O `supabase_flutter` guarda em
   `SharedPreferences`, em claro. Keychain e Keystore são dependência nova e
   decisão própria (ADR 0012).

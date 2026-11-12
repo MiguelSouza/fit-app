@@ -30,6 +30,33 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Deep linking handled by Flutter itself: the engine hands the
+                 uri of the intent to the router as a route, and go_router
+                 answers it (`lib/src/app/router.dart`). No plugin, and no
+                 second place deciding where a link goes. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="true" />
+
+            <!-- The invitation link of the patient:
+                 fitapp://convite?token=<token> (card P-01).
+
+                 A custom scheme and not an App Link over the panel's domain:
+                 an App Link has to be verified by a file served from that
+                 domain, which is infrastructure this card does not have — and
+                 one that fails to verify opens the browser without saying so.
+
+                 Android gives Flutter the **path** and the query of this uri
+                 and drops the host, so what arrives is `/?token=...`;
+                 `invitationLocationFor` is where that is turned back into the
+                 route of the screen. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="fitapp" android:host="convite"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
