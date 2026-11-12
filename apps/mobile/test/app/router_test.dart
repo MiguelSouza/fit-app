@@ -45,14 +45,14 @@ void main() {
       expect(redirectForPath(signedIn: true, location: '$invitePath?token=$_token'), isNull);
     });
 
-    test('the deep link as iOS delivers it lands on the screen', () {
+    test('the deep link, host and all, lands on the screen', () {
       expect(
         redirectForPath(signedIn: false, location: 'fitapp://convite?token=$_token'),
         '$invitePath?token=$_token',
       );
     });
 
-    test('the deep link as Android delivers it, host dropped, lands there too', () {
+    test('the same link with the host dropped, as older engines gave it, lands there too', () {
       expect(
         redirectForPath(signedIn: false, location: '/?token=$_token'),
         '$invitePath?token=$_token',

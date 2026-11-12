@@ -160,9 +160,12 @@ convite de duas formas, e as duas terminam na mesma tela:
 O deep link é tratado pelo próprio Flutter (`flutter_deeplinking_enabled` no
 `AndroidManifest.xml`, `FlutterDeepLinkingEnabled` no `Info.plist`): não há
 plugin novo, e quem decide para onde o link vai é o `router.dart`, como em
-qualquer rota. As duas plataformas **não entregam o link na mesma forma** —
-Android passa só o caminho e a query, e perde o host; iOS passa o endereço
-inteiro — e `invitationLocationFor` é o único lugar que sabe disso.
+qualquer rota. O link, porém, **não chega como rota do app**: as duas
+plataformas entregam o endereço inteiro, e nele `convite` é o _host_ — o
+caminho é vazio, e uri nenhuma assim casa com rota. Engines mais antigos
+descartavam o host e entregavam só o caminho e a query (`/?token=...`), forma
+que continua aceita. `invitationLocationFor` é o único lugar que sabe disso, e
+normaliza todas elas para `/convite?token=...`.
 
 ```bash
 # Android, com o app instalado no emulador

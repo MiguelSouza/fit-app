@@ -46,14 +46,16 @@ reconhece a URL do painel e nada mais muda.
 plugin de deep link seria uma dependência nova para entregar a mesma uri por
 fora do router, com duas coisas navegando.
 
-Isso traz um detalhe que **tem** de estar escrito em algum lugar: as duas
-plataformas não entregam o link na mesma forma. Android passa o caminho e a
-query da intent e **descarta o host**, então `fitapp://convite?token=abc` chega
-como `/?token=abc`; iOS passa o endereço inteiro. `invitationLocationFor`, no
-`router.dart`, é o único lugar que sabe disso, e normaliza as duas formas (e a
-URL do painel) para `/convite?token=abc`. É também por isso que o redirect do
-router lê `state.uri` e não `state.matchedLocation`: uma uri com host e sem
-caminho não casa com rota nenhuma.
+Isso traz um detalhe que **tem** de estar escrito em algum lugar: o link não
+chega como rota do app. `fitapp://convite?token=abc` é entregue inteiro pelas
+duas plataformas, e nele `convite` é o **host** — o caminho é vazio, e uri
+nenhuma assim casa com rota. Engines mais antigos descartavam o host e
+entregavam só o caminho e a query (`/?token=abc`), e essa forma continua aceita.
+`invitationLocationFor`, no `router.dart`, é o único lugar que sabe disso, e
+normaliza todas as formas (e a URL do painel) para `/convite?token=abc`. É
+também por isso que o redirect do router lê `state.uri` e não
+`state.matchedLocation`: uma uri com host e sem caminho não casa com rota
+nenhuma.
 
 **`/convite` é a única rota que responde com e sem sessão.** O paciente chega
 sem conta e é autenticado no meio do fluxo; um redirect para a home no instante
@@ -77,14 +79,17 @@ cliente mandou (ADR 0016), então um app desatualizado pode mostrar um número
 velho, mas não pode registrar concordância com texto que ninguém serviu.
 
 **A resposta do aceite passa a carregar o nome da prática**
-(`organizationName`), e isto reverte uma frase do ADR 0016. A última tela do
-onboarding existe para dizer a quem o paciente se conectou, e id não se lê em
-voz alta. Não é dado de terceiro para quem está lendo: é a parte com quem a
-pessoa acabou de se vincular, e para profissional solo é o nome dele (ADR
-[0014](./0014-modelo-de-identidade-e-organizacao-solo.md)). O ADR 0016 remetia
-esse nome ao `GET /v1/me` do paciente, que não existe — e criá-lo para uma
-palavra numa tela seria um endpoint a mais para a mesma resposta. Nenhum outro
-nome entra: nem o do paciente, nem o de quem convidou.
+(`organizationName`), e isto desfaz uma decisão que o ADR 0016 não escreveu: ela
+estava no comentário do contrato
+(`packages/contracts/src/identity/invitation-acceptance.ts`), que dizia que a
+resposta não carrega nome nenhum e remetia esse ao `GET /v1/me` do paciente. A
+última tela do onboarding existe para dizer a quem o paciente se conectou, e id
+não se lê em voz alta. Não é dado de terceiro para quem está lendo: é a parte
+com quem a pessoa acabou de se vincular, e para profissional solo é o nome dele
+(ADR [0014](./0014-modelo-de-identidade-e-organizacao-solo.md)). O `GET /v1/me`
+do lado do paciente não existe — e criá-lo para uma palavra numa tela seria um
+endpoint a mais para a mesma resposta. Nenhum outro nome entra: nem o do
+paciente, nem o de quem convidou.
 
 Ficam **explicitamente de fora**:
 

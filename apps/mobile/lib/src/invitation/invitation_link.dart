@@ -1,8 +1,8 @@
 /// The invitation link and the invitation code, read without any I/O.
 ///
 /// Pure, and tested on its own: this is the whole of "what the app accepts as
-/// an invitation", and it has to hold on both platforms, which do not deliver
-/// a deep link in the same shape (see [isInvitationLink]).
+/// an invitation", and it has to hold for every shape a deep link arrives in
+/// (see [isInvitationLink]).
 ///
 /// What a token really is, is the API's answer: the row it matches is a hash
 /// (ADR 0015), and nothing here says whether a link still works. What it does
@@ -22,9 +22,9 @@ library;
 const String invitationLinkScheme = 'fitapp';
 
 /// The host of the deep link, which is also the path of the screen inside the
-/// app (`router.dart`). The two are the same word on purpose: Android hands
-/// the app the **path** of the uri and drops the host, so a link written with
-/// one of them arrives carrying the other.
+/// app (`router.dart`). The two are the same word on purpose: what the engine
+/// hands over is a uri whose **host** is this word and whose path is empty,
+/// and what the router matches is the path `/convite`.
 const String invitationLinkHost = 'convite';
 
 /// The name of the query parameter the token travels in, the panel's own.
@@ -44,13 +44,15 @@ const int _tokenMaxLength = 200;
 
 /// Whether this uri is an invitation link, whatever shape it arrived in.
 ///
-/// The same link reaches the two platforms differently, and this is the one
-/// place that knows it. Android gives Flutter the path and the query of the
-/// intent's uri and **drops the host**, so `fitapp://convite?token=abc` shows
-/// up as `/?token=abc`; iOS hands over the whole address, host and all. Both
-/// are recognised here, and so is the panel's own
-/// `https://<painel>/convite?token=abc` — the day the link becomes an App Link
-/// over that domain, nothing below has to change.
+/// A deep link does not arrive as a route of this app, and this is the one
+/// place that knows the shapes it does arrive in. Both platforms hand the
+/// engine the whole address, so `fitapp://convite?token=abc` comes in with
+/// `convite` as the **host** and no path at all — which matches no route until
+/// it is normalised. Engines that predate that dropped the host and handed
+/// over the path and the query (`/?token=abc`), and that shape is recognised
+/// here too, as is the panel's own `https://<painel>/convite?token=abc` — the
+/// day the link becomes an App Link over that domain, nothing below has to
+/// change.
 bool isInvitationLink(Uri uri) {
   if (uri.host == invitationLinkHost) return true;
   if (uri.pathSegments.isNotEmpty && uri.pathSegments.last == invitationLinkHost) return true;

@@ -7,13 +7,14 @@ const String _token = 'abcdefghijklmnopqrstuvwxyz0123456789-_ABCDE';
 
 void main() {
   group('isInvitationLink', () {
-    test('the link as iOS delivers it: the whole address, host and all', () {
+    test('the link as the engine delivers it: the whole address, host and all', () {
       expect(isInvitationLink(Uri.parse('fitapp://convite?token=$_token')), isTrue);
     });
 
-    test('the link as Android delivers it: the path and the query, no host', () {
-      // `fitapp://convite?token=...` reaches the engine as this, which is the
-      // whole reason the token in the query is what identifies the link.
+    test('the same link with the host dropped, as older engines delivered it', () {
+      // `fitapp://convite?token=...` reached the engine as this before the
+      // whole uri was handed over, which is the reason the token in the query
+      // is also enough to identify the link.
       expect(isInvitationLink(Uri.parse('/?token=$_token')), isTrue);
     });
 

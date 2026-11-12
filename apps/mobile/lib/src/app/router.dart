@@ -61,11 +61,13 @@ String? redirectFor({required bool signedIn, required Uri location}) {
 /// An invitation link, as a location of this app — or `null` when the uri is
 /// not one.
 ///
-/// This is the one place that knows that the two platforms deliver a deep link
-/// differently: Android hands over the path and the query and drops the host,
-/// so `fitapp://convite?token=abc` arrives as `/?token=abc`, while iOS hands
-/// over the whole address (`isInvitationLink`). Both come out of here as
-/// `/convite?token=abc`, and the screen below reads one shape.
+/// This is the one place that knows the shapes a deep link arrives in. Both
+/// platforms deliver `fitapp://convite?token=abc` whole, and in it `convite`
+/// is the **host**: the path is empty, so it matches no route of this app.
+/// Engines that predate that dropped the host and delivered the path and the
+/// query only (`/?token=abc`), which is read here as well
+/// (`isInvitationLink`). Every shape comes out of here as
+/// `/convite?token=abc`, and the screen below reads one.
 String? invitationLocationFor(Uri uri) {
   if (!isInvitationLink(uri)) return null;
 

@@ -47,10 +47,10 @@
                  domain, which is infrastructure this card does not have — and
                  one that fails to verify opens the browser without saying so.
 
-                 Android gives Flutter the **path** and the query of this uri
-                 and drops the host, so what arrives is `/?token=...`;
-                 `invitationLocationFor` is where that is turned back into the
-                 route of the screen. -->
+                 The engine hands this uri to the router whole, and in it
+                 `convite` is the **host** and not the path, so it matches no
+                 route on its own; `invitationLocationFor` is where it is
+                 turned into the route of the screen. -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
