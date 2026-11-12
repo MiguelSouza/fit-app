@@ -18,7 +18,10 @@ import {
   patientIdentity,
   professionalIdentity,
 } from '../application/in-memory-identity-registry.spec-support';
-import { InMemoryInvitationAcceptanceRepository } from '../application/in-memory-invitation-acceptance.spec-support';
+import {
+  InMemoryInvitationAcceptanceRepository,
+  TEST_ORGANIZATION_NAME,
+} from '../application/in-memory-invitation-acceptance.spec-support';
 import {
   InMemoryInvitationRepository,
   invitationRow,
@@ -306,6 +309,7 @@ describe('the invitation routes', () => {
       expect(response.body).toEqual({
         profileId: expect.any(String),
         organizationId: ORGANIZATION_ID,
+        organizationName: TEST_ORGANIZATION_NAME,
         careRelationshipId: expect.any(String),
         acceptedAt: expect.any(String),
         consents: ['health_data', 'share_with_professional'],

@@ -62,6 +62,12 @@ export interface InvitationAcceptance {
 export interface AcceptedInvitation {
   readonly profileId: string;
   readonly organizationId: string;
+  /**
+   * The name of the practice, as the patient is told at the end of the
+   * onboarding (card P-01). It is read, never decided here: the practice is
+   * the invitation's, and its name is a row of `identity.organization`.
+   */
+  readonly organizationName: string;
   readonly careRelationshipId: string;
   readonly acceptedAt: Date;
   /** The purposes in force afterwards, which may include older consents. */
