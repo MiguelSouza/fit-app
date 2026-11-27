@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { ProfileNotFoundError } from '../domain/identity-errors';
-import { patientProfileIdOf } from '../domain/patient-caller';
+import { patientCallerOf, patientProfileIdOf, type PatientCaller } from '../domain/patient-caller';
 import { IDENTITY_REGISTRY, type IdentityRegistry } from './ports/identity-registry.port';
 
 /**
@@ -19,6 +19,12 @@ import { IDENTITY_REGISTRY, type IdentityRegistry } from './ports/identity-regis
  * different question with a different subject: a patient reading their own
  * consents needs no care link and no `share_with_professional` — revoking that
  * very consent is one of these requests.
+ *
+ * It leaves the module through `index.ts`, next to the access rule and the
+ * access log, because it is the other half of the same obligation: every route
+ * of `nutrition`, `health` and `insights` that a patient points at themselves
+ * — their check-ins, their diary, their plan — starts by resolving who is
+ * calling, and nobody writes that line twice (card P-02).
  */
 @Injectable()
 export class LoadPatientCaller {
@@ -38,5 +44,27 @@ export class LoadPatientCaller {
     if (identity === undefined) throw new ProfileNotFoundError();
 
     return patientProfileIdOf(identity);
+  }
+
+  /**
+   * The caller as a patient, with the time zone their days are counted in.
+   *
+   * It is what a module that records something the patient **lived** needs:
+   * which Tuesday a check-in is about is read in their zone and in nobody
+   * else's (CLAUDE.md, "Dados de saúde"), and the zone is a column of this
+   * module's `profile` table (rule 2). Whoever only needs the id keeps using
+   * `patientProfileId` above — one query either way.
+   *
+   * @param authUserId the `sub` of the verified access token
+   * @throws ProfileNotFoundError when the caller never finished the first
+   *   access (404), CallerIsNotPatientError when the account is a
+   *   professional's (403)
+   */
+  async execute(authUserId: string): Promise<PatientCaller> {
+    const identity = await this.registry.findByAuthUserId(authUserId);
+
+    if (identity === undefined) throw new ProfileNotFoundError();
+
+    return patientCallerOf(identity);
   }
 }

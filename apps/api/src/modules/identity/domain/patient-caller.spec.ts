@@ -1,5 +1,5 @@
 import { CallerIsNotPatientError } from './identity-errors';
-import { patientProfileIdOf } from './patient-caller';
+import { patientCallerOf, patientProfileIdOf } from './patient-caller';
 import { type RegisteredIdentity } from './registered-identity';
 
 /**
@@ -55,5 +55,27 @@ describe('patientProfileIdOf', () => {
         ],
       }),
     ).toBe('patient-profile-id');
+  });
+});
+
+describe('patientCallerOf', () => {
+  it('answers the profile id and the zone the patient days are counted in', () => {
+    expect(patientCallerOf(PATIENT)).toEqual({
+      profileId: 'patient-profile-id',
+      timeZone: 'America/Sao_Paulo',
+    });
+  });
+
+  it('answers the zone of the profile and never a default of the server', () => {
+    // The zone is what turns an instant into "ontem" for this person
+    // (CLAUDE.md, "Dados de saúde"), so it travels exactly as the column has
+    // it.
+    expect(patientCallerOf({ ...PATIENT, timeZone: 'Europe/Lisbon' }).timeZone).toBe(
+      'Europe/Lisbon',
+    );
+  });
+
+  it('refuses a professional, like the function next to it', () => {
+    expect(() => patientCallerOf(PROFESSIONAL)).toThrow(CallerIsNotPatientError);
   });
 });

@@ -33,3 +33,39 @@ export function patientProfileIdOf(identity: RegisteredIdentity): string {
 
   return identity.personId;
 }
+
+/**
+ * The patient who is calling: the id of their profile and the zone their days
+ * are counted in.
+ *
+ * Two fields, and the second one is why this exists next to the function
+ * above. Every module that records something the patient **lived** has to know
+ * which day it was for them — the night a sleep began, the Tuesday a check-in
+ * is about (CLAUDE.md, "Dados de saúde": UTC in the database, the zone on the
+ * profile) — and the zone is a column of `identity.profile`, which only this
+ * module reads (rule 2). So it travels out of here with the id, instead of
+ * every other module learning to ask for it separately or, worse, defaulting
+ * to the server's.
+ *
+ * It is the caller's own and nobody else's. A professional reading a patient
+ * goes through the access rule (ADR 0017), which answers a different question.
+ */
+export interface PatientCaller {
+  /** `identity.profile.id` — ours, never the Supabase user id. */
+  readonly profileId: string;
+
+  /** The IANA name on the profile. Never empty: the column is `not null`. */
+  readonly timeZone: string;
+}
+
+/**
+ * The caller as a patient, with their zone.
+ *
+ * @throws CallerIsNotPatientError when the account is a professional's (403),
+ *   for the same reason as above
+ */
+export function patientCallerOf(identity: RegisteredIdentity): PatientCaller {
+  if (identity.role !== 'patient') throw new CallerIsNotPatientError();
+
+  return { profileId: identity.personId, timeZone: identity.timeZone };
+}
