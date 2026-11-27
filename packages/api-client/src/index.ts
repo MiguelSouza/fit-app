@@ -57,6 +57,18 @@ export type AccessLogAction = components['schemas']['AccessLogAction'];
 export type AccessLogQuery = components['schemas']['AccessLogQuery'];
 
 /**
+ * `PUT /v1/me/checkins/{date}`, `GET /v1/me/checkins`,
+ * `GET /v1/patients/{patientId}/checkins`
+ */
+export type Checkin = components['schemas']['Checkin'];
+export type CheckinDate = components['schemas']['CheckinDate'];
+export type CheckinScale = components['schemas']['CheckinScale'];
+export type CheckinSymptom = components['schemas']['CheckinSymptom'];
+export type CheckinList = components['schemas']['CheckinList'];
+export type CheckinPeriodQuery = components['schemas']['CheckinPeriodQuery'];
+export type RecordCheckinRequest = components['schemas']['RecordCheckinRequest'];
+
+/**
  * `POST /v1/me/care-relationships/{careRelationshipId}/end`,
  * `POST /v1/patients/{patientId}/care-relationship/end`
  */

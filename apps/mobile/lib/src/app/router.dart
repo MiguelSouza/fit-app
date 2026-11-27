@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/auth_providers.dart';
 import '../auth/sign_in_screen.dart';
+import '../checkin/checkin_screen.dart';
 import '../home/home_screen.dart';
 import '../invitation/invitation_link.dart';
 import '../invitation/invitation_screen.dart';
@@ -12,6 +13,10 @@ const String homePath = '/';
 
 /// The sign in. The only route that answers without a session.
 const String signInPath = '/entrar';
+
+/// The check-in of the day (card P-02). Protected, like the home it is pushed
+/// from: it is the patient's own health data.
+const String checkinPath = '/check-in';
 
 /// The onboarding by invitation: where the deep link lands and where the code
 /// typed by hand goes (card P-01).
@@ -99,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     routes: <RouteBase>[
       GoRoute(path: homePath, builder: (context, state) => const HomeScreen()),
+      GoRoute(path: checkinPath, builder: (context, state) => const CheckinScreen()),
       GoRoute(path: signInPath, builder: (context, state) => const SignInScreen()),
       GoRoute(
         path: invitePath,

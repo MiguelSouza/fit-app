@@ -141,6 +141,7 @@ Toda decisão que mude estrutura, dependência importante ou regra deste arquivo
 - 0019 Registro de acessos: tabela append-only, um registro por visita e página por cursor
 - 0020 Encerrar o vínculo: `ended_at` numa linha, 404 na requisição seguinte e um evento
 - 0021 Onboarding do paciente no app: deep link por esquema próprio, uma tela por finalidade e o nome da prática
+- 0022 Check-in diário: o dia como endereço, a janela do próprio dia e escalas de cinco toques
 
 ## Não faça
 

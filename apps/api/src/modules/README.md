@@ -10,10 +10,9 @@ schema do Postgres e só é visto de fora pelo próprio `index.ts`.
 | `health`    | `health`    | conexões de wearable, atividades, sono, métricas diárias, check-ins, medidas   |
 | `insights`  | `insights`  | regras de alerta, alertas, resumos por IA, intervenções, linha do tempo        |
 
-`nutrition`, `health` e `insights` ainda têm só o `<modulo>.module.ts` e o
-`index.ts`: o conteúdo entra pelos cards de cada domínio, e as pastas das quatro
-camadas já existem, com um `.gitkeep` cada, porque o git não versiona pasta
-vazia.
+`nutrition` e `insights` ainda têm só o `<modulo>.module.ts` e o `index.ts`: o
+conteúdo entra pelos cards de cada domínio, e as pastas das quatro camadas já
+existem, com um `.gitkeep` cada, porque o git não versiona pasta vazia.
 
 `identity` é o primeiro módulo com as quatro camadas preenchidas: as tabelas
 `profile`, `professional`, `organization` e `organization_member`, o cadastro do
@@ -24,13 +23,16 @@ I-03); o serviço de acesso ao paciente (card I-04); as três rotas de
 `/v1/me/consents` (card I-05); e a tabela `access_log` com o registro de
 acessos e o `GET /v1/me/access-log` (card I-06).
 
-O que os outros três módulos usam são duas coisas — a regra de acesso e o
-registro dele —, e é tudo o que este módulo exporta além do `IdentityModule`:
+O que os outros três módulos usam são três coisas — quem está chamando, a regra
+de acesso e o registro dele —, e é tudo o que este módulo exporta além do
+`IdentityModule`:
 
 ```ts
 import {
   AccessLogService,
   IdentityModule,
+  LoadPatientCaller,
+  LoadProfessionalCaller,
   PatientAccessService,
   RecordsPatientAccess,
   RequiresPatientAccess,
@@ -45,6 +47,12 @@ paciente no caminho. Negativa é **404**, nunca 403: 403 diria ao profissional
 quais ids existem. Ninguém reimplementa isso (`CLAUDE.md`, "Saúde e LGPD"); a
 decisão está na ADR
 [0017](../../../../docs/adr/0017-servico-de-acesso-ao-paciente.md).
+
+`LoadPatientCaller` e `LoadProfessionalCaller` resolvem quem está chamando a
+partir do `sub` do token verificado (ADR 0007), e é a primeira linha de todo
+caso de uso. O do paciente responde também o **fuso** do perfil
+(`execute`): que terça-feira é o check-in de alguém se lê onde a pessoa está
+(`CLAUDE.md`, "Dados de saúde"), e a coluna é do `identity`.
 
 `AccessLogService.logAccess(actorId, patientId, resource, action)` grava que
 alguém abriu ou exportou os dados de um paciente, e `@RecordsPatientAccess()`

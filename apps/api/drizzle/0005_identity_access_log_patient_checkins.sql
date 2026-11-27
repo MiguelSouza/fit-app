@@ -1,0 +1,11 @@
+-- Mais um tipo de acesso ao registro: os check-ins de um período (card P-02).
+--
+-- `ADD VALUE` e nada mais: o enum só cresce, nunca é reordenado e nenhum valor
+-- é reaproveitado. Os códigos estão na trilha de auditoria de pacientes reais,
+-- e trocar o significado de um deles reescreveria história.
+--
+-- O Postgres aceita isso dentro de uma transação desde a 12 — é o que o
+-- migrador do Drizzle usa — com uma condição que esta migração respeita: o
+-- valor novo não pode ser *usado* na mesma transação em que nasce. Aqui ele só
+-- passa a existir; quem escreve com ele é a requisição seguinte.
+ALTER TYPE "identity"."access_log_resource" ADD VALUE 'patient_checkins';

@@ -28,6 +28,7 @@ export const DOMAIN_EVENT_NAMES = [
   'identity.consent.revoked',
   'identity.relationship.ended',
   'nutrition.plan.activated',
+  'health.checkin.recorded',
   'health.sleep.received',
   'insights.alert.created',
 ] as const;
@@ -111,6 +112,40 @@ export interface DomainEventPayloads extends Record<DomainEventName, object> {
     readonly planId: string;
     readonly patientId: string;
     readonly activatedAt: string;
+  };
+
+  /**
+   * The patient filled in the check-in of a day, or corrected the one that was
+   * already there (card P-02).
+   *
+   * One event per save and not one per day: a correction is a new fact about
+   * the same day, and `corrected` is what lets a subscriber tell them apart —
+   * `insights` recalculates either way, and whatever one day notifies somebody
+   * must not notify twice because a tap was fixed.
+   *
+   * **Ids, a day and an instant, as every payload here.** Not the energy, not
+   * the hunger, not the symptoms and certainly not the note: a payload is read
+   * by handlers that may log it, enqueue it or hand it to a provider, and
+   * those are the patient's health data (CLAUDE.md, "Saúde e LGPD"). A
+   * subscriber that needs the answers asks `health` for them, with the consent
+   * check that comes with it.
+   */
+  'health.checkin.recorded': {
+    /** The patient's `identity.profile.id`. */
+    readonly patientId: string;
+
+    /**
+     * The day the check-in is about, `YYYY-MM-DD`, as read in the patient's
+     * own time zone — not an instant, for the reason written at the top of
+     * this file.
+     */
+    readonly date: string;
+
+    /** `true` when this save replaced a check-in of the same day. */
+    readonly corrected: boolean;
+
+    /** When it was saved, in UTC. */
+    readonly savedAt: string;
   };
 
   /** A night of sleep arrived from the aggregator, named by the day it began. */

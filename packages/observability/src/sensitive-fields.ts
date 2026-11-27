@@ -65,12 +65,17 @@ const SENSITIVE_NAMES = new Set([
   'measures',
   'measurements',
   'sleephours',
+  // The three the daily check-in added to the ones above (card P-02): they are
+  // answers on a scale of how somebody felt, which is exactly the "valores de
+  // check-in" CLAUDE.md refuses to see in a log.
+  'sleepquality',
+  'hunger',
 ]);
 
 /**
  * Suffixes, for the same fields spelled with a qualifier in front:
  * `patientName`, `contactEmail`, `accessToken`, `professional_phone`,
- * `patientContact`, `lastCheckIn`.
+ * `patientContact`, `lastCheckIn`, `otherSymptom`.
  */
 const SENSITIVE_SUFFIXES = [
   'name',
@@ -83,6 +88,8 @@ const SENSITIVE_SUFFIXES = [
   'password',
   'notes',
   'note',
+  'symptom',
+  'symptoms',
   'cpf',
   'birthdate',
   'address',

@@ -10,6 +10,7 @@ desse OpenAPI, em [`packages/api-client`](../api-client/README.md).
 ```
 src/
   health-check/   GET /v1/health
+  health/         check-ins, sono, atividades, medidas
   identity/       pessoas, vínculos, consentimentos
   shared/         o que toda resposta pode trazer (corpo de erro)
   index.ts        API pública do pacote: é o que os outros importam

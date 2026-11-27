@@ -21,6 +21,28 @@ export {
 } from './health-check/health-response';
 
 export {
+  checkinDateSchema,
+  checkinListSchema,
+  checkinPeriodQuerySchema,
+  checkinScaleSchema,
+  checkinSchema,
+  checkinSymptomSchema,
+  recordCheckinRequestSchema,
+  CHECKIN_NOTE_MAX_LENGTH,
+  CHECKIN_OTHER_SYMPTOM_MAX_LENGTH,
+  CHECKIN_PERIOD_MAX_DAYS,
+  CHECKIN_SCALE_MAX,
+  CHECKIN_SCALE_MIN,
+  type Checkin,
+  type CheckinDate,
+  type CheckinList,
+  type CheckinPeriodQuery,
+  type CheckinScale,
+  type CheckinSymptom,
+  type RecordCheckinRequest,
+} from './health/checkin';
+
+export {
   accessLogActionSchema,
   accessLogActorSchema,
   accessLogEntrySchema,

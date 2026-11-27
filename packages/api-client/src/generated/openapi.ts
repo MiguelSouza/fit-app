@@ -228,6 +228,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/checkins/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Salvar o check-in de um dia
+         * @description Grava o check-in do dia, ou corrige o que já estava lá: é **um por paciente por dia**, e mandar duas vezes não cria dois. O conjunto de respostas é substituído inteiro, então sintoma retirado e nota apagada somem de verdade. `recordedAt` é a primeira gravação e não se move; `updatedAt` acompanha cada correção. **Só no próprio dia**: o dia é lido no fuso do paciente, e qualquer outro responde 422. Só o próprio paciente pode gravar.
+         */
+        put: operations["MyCheckinsController_record_v1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/checkins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Os check-ins de quem fez a chamada, num período
+         * @description Lista os check-ins do paciente entre `from` e `to`, os dois dias incluídos, do mais antigo para o mais recente. Dia sem check-in simplesmente não vem na lista — a API não preenche o que ninguém respondeu. Só o próprio paciente pode pedir.
+         */
+        get: operations["MyCheckinsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/patients/{patientId}/checkins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Os check-ins de um paciente, num período
+         * @description Lista os check-ins do paciente entre `from` e `to`, os dois dias incluídos, do mais antigo para o mais recente — exatamente como o paciente respondeu, sem nota, score ou leitura da plataforma. Dia sem check-in não vem na lista. **Exige vínculo ativo e o consentimento de compartilhamento vigente**: sem um dos dois a resposta é 404, igual a um paciente que não existe. Cada chamada vira uma linha no registro de acessos do paciente.
+         */
+        get: operations["PatientCheckinsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -559,10 +619,10 @@ export interface components {
             professionalType?: components["schemas"]["ProfessionalType"];
         };
         /**
-         * @description O que foi acessado: hoje, a ficha do paciente
+         * @description O que foi acessado: a ficha do paciente ou os check-ins de um período
          * @enum {string}
          */
-        AccessLogResource: "patient_chart";
+        AccessLogResource: "patient_chart" | "patient_checkins";
         /**
          * @description O que foi feito: abrir na tela (`view`) ou exportar (`export`)
          * @enum {string}
@@ -605,6 +665,78 @@ export interface components {
          * @description Id do perfil do paciente no módulo identity
          */
         PatientId: string;
+        /**
+         * @description O dia do check-in, `YYYY-MM-DD`, no fuso do paciente. É um dia do calendário e não um instante: não tem hora e não tem fuso
+         * @example 2026-11-27
+         */
+        CheckinDate: string;
+        /** @description O check-in do dia, como o paciente preenche */
+        RecordCheckinRequest: {
+            /** @description Energia percebida no dia, de 1 a 5 */
+            energy: components["schemas"]["CheckinScale"];
+            /** @description Qualidade do sono **percebida** pelo paciente, na mesma escala. É o que a pessoa achou, não o que o wearable mediu: os dois convivem e não se corrigem */
+            sleepQuality: components["schemas"]["CheckinScale"];
+            /** @description Fome ao longo do dia, de 1 a 5 */
+            hunger: components["schemas"]["CheckinScale"];
+            /**
+             * @description Os sintomas do dia, em código. Ausente ou vazio significa "nada a relatar". Repetições e ordem não importam: a API responde na ordem do vocabulário
+             * @default []
+             */
+            symptoms: components["schemas"]["CheckinSymptom"][];
+            /** @description O que foi o `other`, em poucas palavras. Só é guardado quando `other` está em `symptoms`; sem ele, é descartado */
+            otherSymptom?: string;
+            /** @description Nota livre do paciente sobre o dia. Texto em branco é o mesmo que nota nenhuma */
+            note?: string;
+        };
+        /**
+         * @description Uma resposta na escala de 1 a 5
+         * @example 3
+         */
+        CheckinScale: number;
+        /**
+         * @description Um sintoma do check-in, em código: o cliente traduz. `other` é "algo que não está nesta lista", e o que foi vai em `otherSymptom`
+         * @enum {string}
+         */
+        CheckinSymptom: "bloating" | "nausea" | "heartburn" | "constipation" | "diarrhea" | "headache" | "cramps" | "muscle_soreness" | "dizziness" | "other";
+        /** @description Um check-in diário do paciente */
+        Checkin: {
+            date: components["schemas"]["CheckinDate"];
+            energy: components["schemas"]["CheckinScale"];
+            sleepQuality: components["schemas"]["CheckinScale"];
+            hunger: components["schemas"]["CheckinScale"];
+            /** @description Os sintomas relatados, na ordem do vocabulário. Vazio quando não houve */
+            symptoms: components["schemas"]["CheckinSymptom"][];
+            /** @description O que foi o `other`, quando o paciente escreveu. Ausente quando não escreveu */
+            otherSymptom?: string;
+            /** @description A nota do paciente. Ausente quando não houve */
+            note?: string;
+            /**
+             * Format: date-time
+             * @description Quando o check-in foi salvo pela primeira vez, em UTC
+             * @example 2026-11-27T12:00:00.000Z
+             */
+            recordedAt: string;
+            /**
+             * Format: date-time
+             * @description Quando o check-in mudou pela última vez, em UTC. Igual a `recordedAt` enquanto ninguém o corrigiu
+             * @example 2026-11-27T12:00:00.000Z
+             */
+            updatedAt: string;
+        };
+        /** @description O período da listagem, de no máximo 366 dias */
+        CheckinPeriodQuery: {
+            /** @description Primeiro dia do período, incluído */
+            from: components["schemas"]["CheckinDate"];
+            /** @description Último dia do período, incluído */
+            to: components["schemas"]["CheckinDate"];
+        };
+        /** @description Os check-ins de um período */
+        CheckinList: {
+            from: components["schemas"]["CheckinDate"];
+            to: components["schemas"]["CheckinDate"];
+            /** @description Os check-ins do período, do dia mais antigo para o mais recente */
+            checkins: components["schemas"]["Checkin"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -1326,6 +1458,202 @@ export interface operations {
             };
             /** @description O acompanhamento já estava encerrado: `identity.care_relationship.already_ended` */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    MyCheckinsController_record_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description O dia do check-in, `YYYY-MM-DD`, no fuso do paciente */
+                date: components["schemas"]["CheckinDate"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordCheckinRequest"];
+            };
+        };
+        responses: {
+            /** @description O check-in do dia, como ficou */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Checkin"];
+                };
+            };
+            /** @description Corpo inválido (`api.request.invalid`) ou dia que não existe no calendário (`health.checkin.invalid_date`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description O dia não é hoje no fuso do paciente: `health.checkin.window_closed` */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    MyCheckinsController_list_v1: {
+        parameters: {
+            query: {
+                /** @description Último dia do período, incluído, `YYYY-MM-DD` */
+                to: string;
+                /** @description Primeiro dia do período, incluído, `YYYY-MM-DD` */
+                from: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Os check-ins do período */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinList"];
+                };
+            };
+            /** @description Período inválido: `api.request.invalid`, `health.checkin.invalid_date`, `health.checkin.invalid_period` ou, acima de 366 dias, `health.checkin.period_too_long` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é paciente: `identity.patient.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil: `identity.profile.not_found` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Erro inesperado. É o envelope de erro de toda a API */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    PatientCheckinsController_list_v1: {
+        parameters: {
+            query: {
+                /** @description Último dia do período, incluído, `YYYY-MM-DD` */
+                to: string;
+                /** @description Primeiro dia do período, incluído, `YYYY-MM-DD` */
+                from: string;
+            };
+            header?: never;
+            path: {
+                patientId: components["schemas"]["PatientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Os check-ins do paciente no período */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinList"];
+                };
+            };
+            /** @description Período inválido: `api.request.invalid`, `health.checkin.invalid_date`, `health.checkin.invalid_period` ou, acima de 366 dias, `health.checkin.period_too_long` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não é profissional: `identity.professional.required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Quem chamou não tem perfil (`identity.profile.not_found`) ou não pode ver esse paciente — sem vínculo, sem consentimento, ou paciente que não existe: `identity.patient.not_found`, a mesma resposta para os três */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

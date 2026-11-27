@@ -132,10 +132,15 @@ import { ProfessionalsController } from './presentation/professionals.controller
   // exported, `index.ts` does not name any of these classes except the
   // service, and lint keeps another module from importing the files
   // (CLAUDE.md rule 1).
+  //
+  // `LoadPatientCaller` is exported for a plainer reason than the guard: it is
+  // named by `index.ts`, so the use cases of the other modules inject it
+  // directly (card P-02).
   exports: [
     PatientAccessService,
     PatientAccessGuard,
     LoadProfessionalCaller,
+    LoadPatientCaller,
     AccessLogService,
     PatientAccessLogInterceptor,
   ],
