@@ -881,6 +881,275 @@
           "PatientCareRelationships"
         ]
       }
+    },
+    "/v1/me/checkins/{date}": {
+      "put": {
+        "description": "Grava o check-in do dia, ou corrige o que já estava lá: é **um por paciente por dia**, e mandar duas vezes não cria dois. O conjunto de respostas é substituído inteiro, então sintoma retirado e nota apagada somem de verdade. `recordedAt` é a primeira gravação e não se move; `updatedAt` acompanha cada correção. **Só no próprio dia**: o dia é lido no fuso do paciente, e qualquer outro responde 422. Só o próprio paciente pode gravar.",
+        "operationId": "MyCheckinsController_record_v1",
+        "parameters": [
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "description": "O dia do check-in, `YYYY-MM-DD`, no fuso do paciente",
+            "schema": {
+              "$ref": "#/components/schemas/CheckinDate"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordCheckinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "O check-in do dia, como ficou",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checkin"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo inválido (`api.request.invalid`) ou dia que não existe no calendário (`health.checkin.invalid_date`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "O dia não é hoje no fuso do paciente: `health.checkin.window_closed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Salvar o check-in de um dia",
+        "tags": [
+          "MyCheckins"
+        ]
+      }
+    },
+    "/v1/me/checkins": {
+      "get": {
+        "description": "Lista os check-ins do paciente entre `from` e `to`, os dois dias incluídos, do mais antigo para o mais recente. Dia sem check-in simplesmente não vem na lista — a API não preenche o que ninguém respondeu. Só o próprio paciente pode pedir.",
+        "operationId": "MyCheckinsController_list_v1",
+        "parameters": [
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Último dia do período, incluído, `YYYY-MM-DD`",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-27"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Primeiro dia do período, incluído, `YYYY-MM-DD`",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-01"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Os check-ins do período",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Período inválido: `api.request.invalid`, `health.checkin.invalid_date`, `health.checkin.invalid_period` ou, acima de 366 dias, `health.checkin.period_too_long`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é paciente: `identity.patient.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil: `identity.profile.not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Os check-ins de quem fez a chamada, num período",
+        "tags": [
+          "MyCheckins"
+        ]
+      }
+    },
+    "/v1/patients/{patientId}/checkins": {
+      "get": {
+        "description": "Lista os check-ins do paciente entre `from` e `to`, os dois dias incluídos, do mais antigo para o mais recente — exatamente como o paciente respondeu, sem nota, score ou leitura da plataforma. Dia sem check-in não vem na lista. **Exige vínculo ativo e o consentimento de compartilhamento vigente**: sem um dos dois a resposta é 404, igual a um paciente que não existe. Cada chamada vira uma linha no registro de acessos do paciente.",
+        "operationId": "PatientCheckinsController_list_v1",
+        "parameters": [
+          {
+            "name": "patientId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/PatientId"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Último dia do período, incluído, `YYYY-MM-DD`",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-27"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Primeiro dia do período, incluído, `YYYY-MM-DD`",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-01"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Os check-ins do paciente no período",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Período inválido: `api.request.invalid`, `health.checkin.invalid_date`, `health.checkin.invalid_period` ou, acima de 366 dias, `health.checkin.period_too_long`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quem chamou não é profissional: `identity.professional.required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Quem chamou não tem perfil (`identity.profile.not_found`) ou não pode ver esse paciente — sem vínculo, sem consentimento, ou paciente que não existe: `identity.patient.not_found`, a mesma resposta para os três",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro inesperado. É o envelope de erro de toda a API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Os check-ins de um paciente, num período",
+        "tags": [
+          "PatientCheckins"
+        ]
+      }
     }
   },
   "info": {
@@ -1589,9 +1858,10 @@
       "AccessLogResource": {
         "type": "string",
         "enum": [
-          "patient_chart"
+          "patient_chart",
+          "patient_checkins"
         ],
-        "description": "O que foi acessado: hoje, a ficha do paciente"
+        "description": "O que foi acessado: a ficha do paciente ou os check-ins de um período"
       },
       "AccessLogAction": {
         "type": "string",
@@ -1660,6 +1930,198 @@
         "format": "uuid",
         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
         "description": "Id do perfil do paciente no módulo identity"
+      },
+      "CheckinDate": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "description": "O dia do check-in, `YYYY-MM-DD`, no fuso do paciente. É um dia do calendário e não um instante: não tem hora e não tem fuso",
+        "example": "2026-11-27"
+      },
+      "RecordCheckinRequest": {
+        "type": "object",
+        "properties": {
+          "energy": {
+            "description": "Energia percebida no dia, de 1 a 5",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinScale"
+              }
+            ]
+          },
+          "sleepQuality": {
+            "description": "Qualidade do sono **percebida** pelo paciente, na mesma escala. É o que a pessoa achou, não o que o wearable mediu: os dois convivem e não se corrigem",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinScale"
+              }
+            ]
+          },
+          "hunger": {
+            "description": "Fome ao longo do dia, de 1 a 5",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinScale"
+              }
+            ]
+          },
+          "symptoms": {
+            "default": [],
+            "description": "Os sintomas do dia, em código. Ausente ou vazio significa \"nada a relatar\". Repetições e ordem não importam: a API responde na ordem do vocabulário",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckinSymptom"
+            }
+          },
+          "otherSymptom": {
+            "description": "O que foi o `other`, em poucas palavras. Só é guardado quando `other` está em `symptoms`; sem ele, é descartado",
+            "type": "string",
+            "maxLength": 80
+          },
+          "note": {
+            "description": "Nota livre do paciente sobre o dia. Texto em branco é o mesmo que nota nenhuma",
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "energy",
+          "sleepQuality",
+          "hunger"
+        ],
+        "description": "O check-in do dia, como o paciente preenche"
+      },
+      "CheckinScale": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5,
+        "description": "Uma resposta na escala de 1 a 5",
+        "example": 3
+      },
+      "CheckinSymptom": {
+        "type": "string",
+        "enum": [
+          "bloating",
+          "nausea",
+          "heartburn",
+          "constipation",
+          "diarrhea",
+          "headache",
+          "cramps",
+          "muscle_soreness",
+          "dizziness",
+          "other"
+        ],
+        "description": "Um sintoma do check-in, em código: o cliente traduz. `other` é \"algo que não está nesta lista\", e o que foi vai em `otherSymptom`"
+      },
+      "Checkin": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/CheckinDate"
+          },
+          "energy": {
+            "$ref": "#/components/schemas/CheckinScale"
+          },
+          "sleepQuality": {
+            "$ref": "#/components/schemas/CheckinScale"
+          },
+          "hunger": {
+            "$ref": "#/components/schemas/CheckinScale"
+          },
+          "symptoms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckinSymptom"
+            },
+            "description": "Os sintomas relatados, na ordem do vocabulário. Vazio quando não houve"
+          },
+          "otherSymptom": {
+            "description": "O que foi o `other`, quando o paciente escreveu. Ausente quando não escreveu",
+            "type": "string",
+            "minLength": 1
+          },
+          "note": {
+            "description": "A nota do paciente. Ausente quando não houve",
+            "type": "string",
+            "minLength": 1
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o check-in foi salvo pela primeira vez, em UTC",
+            "example": "2026-11-27T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "Quando o check-in mudou pela última vez, em UTC. Igual a `recordedAt` enquanto ninguém o corrigiu",
+            "example": "2026-11-27T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "date",
+          "energy",
+          "sleepQuality",
+          "hunger",
+          "symptoms",
+          "recordedAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Um check-in diário do paciente"
+      },
+      "CheckinPeriodQuery": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "Primeiro dia do período, incluído",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinDate"
+              }
+            ]
+          },
+          "to": {
+            "description": "Último dia do período, incluído",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckinDate"
+              }
+            ]
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "description": "O período da listagem, de no máximo 366 dias"
+      },
+      "CheckinList": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/CheckinDate"
+          },
+          "to": {
+            "$ref": "#/components/schemas/CheckinDate"
+          },
+          "checkins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkin"
+            },
+            "description": "Os check-ins do período, do dia mais antigo para o mais recente"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "checkins"
+        ],
+        "additionalProperties": false,
+        "description": "Os check-ins de um período"
       }
     }
   }

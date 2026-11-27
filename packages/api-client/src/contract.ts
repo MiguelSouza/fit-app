@@ -4,6 +4,9 @@ import {
   type AccessLogPage,
   type AcceptedInvitation,
   type AcceptInvitationRequest,
+  type Checkin,
+  type CheckinList,
+  type CheckinPeriodQuery,
   type Consent,
   type ConsentList,
   type CreatedInvitation,
@@ -16,6 +19,7 @@ import {
   type MeResponse,
   type OrganizationMembership,
   type ProfessionalIdentity,
+  type RecordCheckinRequest,
   type RegisterProfessionalRequest,
   type RevokedConsent,
   type RevokedConsentList,
@@ -109,4 +113,26 @@ export type AccessLogPageFields = FieldsOf<AccessLogPage, 'entries' | 'nextCurso
 export type EndedCareRelationshipFields = FieldsOf<
   EndedCareRelationship,
   'id' | 'organizationId' | 'status' | 'startedAt' | 'endedAt'
+>;
+
+export type CheckinFields = FieldsOf<
+  Checkin,
+  | 'date'
+  | 'energy'
+  | 'sleepQuality'
+  | 'hunger'
+  | 'symptoms'
+  | 'otherSymptom'
+  | 'note'
+  | 'recordedAt'
+  | 'updatedAt'
+>;
+
+export type CheckinListFields = FieldsOf<CheckinList, 'from' | 'to' | 'checkins'>;
+
+export type CheckinPeriodQueryFields = FieldsOf<CheckinPeriodQuery, 'from' | 'to'>;
+
+export type RecordCheckinRequestFields = FieldsOf<
+  RecordCheckinRequest,
+  'energy' | 'sleepQuality' | 'hunger' | 'symptoms' | 'otherSymptom' | 'note'
 >;
