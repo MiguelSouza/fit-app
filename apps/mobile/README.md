@@ -107,6 +107,13 @@ lib/
       consent_page.dart      uma finalidade, uma tela
       accept_invitation.dart POST /v1/invitations/accept
       invitation_screen.dart o fluxo: código, conta, consentimentos, pronto
+    checkin/
+      checkin_day.dart       que dia é hoje, como a API recebe (YYYY-MM-DD)
+      checkin_labels.dart    as palavras das escalas e dos sintomas, em pt-BR
+      checkin_scale_field.dart uma escala de 1 a 5, respondida com um toque
+      checkin_symptom_chips.dart os sintomas em chips
+      checkin_api.dart       PUT /v1/me/checkins/{date} e o check-in de hoje
+      checkin_screen.dart    o check-in do dia: três escalas, chips e a nota
     api/
       api_client.dart        o cliente gerado + o token em cada requisição
       api_failure.dart       DioException -> mensagem que pode ir para a tela
@@ -246,8 +253,16 @@ que lê o `toJson()` do evento — o que iria para o fio.
 
 ## O que ainda não tem
 
-- **As telas do paciente.** Plano alimentar, check-in, diário e medidas vêm com
-  os cards dos módulos `nutrition` e `health`.
+- **O resto das telas do paciente.** O check-in do dia existe (card P-02); plano
+  alimentar, diário, medidas e o histórico de check-ins vêm com os outros cards
+  dos módulos `nutrition` e `health`.
+- **O check-in de um dia que não é hoje.** A API só aceita o próprio dia, e o
+  app manda o dia do **aparelho** — o Dart converte um instante para o fuso
+  local e para UTC, e para nenhum outro por nome, o que precisaria da base IANA
+  (dependência nova, decisão própria). Quem viaja para outro fuso pode ouvir um
+  `health.checkin.window_closed` da API, com a mensagem na tela, e nenhum
+  check-in é gravado no dia errado. Escolher o fuso é a tela de perfil, que
+  ainda não existe.
 - **A sessão real aceita pela API.** Entrar e sair funcionam, mas `GET /v1/me`
   com o token de um login de verdade responde 401 no stack local: o Auth assina
   em ES256 e o guard da API valida HS256. É o mesmo ponto aberto do painel

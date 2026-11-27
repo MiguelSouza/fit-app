@@ -25,6 +25,15 @@ void main() {
 
     test('with a session: the protected routes answer', () {
       expect(redirectForPath(signedIn: true, location: homePath), isNull);
+      expect(redirectForPath(signedIn: true, location: checkinPath), isNull);
+    });
+
+    test('no session: the check-in goes to the sign in, like any patient screen', () {
+      // It is the patient's own health data (card P-02), so it is on neither
+      // of the two open lists.
+      expect(redirectForPath(signedIn: false, location: checkinPath), signInPath);
+      expect(publicPaths, isNot(contains(checkinPath)));
+      expect(sessionAgnosticPaths, isNot(contains(checkinPath)));
     });
 
     test('a route nobody listed is protected by not being on the list', () {

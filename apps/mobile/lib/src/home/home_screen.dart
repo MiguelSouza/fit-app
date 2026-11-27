@@ -1,9 +1,11 @@
 import 'package:fit_app_api_client/fit_app_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../api/api_failure.dart';
 import '../api/me.dart';
+import '../app/router.dart';
 import '../auth/auth_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../shared/environment_badge.dart';
@@ -48,6 +50,20 @@ class HomeScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
+              // The one thing the patient opens this app to do, so it is the
+              // first thing on the screen and one tap away (card P-02).
+              FilledButton.icon(
+                onPressed: () => context.push(checkinPath),
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Fazer o check-in de hoje'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Leva dez segundos, e dá para corrigir até o fim do dia.',
+                style: textTheme.labelSmall,
+              ),
+              const SizedBox(height: 32),
+
               Text('Sua conta', style: textTheme.titleLarge),
               const SizedBox(height: 4),
               Text('O que a API responde em GET /v1/me.', style: textTheme.labelSmall),
@@ -61,8 +77,8 @@ class HomeScreen extends ConsumerWidget {
 
               const SizedBox(height: 32),
               Text(
-                'Seu plano alimentar, seus check-ins e seu diário aparecem aqui '
-                'quando os cards dos módulos nutrition e health chegarem.',
+                'Seu plano alimentar e seu diário aparecem aqui quando os cards '
+                'do módulo nutrition chegarem.',
                 style: textTheme.labelSmall,
               ),
             ],
