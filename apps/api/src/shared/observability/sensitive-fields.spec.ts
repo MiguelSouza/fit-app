@@ -37,6 +37,28 @@ describe('isSensitiveKey', () => {
     }
   });
 
+  it('recognizes every value the daily check-in writes', () => {
+    // The card's own fields, in the spellings they travel in: the contract's
+    // camel case, the column's snake case and the qualified name a payload
+    // would give them. CLAUDE.md names "valores de check-in" and "notas" as
+    // things that never reach a log, and this list is where that is decided
+    // for the whole platform (ADR 0013) — a field the check-in has and this
+    // list does not is a value that comes out in full.
+    for (const key of [
+      'energy',
+      'sleepQuality',
+      'sleep_quality',
+      'hunger',
+      'symptoms',
+      'otherSymptom',
+      'other_symptom',
+      'note',
+      'checkInNote',
+    ]) {
+      expect(isSensitiveKey(key)).toBe(true);
+    }
+  });
+
   it('leaves ids, codes and timings alone, which is what a log is for', () => {
     for (const key of [
       'patientId',
