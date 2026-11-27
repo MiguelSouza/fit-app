@@ -15,16 +15,19 @@ import { professionalTypeSchema } from './professional';
  *
  * - `patient_chart`: a ficha do paciente, the screen that gathers what the
  *   platform knows about them.
+ * - `patient_checkins`: os check-ins de um período, read on their own
+ *   (card P-02). A value of its own and not a reuse of the one above, which is
+ *   what this list said it would do when a second kind of access arrived: the
+ *   patient's log has to be able to say "a nutricionista leu os seus
+ *   check-ins", and a row claiming the whole ficha was opened would be a
+ *   record of something that did not happen.
  *
- * It is one value today because the platform has one screen that opens a
- * patient (ADR 0017, and the `nutrition`, `health` and `insights` modules are
- * still skeletons). A new kind of access — the meal plan on its own, the
- * check-ins of a period — is a value appended here and in the database enum,
- * never a reuse of this one.
+ * A value is appended here and in the database enum, never reused and never
+ * reordered: the codes are in a year of somebody's audit trail.
  */
-export const accessLogResourceSchema = z.enum(['patient_chart']).meta({
+export const accessLogResourceSchema = z.enum(['patient_chart', 'patient_checkins']).meta({
   id: 'AccessLogResource',
-  description: 'O que foi acessado: hoje, a ficha do paciente',
+  description: 'O que foi acessado: a ficha do paciente ou os check-ins de um período',
 });
 
 export type AccessLogResource = z.infer<typeof accessLogResourceSchema>;

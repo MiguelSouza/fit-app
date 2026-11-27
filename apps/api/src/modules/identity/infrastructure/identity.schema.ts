@@ -54,7 +54,7 @@ const CONSENT_TYPES = [
   'wearable_data',
   'ai_processing',
 ] as const;
-const ACCESS_LOG_RESOURCES = ['patient_chart'] as const;
+const ACCESS_LOG_RESOURCES = ['patient_chart', 'patient_checkins'] as const;
 const ACCESS_LOG_ACTIONS = ['view', 'export'] as const;
 
 /**

@@ -20,14 +20,19 @@ import { type ProfessionalType } from './person';
  */
 
 /**
- * What was accessed. One value today, because the platform has one thing that
- * opens a patient: a ficha.
+ * What was accessed: the ficha of a patient, or their check-ins of a period
+ * read on their own (card P-02).
  *
  * A closed vocabulary, for the reason written on the contract: a record is
  * auditable only while the words in it mean one thing, and the patient's
  * screen needs a code it can translate, not a sentence the API wrote.
+ *
+ * The two are separate values and not one, which is what this type said it
+ * would do when a second kind of access arrived: "abriu a sua ficha" and "leu
+ * os seus check-ins" are different facts, and a row claiming the first when
+ * only the second happened is a record of something nobody did.
  */
-export type AccessLogResource = 'patient_chart';
+export type AccessLogResource = 'patient_chart' | 'patient_checkins';
 
 /**
  * What was done to it: read on the screen, or taken out of the platform.
