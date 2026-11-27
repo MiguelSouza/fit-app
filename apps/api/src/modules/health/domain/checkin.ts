@@ -376,3 +376,27 @@ function textOrNull(value: string | undefined): string | null {
 
   return text === '' ? null : text;
 }
+
+/** The check-ins of one period, as a listing answers them. */
+export interface CheckinsInPeriod {
+  readonly period: CheckinPeriod;
+  /** From the oldest day to the newest. Days with no check-in are absent. */
+  readonly checkins: readonly RecordedCheckin[];
+}
+
+/**
+ * Whether a save replaced a check-in that was already there.
+ *
+ * Read off the row and not off a flag the database returned: on a first save
+ * `recorded_at` **is** the instant of the request, and on a correction it is
+ * the instant of the first one, which is earlier. One comparison, no
+ * `xmax` trick, and it means the same thing in a test double as in Postgres.
+ *
+ * The one case it reads as new is two saves of the same day in the same
+ * millisecond, which is a double tap faster than a millisecond. What it costs
+ * then is a `corrected: false` on an event, and nothing else: the row is right
+ * either way.
+ */
+export function wasCorrected(checkin: RecordedCheckin, savedAt: Date): boolean {
+  return checkin.recordedAt.getTime() !== savedAt.getTime();
+}
