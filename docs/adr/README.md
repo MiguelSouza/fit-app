@@ -30,3 +30,4 @@ antigo como substituído por ele.
 | [0019](./0019-registro-de-acessos-e-quem-viu-meus-dados.md) | Registro de acessos: tabela append-only, um registro por visita e página por cursor                       | aceito |
 | [0020](./0020-encerramento-do-vinculo-de-acompanhamento.md) | Encerrar o vínculo: `ended_at` numa linha, 404 na requisição seguinte e um evento                         | aceito |
 | [0021](./0021-onboarding-do-paciente-no-app.md)             | Onboarding do paciente no app: deep link por esquema próprio, uma tela por finalidade e o nome da prática | aceito |
+| [0022](./0022-check-in-diario-do-paciente.md)               | Check-in diário: o dia como endereço, a janela do próprio dia e escalas de cinco toques                   | aceito |
